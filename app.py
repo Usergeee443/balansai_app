@@ -6,6 +6,7 @@ from database import (
     get_statistics, get_debts, add_debt, get_reminders,
     get_balance_and_statistics
 )
+import os
 import hmac
 import hashlib
 import json
@@ -308,5 +309,6 @@ def api_get_reminders():
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(debug=Config.DEBUG, host='0.0.0.0', port=5000)
+    port = int(os.getenv('PORT', 5000))
+    app.run(debug=Config.DEBUG, host='0.0.0.0', port=port)
 
