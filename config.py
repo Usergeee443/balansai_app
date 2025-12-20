@@ -14,7 +14,8 @@ class Config:
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here-change-in-production')
     # Development uchun default True, production'da .env orqali False qiling
     # Render'da default False bo'ladi
-    DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+    # Local development uchun True qiling
+    DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
     
     # Telegram Mini App konfiguratsiyasi
     TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')

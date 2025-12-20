@@ -172,8 +172,14 @@ async function loadUserInfo() {
         }
         
         // User ma'lumotlarini darhol ko'rsatish
-        document.getElementById('userName').textContent = user.name || user.first_name || 'Foydalanuvchi';
-        document.getElementById('userInitial').textContent = (user.name || user.first_name || 'U')[0].toUpperCase();
+        const userNameEl = document.getElementById('userName');
+        const userInitialEl = document.getElementById('userInitial');
+        if (userNameEl) {
+            userNameEl.textContent = user.name || user.first_name || 'Foydalanuvchi';
+        }
+        if (userInitialEl) {
+            userInitialEl.textContent = (user.name || user.first_name || 'U')[0].toUpperCase();
+        }
         
         // Balance ni darhol ko'rsatish (user API dan kelgan)
         const balanceEl = document.getElementById('balanceAmount');
@@ -184,6 +190,31 @@ async function loadUserInfo() {
         return true;
     } catch (error) {
         console.error('Foydalanuvchi ma\'lumotlarini yuklashda xatolik:', error);
+        
+        // 401 xatosi bo'lsa, test mode haqida xabar ko'rsatish
+        if (error.message && error.message.includes('Unauthorized')) {
+            const loadingScreen = document.getElementById('loadingScreen');
+            if (loadingScreen) {
+                const urlParams = new URLSearchParams(window.location.search);
+                const testUserId = urlParams.get('test_user_id');
+                
+                if (!testUserId) {
+                    loadingScreen.innerHTML = `
+                        <div style="text-align: center; padding: 20px;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">🔐</div>
+                            <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #333;">Autentifikatsiya kerak</h2>
+                            <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Iltimos, Telegram orqali oching yoki</p>
+                            <p style="color: #999; font-size: 12px; margin-bottom: 20px;">Test mode uchun URL ga <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">?test_user_id=YOUR_ID</code> qo'shing</p>
+                            <p style="color: #666; font-size: 12px; margin-bottom: 16px;">Masalan: <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 4px;">?test_user_id=123456789</code></p>
+                            <button onclick="location.reload()" style="background: #1E88E5; color: white; border: none; border-radius: 12px; padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer;">
+                                Qayta urinish
+                            </button>
+                        </div>
+                    `;
+                }
+            }
+        }
+        
         return false;
     }
 }
@@ -881,6 +912,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Foydalanuvchi ma'lumotlarini yuklash
         const userLoaded = await loadUserInfo();
         if (!userLoaded) {
+            // Xatolik bo'lsa, loading screen yashirish
+            showLoading(false);
             return;
         }
         
@@ -889,6 +922,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     } catch (error) {
         console.error('Yuklanishda xatolik:', error);
         showLoading(false);
+        
+        // Xatolik xabari ko'rsatish
+        const loadingScreen = document.getElementById('loadingScreen');
+        if (loadingScreen) {
+            loadingScreen.innerHTML = `
+                <div style="text-align: center; padding: 20px;">
+                    <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
+                    <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #333;">Xatolik</h2>
+                    <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Ilovani yuklashda xatolik yuz berdi.</p>
+                    <p style="color: #999; font-size: 12px; margin-bottom: 20px;">Iltimos, Telegram orqali oching yoki test mode uchun URL ga ?test_user_id=YOUR_ID qo'shing</p>
+                    <button onclick="location.reload()" style="background: #1E88E5; color: white; border: none; border-radius: 12px; padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer; margin-right: 8px;">
+                        Qayta urinish
+                    </button>
+                </div>
+            `;
+        }
     }
     
     // Nav itemlar - SPA o'tish

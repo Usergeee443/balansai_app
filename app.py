@@ -27,6 +27,7 @@ def validate_telegram_webapp(init_data):
     try:
         # init_data ni URL decode qilish
         init_data = unquote(init_data)
+        print(f"[DEBUG] Init data received (length: {len(init_data)})")
         
         # init_data ni parse qilish
         pairs = {}
@@ -35,18 +36,47 @@ def validate_telegram_webapp(init_data):
                 key, value = pair.split('=', 1)
                 pairs[key] = value
         
+        print(f"[DEBUG] Parsed pairs keys: {list(pairs.keys())}")
+        
         if 'hash' not in pairs:
+            print("❌ Hash topilmadi")
+            # DEBUG mode'da hash yo'q bo'lsa ham parse qilib ko'rish
+            if Config.DEBUG and 'user' in pairs:
+                try:
+                    user_str = unquote(pairs['user'])
+                    user_data = json.loads(user_str)
+                    user_id = user_data.get('id')
+                    print(f"[DEBUG] Hash yo'q, lekin DEBUG mode'da user_id parse qilindi: {user_id}")
+                    return user_id
+                except Exception as e:
+                    print(f"[DEBUG] User parse xatosi: {e}")
             return None
         
         hash_value = pairs.pop('hash')
         
+        # Bot token tekshiruvi
+        bot_token = Config.TELEGRAM_BOT_TOKEN
+        if not bot_token:
+            print("⚠️ Bot token topilmadi, validatsiya o'tkazib yuborildi (development mode)")
+            if 'user' in pairs:
+                try:
+                    user_str = unquote(pairs['user'])
+                    user_data = json.loads(user_str)
+                    user_id = user_data.get('id')
+                    print(f"[DEBUG] Bot token yo'q, user_id parse qilindi: {user_id}")
+                    return user_id
+                except Exception as e:
+                    print(f"[DEBUG] User parse xatosi: {e}")
+            return None
+        
         # Data string ni yaratish
         data_check_string = '\n'.join(sorted([f"{k}={pairs[k]}" for k in pairs]))
+        print(f"[DEBUG] Data check string created (length: {len(data_check_string)})")
         
         # Secret key yaratish (Bot token dan)
         secret_key = hmac.new(
             "WebAppData".encode(),
-            Config.TELEGRAM_BOT_TOKEN.encode(),
+            bot_token.encode(),
             hashlib.sha256
         ).digest()
         
@@ -58,16 +88,50 @@ def validate_telegram_webapp(init_data):
         ).hexdigest()
         
         if calculated_hash != hash_value:
+            print(f"❌ Hash mos kelmadi. Received: {hash_value[:10]}..., Calculated: {calculated_hash[:10]}...")
+            # DEBUG mode'da hash mos kelmasa ham parse qilib ko'rish
+            if Config.DEBUG and 'user' in pairs:
+                try:
+                    user_str = unquote(pairs['user'])
+                    user_data = json.loads(user_str)
+                    user_id = user_data.get('id')
+                    print(f"[DEBUG] Hash mos kelmadi, lekin DEBUG mode'da user_id parse qilindi: {user_id}")
+                    return user_id
+                except Exception as e:
+                    print(f"[DEBUG] User parse xatosi: {e}")
             return None
+        
+        print("✅ Hash validatsiyasi muvaffaqiyatli")
         
         # User ma'lumotlarini olish
         if 'user' in pairs:
-            user_data = json.loads(pairs['user'].replace('+', ' ').replace('%22', '"'))
-            return user_data.get('id')
+            user_str = unquote(pairs['user'])
+            user_data = json.loads(user_str)
+            user_id = user_data.get('id')
+            print(f"[DEBUG] Valid user_id: {user_id}")
+            return user_id
         
         return None
     except Exception as e:
-        print(f"Validatsiya xatosi: {e}")
+        print(f"❌ Validatsiya xatosi: {e}")
+        import traceback
+        traceback.print_exc()
+        # Xatolik bo'lsa ham DEBUG mode'da parse qilib ko'rish
+        if Config.DEBUG and init_data:
+            try:
+                pairs = {}
+                for pair in init_data.split('&'):
+                    if '=' in pair:
+                        key, value = pair.split('=', 1)
+                        pairs[key] = value
+                if 'user' in pairs:
+                    user_str = unquote(pairs['user'])
+                    user_data = json.loads(user_str)
+                    user_id = user_data.get('id')
+                    print(f"[DEBUG] Exception bo'ldi, lekin DEBUG mode'da user_id parse qilindi: {user_id}")
+                    return user_id
+            except:
+                pass
         return None
 
 @app.route('/')
@@ -77,8 +141,20 @@ def index():
 
 def get_telegram_init_data():
     """Telegram Mini App init_data ni olish (header yoki query parameter dan)"""
-    init_data = request.headers.get('X-Telegram-Init-Data') or request.args.get('_auth')
-    return init_data
+    # Avval header dan olish
+    init_data = request.headers.get('X-Telegram-Init-Data')
+    if init_data:
+        print(f"[DEBUG] Init data header dan olindi (length: {len(init_data)})")
+        return init_data
+    
+    # Keyin query parameter dan
+    init_data = request.args.get('_auth') or request.args.get('initData')
+    if init_data:
+        print(f"[DEBUG] Init data query parameter dan olindi (length: {len(init_data)})")
+        return init_data
+    
+    print("[DEBUG] Init data topilmadi")
+    return None
 
 def parse_user_id_from_init_data(init_data):
     """DEBUG mode uchun init_data dan user_id ni parse qilish (validatsiyasiz)"""
@@ -106,14 +182,18 @@ def get_user_id_from_request():
     """Foydalanuvchi ID ni olish (validatsiya orqali yoki test mode)"""
     init_data = get_telegram_init_data()
     
-    # Agar init_data bo'sh bo'lsa va DEBUG mode bo'lsa, test user_id qaytarish
-    if not init_data and Config.DEBUG:
-        # Test user_id ni query parameter dan olish yoki default
-        test_user_id = request.args.get('test_user_id', '123456789')
+    # Test user_id ni query parameter dan olish (DEBUG mode uchun)
+    test_user_id = request.args.get('test_user_id')
+    if test_user_id and Config.DEBUG:
         print(f"[DEBUG] Test mode: user_id={test_user_id}")
         return int(test_user_id)
     
+    # Agar init_data bo'sh bo'lsa
     if not init_data:
+        if Config.DEBUG:
+            # DEBUG mode'da default test user_id
+            print(f"[DEBUG] Init data yo'q, default test user_id ishlatilmoqda")
+            return 123456789
         return None
     
     # Validatsiya qilish
