@@ -6,246 +6,13 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Balans AI</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    <!-- Scripts -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        * {
-            -webkit-tap-highlight-color: transparent;
-            -webkit-touch-callout: none;
-            -webkit-user-select: none;
-            user-select: none;
-        }
-        
-        body {
-            margin: 0;
-            padding: 0;
-            background: #f5f5f5;
-            min-height: 100vh;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            overflow-x: hidden;
-            overscroll-behavior: none;
-            -webkit-overflow-scrolling: touch;
-        }
-        
-        ::-webkit-scrollbar {
-            display: none;
-        }
-        * {
-            scrollbar-width: none;
-        }
-        
-        .page {
-            display: none;
-            min-height: calc(100vh - 80px);
-            padding-bottom: 20px;
-            opacity: 0;
-            transform: translateY(10px);
-            transition: opacity 0.2s ease, transform 0.2s ease;
-        }
-        
-        .page.active {
-            display: block;
-            opacity: 1;
-            transform: translateY(0);
-        }
-        
-        .card {
-            background: white;
-            border-radius: 16px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-        }
-        
-        .bottom-nav {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: white;
-            border-radius: 50px;
-            padding: 12px 20px;
-            z-index: 100;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .bottom-nav-content {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 32px;
-        }
-        
-        .nav-item {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            transition: all 0.2s;
-            border-radius: 50%;
-        }
-        
-        .nav-item:active {
-            background: rgba(30, 136, 229, 0.1);
-        }
-        
-        .nav-item-icon {
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        
-        .nav-item-icon svg {
-            width: 100%;
-            height: 100%;
-        }
-        
-        .nav-item.active .nav-item-icon svg {
-            color: #1E88E5;
-        }
-        
-        .nav-item:not(.active) .nav-item-icon svg {
-            color: #9CA3AF;
-        }
-        
-        .loading-screen {
-            position: fixed;
-            inset: 0;
-            background: white;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        
-        .spinner {
-            width: 48px;
-            height: 48px;
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #1E88E5;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .tarif-modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 2000;
-            padding: 20px;
-        }
-        
-        .tarif-modal.active {
-            display: flex;
-        }
-        
-        .tarif-content {
-            background: white;
-            border-radius: 20px;
-            padding: 24px;
-            max-width: 320px;
-            width: 100%;
-            text-align: center;
-        }
-        
-        .btn-primary {
-            background: #1E88E5;
-            color: white;
-            border: none;
-            border-radius: 12px;
-            padding: 14px 24px;
-            font-size: 16px;
-            font-weight: 600;
-            width: 100%;
-            margin-top: 16px;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        
-        .btn-primary:active {
-            background: #1976D2;
-        }
-        
-        .currency-item-main {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: background 0.2s;
-        }
-        
-        .currency-item-main:active {
-            background: #f9f9f9;
-        }
-        
-        .currency-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 12px 16px;
-            border-bottom: 1px solid #f0f0f0;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        
-        .currency-item:active {
-            background: #f9f9f9;
-        }
-        
-        .currency-item:last-child {
-            border-bottom: none;
-        }
-        
-        .currency-modal {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1500;
-            padding: 20px;
-        }
-        
-        .currency-modal.active {
-            display: flex;
-        }
-        
-        .currency-modal-content {
-            background: white;
-            border-radius: 20px;
-            padding: 24px;
-            max-width: 320px;
-            width: 100%;
-        }
-        
-        .transaction-card-mini {
-            background: white;
-            border-radius: 12px;
-            padding: 12px;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-            flex: 1;
-        }
-    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
     <!-- Loading Screen -->
@@ -254,201 +21,233 @@
         <p style="margin-top: 20px; color: #666; font-size: 14px;">Yuklanmoqda...</p>
     </div>
 
-    <!-- Tarif Modal -->
-    <div id="tarifModal" class="tarif-modal">
-        <div class="tarif-content">
-            <div style="font-size: 48px; margin-bottom: 16px;">🚫</div>
-            <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px;" id="tarifModalTitle">Tarif topilmadi</h2>
-            <p style="color: #666; font-size: 14px; margin-bottom: 20px;" id="tarifModalText">Sizning tarifingiz bu ilova uchun mos emas</p>
-            <button class="btn-primary" id="tarifModalBtn" onclick="window.open('https://balansai.uz', '_blank')">Boshqa ilovaga o'tish</button>
+    <!-- Asosiy Sahifa -->
+    <div id="pageHome" class="page active">
+        <!-- Header -->
+        <header class="app-header">
+            <img src="/static/logo.png" alt="Balans AI" class="app-logo" id="headerLogo">
+        </header>
+
+        <!-- Umumiy Balans -->
+        <div class="balance-card" onclick="showBalanceDetails()">
+            <div class="balance-icon">101</div>
+            <div class="balance-amount" id="totalBalance">0 so'm</div>
+            <svg class="arrow-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+        </div>
+
+        <!-- Valyutalar -->
+        <div class="currency-list" id="currencyList">
+            <!-- JavaScript orqali yuklanadi -->
+        </div>
+
+        <!-- So'nggi Tranzaksiyalar -->
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">So'nggi tranzaksiyalar</h2>
+                <svg class="section-arrow" onclick="navigateTo('transactions')" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+            <div class="transactions-scroll" id="transactionsList">
+                <!-- JavaScript orqali yuklanadi -->
+            </div>
+        </section>
+
+        <!-- Statistika -->
+        <section class="section">
+            <div class="section-header">
+                <h2 class="section-title">Statitikalar</h2>
+                <svg class="section-arrow" onclick="navigateTo('statistics')" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                </svg>
+            </div>
+            <div class="stats-card">
+                <canvas id="statsChart" class="stats-canvas"></canvas>
+            </div>
+        </section>
+    </div>
+
+    <!-- Tranzaksiyalar Sahifasi -->
+    <div id="pageTransactions" class="page">
+        <div class="page-header">
+            <h2 class="page-title">Tranzaksiyalar</h2>
+        </div>
+        
+        <!-- Search -->
+        <div class="search-section">
+            <div class="search-box">
+                <svg class="search-icon" viewBox="0 0 24 24" fill="none">
+                    <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="currentColor" stroke-width="2"/>
+                    <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                </svg>
+                <input type="text" id="transactionSearch" placeholder="Qidiring..." class="search-input">
+            </div>
+        </div>
+        
+        <!-- Filter -->
+        <div class="filter-section">
+            <button class="filter-btn active" data-filter="all">Barchasi</button>
+            <button class="filter-btn" data-filter="income">Kirim</button>
+            <button class="filter-btn" data-filter="expense">Chiqim</button>
+            <button class="filter-btn" data-filter="debt_given">Qarz berish</button>
+            <button class="filter-btn" data-filter="debt_taken">Qarz olish</button>
+        </div>
+        
+        <!-- Transactions List -->
+        <div id="allTransactionsList" class="transactions-list-grouped">
+            <!-- JavaScript orqali yuklanadi -->
         </div>
     </div>
 
-    <!-- Currency Details Modal -->
-    <div id="currencyModal" class="currency-modal">
-        <div class="currency-modal-content">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-                <h3 style="font-size: 18px; font-weight: 700; margin: 0;" id="currencyModalTitle">Valyuta tafsilotlari</h3>
-                <button onclick="document.getElementById('currencyModal').classList.remove('active')" style="background: none; border: none; font-size: 24px; color: #999; cursor: pointer; padding: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center;">×</button>
+    <!-- Statistika Sahifasi -->
+    <div id="pageStatistics" class="page">
+        <div class="page-header">
+            <h2 class="page-title">Statistika</h2>
+        </div>
+        
+        <div style="padding: 16px;">
+            <!-- Daromad dinamikasi -->
+            <div class="stats-card" style="margin-bottom: 16px;">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a;">Daromad dinamikasi</h3>
+                <canvas id="incomeTrendChart" class="stats-canvas"></canvas>
             </div>
-            <div id="currencyModalContent">
-                <!-- Tafsilotlar bu yerda yuklanadi -->
+            
+            <!-- Top kategoriyalar -->
+            <div class="stats-card" style="margin-bottom: 16px;">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a;">Eng ko'p xarajat</h3>
+                <div id="topCategoriesList">
+                    <!-- JavaScript orqali yuklanadi -->
+                </div>
+            </div>
+            
+            <!-- Xarajat taqsimoti -->
+            <div class="stats-card">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a;">Xarajat taqsimoti</h3>
+                <canvas id="expensePieChart" class="stats-canvas"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- Main Content -->
-    <div style="padding-bottom: 80px;">
-        <!-- Asosiy Sahifa -->
-        <div id="pageHome" class="page active">
-            <!-- Header -->
-            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 20px 16px 24px; color: white;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
-                    <div>
-                        <h1 style="font-size: 24px; font-weight: 700; margin: 0 0 4px;">Balans AI</h1>
-                        <p style="font-size: 14px; opacity: 0.9; margin: 0;" id="userName">Yuklanmoqda...</p>
-                    </div>
-                    <div style="width: 48px; height: 48px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: 600;" id="userInitial">U</div>
-                </div>
-            </div>
-
-            <!-- Balance and Currency List -->
-            <div style="padding: 16px; margin-top: -20px;">
-                <div class="card" style="padding: 0;">
-                    <!-- Umumiy balans - birinchi item -->
-                    <div class="currency-item-main" onclick="showCurrencyDetails()" style="padding: 16px; border-bottom: 1px solid #f0f0f0; cursor: pointer;">
-                        <div style="display: flex; align-items: center; justify-content: space-between;">
-                            <div style="display: flex; align-items: center; gap: 12px;">
-                                <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 700; color: white;">101</div>
-                                <h2 style="font-size: 20px; font-weight: 600; color: #333; margin: 0;" id="balanceAmount">0 so'm</h2>
-                            </div>
-                            <svg style="width: 20px; height: 20px; color: #1E88E5;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                            </svg>
-                        </div>
-                    </div>
-                    
-                    <!-- Currency List -->
-                    <div id="currencyList">
-                        <!-- Valyutalar bu yerda yuklanadi -->
-                    </div>
-                </div>
-            </div>
-
-            <!-- So'nggi Tranzaksiyalar -->
-            <div style="padding: 0 16px 16px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                    <h3 style="font-size: 18px; font-weight: 700; margin: 0;">So'nggi tranzaksiyalar</h3>
-                    <svg style="width: 20px; height: 20px; color: #999;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
-                <div style="display: flex; gap: 12px;" id="recentTransactions">
-                    <!-- So'nggi tranzaksiyalar bu yerda yuklanadi -->
-                </div>
-            </div>
-
-            <!-- Statistika -->
-            <div style="padding: 0 16px 16px;">
-                <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-                    <h3 style="font-size: 18px; font-weight: 700; margin: 0;">Statistika</h3>
-                    <svg style="width: 20px; height: 20px; color: #999;" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                    </svg>
-                </div>
-                <div class="card" style="padding: 16px;">
-                    <canvas id="statisticsChart" style="max-height: 200px;"></canvas>
-                </div>
-            </div>
+    <!-- Eslatmalar Sahifasi -->
+    <div id="pageReminders" class="page">
+        <div class="page-header" style="display: flex; justify-content: space-between; align-items: center;">
+            <h2 class="page-title">Eslatmalar</h2>
+            <button class="add-btn" onclick="showAddReminderModal()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+            </button>
         </div>
-
-        <!-- Tranzaksiyalar Sahifa -->
-        <div id="pageTransactions" class="page">
-            <div style="background: white; padding: 16px; border-bottom: 1px solid #e5e5e5; position: sticky; top: 0; z-index: 10;">
-                <h2 style="font-size: 20px; font-weight: 700; margin: 0;">Tranzaksiyalar</h2>
-            </div>
-            
-            <div style="padding: 16px; display: flex; gap: 8px; overflow-x: auto; -webkit-overflow-scrolling: touch;">
-                <button class="filter-btn" data-type="all" style="padding: 8px 16px; border-radius: 20px; border: 2px solid #1E88E5; background: #1E88E5; color: white; font-size: 14px; white-space: nowrap; cursor: pointer;">Barchasi</button>
-                <button class="filter-btn" data-type="income" style="padding: 8px 16px; border-radius: 20px; border: 2px solid #e5e5e5; background: white; color: #666; font-size: 14px; white-space: nowrap; cursor: pointer;">Kirim</button>
-                <button class="filter-btn" data-type="expense" style="padding: 8px 16px; border-radius: 20px; border: 2px solid #e5e5e5; background: white; color: #666; font-size: 14px; white-space: nowrap; cursor: pointer;">Chiqim</button>
-                <button class="filter-btn" data-type="debt" style="padding: 8px 16px; border-radius: 20px; border: 2px solid #e5e5e5; background: white; color: #666; font-size: 14px; white-space: nowrap; cursor: pointer;">Qarz</button>
-            </div>
-            
-            <div style="padding: 0 16px 16px;" id="transactionsList">
-                <!-- Tranzaksiyalar bu yerda yuklanadi -->
-            </div>
+        
+        <div id="remindersList" class="reminders-list">
+            <!-- JavaScript orqali yuklanadi -->
         </div>
-
-        <!-- Statistika Sahifa -->
-        <div id="pageStatistics" class="page">
-            <div style="background: white; padding: 16px; border-bottom: 1px solid #e5e5e5; position: sticky; top: 0; z-index: 10;">
-                <h2 style="font-size: 20px; font-weight: 700; margin: 0;">Statistika</h2>
-            </div>
-            
-            <div style="padding: 16px;" id="statisticsContent">
-                <!-- Statistika bu yerda yuklanadi -->
-            </div>
+    </div>
+    
+    <!-- Add Reminder Modal -->
+    <div id="addReminderModal" class="modal">
+        <div class="modal-content">
+            <h3 class="modal-title">Yangi eslatma</h3>
+            <form id="addReminderForm" onsubmit="handleAddReminder(event)">
+                <div class="form-group">
+                    <label>Nomi</label>
+                    <input type="text" name="title" required placeholder="Masalan: Ijara to'lovi">
+                </div>
+                <div class="form-group">
+                    <label>Summa</label>
+                    <input type="number" name="amount" required placeholder="0">
+                </div>
+                <div class="form-group">
+                    <label>Valyuta</label>
+                    <select name="currency" required>
+                        <option value="UZS">UZS</option>
+                        <option value="USD">USD</option>
+                        <option value="EUR">EUR</option>
+                        <option value="RUB">RUB</option>
+                        <option value="TRY">TRY</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Sana</label>
+                    <input type="date" name="reminder_date" required>
+                </div>
+                <div class="form-group">
+                    <label>Takrorlash</label>
+                    <select name="repeat_interval">
+                        <option value="none">Takrorlanmaydi</option>
+                        <option value="daily">Har kuni</option>
+                        <option value="weekly">Har hafta</option>
+                        <option value="monthly">Har oy</option>
+                        <option value="yearly">Har yil</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="closeAddReminderModal()">Bekor qilish</button>
+                    <button type="submit" class="btn-primary">Qo'shish</button>
+                </div>
+            </form>
         </div>
+    </div>
 
-        <!-- Eslatmalar Sahifa -->
-        <div id="pageReminders" class="page">
-            <div style="background: white; padding: 16px; border-bottom: 1px solid #e5e5e5; position: sticky; top: 0; z-index: 10;">
-                <h2 style="font-size: 20px; font-weight: 700; margin: 0;">Eslatmalar</h2>
-            </div>
-            
-            <div style="padding: 16px;" id="remindersList">
-                <!-- Eslatmalar bu yerda yuklanadi -->
-            </div>
+    <!-- Qarzlar Sahifasi -->
+    <div id="pageDebts" class="page">
+        <div class="page-header">
+            <h2 class="page-title">Qarzlar</h2>
         </div>
-
-        <!-- Qarzlar Sahifa -->
-        <div id="pageDebts" class="page">
-            <div style="background: white; padding: 16px; border-bottom: 1px solid #e5e5e5; position: sticky; top: 0; z-index: 10;">
-                <h2 style="font-size: 20px; font-weight: 700; margin: 0;">Qarzlar</h2>
-            </div>
-            
-            <div style="padding: 16px;" id="debtsList">
-                <!-- Qarzlar bu yerda yuklanadi -->
-            </div>
+        
+        <!-- Filter -->
+        <div class="filter-section">
+            <button class="filter-btn active" data-filter="all">Barchasi</button>
+            <button class="filter-btn" data-filter="given">Berdim</button>
+            <button class="filter-btn" data-filter="taken">Oldim</button>
+        </div>
+        
+        <div id="debtsList" class="debts-list">
+            <!-- JavaScript orqali yuklanadi -->
         </div>
     </div>
 
     <!-- Bottom Navigation -->
-    <div class="bottom-nav">
-        <div class="bottom-nav-content">
-            <div class="nav-item active" data-page="home">
-                <div class="nav-item-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 18V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M10.07 2.81997L3.14002 8.36997C2.36002 8.98997 1.86002 10.3 2.03002 11.28L3.36002 19.24C3.60002 20.66 4.96002 21.81 6.40002 21.81H17.6C19.03 21.81 20.4 20.65 20.64 19.24L21.97 11.28C22.13 10.3 21.63 8.98997 20.86 8.36997L13.93 2.82997C12.86 1.96997 11.13 1.96997 10.07 2.81997Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-            </div>
-            <div class="nav-item" data-page="transactions">
-                <div class="nav-item-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M12 22H17C20 22 22 20 22 17V12C22 9.3 20.3 7.3 17.8 7C17.6 7 17.3 7 17 7H7C6.7 7 6.5 6.99998 6.2 7.09998C3.6 7.39998 2 9.3 2 12C2 12.3 2 12.7 2 13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M17.8 6.99995C17.6 6.99995 17.3 6.99995 17 6.99995H6.99995C6.69995 6.99995 6.49995 6.99993 6.19995 7.09993C6.29995 6.79993 6.49996 6.59994 6.79996 6.29994L9.99995 2.99995C11.4 1.59995 13.6 1.59995 15 2.99995L16.8 4.79994C17.4 5.39994 17.7 6.19995 17.8 6.99995Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M22 12.5H19C17.9 12.5 17 13.4 17 14.5C17 15.6 17.9 16.5 19 16.5H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M5.80157 21.4C7.57157 21.4 9.00156 19.97 9.00156 18.2C9.00156 16.43 7.57157 15 5.80157 15C4.03157 15 2.60156 16.43 2.60156 18.2C2.60156 19.97 4.03157 21.4 5.80157 21.4Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M2 22L3 21" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-            </div>
-            <div class="nav-item" data-page="statistics">
-                <div class="nav-item-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M10.11 11.15H7.46005C6.83005 11.15 6.32007 11.66 6.32007 12.29V17.41H10.11V11.15V11.15Z" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M12.7613 6.59998H11.2413C10.6113 6.59998 10.1013 7.10999 10.1013 7.73999V17.4H13.8913V7.73999C13.8913 7.10999 13.3913 6.59998 12.7613 6.59998Z" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M16.5482 12.85H13.8982V17.4H17.6882V13.99C17.6782 13.36 17.1682 12.85 16.5482 12.85Z" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M9 22H15C20 22 22 20 22 15V9C22 4 20 2 15 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-            </div>
-            <div class="nav-item" data-page="reminders">
-                <div class="nav-item-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20.75 13.25C20.75 18.08 16.83 22 12 22C7.17 22 3.25 18.08 3.25 13.25C3.25 8.42 7.17 4.5 12 4.5C16.83 4.5 20.75 8.42 20.75 13.25Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M12 8V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M9 2H15" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-            </div>
-            <div class="nav-item" data-page="debts">
-                <div class="nav-item-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M20.5 11.3V7.04001C20.5 3.01001 19.56 2 15.78 2H8.22C4.44 2 3.5 3.01001 3.5 7.04001V18.3C3.5 20.96 4.96001 21.59 6.73001 19.69L6.73999 19.68C7.55999 18.81 8.80999 18.88 9.51999 19.83L10.53 21.18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M8 7H16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M9 11H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M18.211 14.7703L14.671 18.3103C14.531 18.4503 14.401 18.7103 14.371 18.9003L14.181 20.2503C14.111 20.7403 14.451 21.0803 14.941 21.0103L16.291 20.8203C16.481 20.7903 16.751 20.6603 16.881 20.5203L20.421 16.9803C21.031 16.3703 21.321 15.6603 20.421 14.7603C19.531 13.8703 18.821 14.1603 18.211 14.7703Z" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-                        <path d="M17.6992 15.2803C17.9992 16.3603 18.8392 17.2003 19.9192 17.5003" stroke="currentColor" stroke-width="1.5" stroke-miterlimit="10" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                </div>
-            </div>
+    <nav class="bottom-nav">
+        <div class="nav-item active" data-page="home">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 18V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M10.07 2.82L3.14 8.37C2.36 8.99 1.86 10.3 2.03 11.28L3.36 19.24C3.6 20.66 4.96 21.81 6.4 21.81H17.6C19.03 21.81 20.4 20.65 20.64 19.24L21.97 11.28C22.13 10.3 21.63 8.99 20.86 8.37L13.93 2.83C12.86 1.97 11.13 1.97 10.07 2.82Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
         </div>
-    </div>
+        <div class="nav-item" data-page="transactions">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path d="M12 22H17C20 22 22 20 22 17V12C22 9.3 20.3 7.3 17.8 7C17.6 7 17.3 7 17 7H7C6.7 7 6.5 7 6.2 7.1C3.6 7.4 2 9.3 2 12V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M22 12.5H19C17.9 12.5 17 13.4 17 14.5C17 15.6 17.9 16.5 19 16.5H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <div class="nav-item" data-page="statistics">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path d="M9 22H15C20 22 22 20 22 15V9C22 4 20 2 15 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M10.11 11.15H7.46C6.83 11.15 6.32 11.66 6.32 12.29V17.41H10.11V11.15Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M12.76 6.6H11.24C10.61 6.6 10.1 7.11 10.1 7.74V17.4H13.89V7.74C13.89 7.11 13.39 6.6 12.76 6.6Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M16.55 12.85H13.9V17.4H17.69V13.99C17.68 13.36 17.17 12.85 16.55 12.85Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <div class="nav-item" data-page="reminders">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path d="M20.75 13.25C20.75 18.08 16.83 22 12 22C7.17 22 3.25 18.08 3.25 13.25C3.25 8.42 7.17 4.5 12 4.5C16.83 4.5 20.75 8.42 20.75 13.25Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M12 8V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M9 2H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+        </div>
+        <div class="nav-item" data-page="debts">
+            <svg viewBox="0 0 24 24" fill="none">
+                <path d="M20.5 11.3V7.04C20.5 3.01 19.56 2 15.78 2H8.22C4.44 2 3.5 3.01 3.5 7.04V18.3C3.5 20.96 4.96 21.59 6.73 19.69L6.74 19.68C7.56 18.81 8.81 18.88 9.52 19.83L10.53 21.18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M8 7H16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                <path d="M9 11H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            </svg>
+        </div>
+    </nav>
 
+    <!-- Main JavaScript -->
     <script src="/static/js/main.js"></script>
 </body>
 </html>

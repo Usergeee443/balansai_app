@@ -1,0 +1,782 @@
+/* Balans AI - Asosiy Stillar */
+
+/* Reset va Asosiy */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5f5f5;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+}
+
+::-webkit-scrollbar {
+    display: none;
+}
+
+/* Header */
+.app-header {
+    background: linear-gradient(180deg, #5A8EF4 0%, #7BA5F7 100%);
+    padding: 24px 16px 48px;
+    text-align: center;
+}
+
+.app-logo {
+    height: 48px;
+    object-fit: contain;
+}
+
+/* Umumiy Balans Card */
+.balance-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    padding: 18px 20px;
+    margin: -32px 16px 16px;
+    cursor: pointer;
+    transition: transform 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.balance-card:active {
+    transform: scale(0.98);
+}
+
+.balance-icon {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #C9A227 0%, #F4D03F 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a1a;
+    flex-shrink: 0;
+}
+
+.balance-amount {
+    flex: 1;
+    font-size: 20px;
+    font-weight: 600;
+    color: #1a1a1a;
+    letter-spacing: -0.3px;
+}
+
+.arrow-icon {
+    width: 20px;
+    height: 20px;
+    color: #aaa;
+    flex-shrink: 0;
+}
+
+/* Valyutalar */
+.currency-list {
+    background: #f5f5f5;
+}
+
+.currency-item {
+    padding: 16px;
+    background: #f5f5f5;
+    border-bottom: 1px solid #e8e8e8;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    transition: background 0.2s;
+}
+
+.currency-item:active {
+    background: #ececec;
+}
+
+.currency-icon {
+    width: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.currency-symbol {
+    font-weight: 700;
+    font-size: 22px;
+    line-height: 1;
+}
+
+.currency-symbol-usd { color: #22c55e; }
+.currency-symbol-rub { color: #3b82f6; }
+.currency-symbol-eur { color: #3b82f6; }
+.currency-symbol-try { color: #ef4444; }
+
+.currency-badge {
+    width: 32px;
+    height: 24px;
+    background: linear-gradient(135deg, #C9A227 0%, #F4D03F 100%);
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 9px;
+    font-weight: 700;
+    color: #1a1a1a;
+    letter-spacing: 0.3px;
+}
+
+.currency-amount {
+    flex: 1;
+    font-size: 18px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+/* Section */
+.section {
+    padding: 20px 0 16px;
+    background: #f5f5f5;
+}
+
+.section-header {
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.section-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+}
+
+.section-arrow {
+    width: 18px;
+    height: 18px;
+    color: #aaa;
+    cursor: pointer;
+}
+
+/* Tranzaksiyalar */
+.transactions-scroll {
+    display: flex;
+    gap: 12px;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    padding: 0 16px 8px;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+}
+
+.transactions-scroll::-webkit-scrollbar {
+    display: none;
+}
+
+.transaction-card {
+    flex: 0 0 calc(50% - 6px);
+    scroll-snap-align: start;
+    background: white;
+    border-radius: 12px;
+    padding: 14px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.transaction-amount {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 8px;
+    line-height: 1.2;
+}
+
+.transaction-amount.income { color: #10b981; }
+.transaction-amount.expense { color: #ef4444; }
+
+.transaction-title {
+    font-size: 14px;
+    color: #1a1a1a;
+    margin-bottom: 4px;
+    font-weight: 500;
+    line-height: 1.3;
+}
+
+.transaction-meta {
+    font-size: 12px;
+    color: #999;
+    line-height: 1.3;
+}
+
+/* Statistika */
+.stats-card {
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    padding: 16px;
+    margin: 0 16px;
+}
+
+.stats-canvas {
+    max-height: 180px;
+}
+
+/* Bottom Navigation */
+.bottom-nav {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: white;
+    border-radius: 50px;
+    padding: 12px 20px;
+    z-index: 100;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 32px;
+}
+
+.nav-item {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 50%;
+}
+
+.nav-item:active {
+    background: rgba(30, 136, 229, 0.1);
+}
+
+.nav-item svg {
+    width: 24px;
+    height: 24px;
+    color: #9CA3AF;
+}
+
+.nav-item.active svg {
+    color: #1E88E5;
+}
+
+/* Page */
+.page {
+    display: none;
+    min-height: calc(100vh - 80px);
+    padding-bottom: 100px;
+}
+
+.page.active {
+    display: block;
+}
+
+/* Loading */
+.loading-screen {
+    position: fixed;
+    inset: 0;
+    background: white;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #1E88E5;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Modals */
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    max-width: 360px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+.modal-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a1a;
+    margin-bottom: 20px;
+}
+
+/* Form */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    margin-bottom: 8px;
+}
+
+.form-group input,
+.form-group select {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #e5e5e5;
+    border-radius: 10px;
+    font-size: 15px;
+    color: #1a1a1a;
+    background: white;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #5A8EF4;
+}
+
+.modal-actions {
+    display: flex;
+    gap: 12px;
+    margin-top: 24px;
+}
+
+.btn-cancel,
+.btn-primary {
+    flex: 1;
+    padding: 12px;
+    border: none;
+    border-radius: 10px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-cancel {
+    background: #f5f5f5;
+    color: #666;
+}
+
+.btn-primary {
+    background: #5A8EF4;
+    color: white;
+}
+
+.btn-cancel:active,
+.btn-primary:active {
+    transform: scale(0.98);
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #999;
+}
+
+.empty-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+}
+
+/* Page Header */
+.page-header {
+    background: white;
+    padding: 16px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.page-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #1a1a1a;
+}
+
+/* Search Section */
+.search-section {
+    background: white;
+    padding: 12px 16px;
+    border-bottom: 1px solid #e5e5e5;
+}
+
+.search-box {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #f5f5f5;
+    border-radius: 10px;
+    padding: 10px 14px;
+}
+
+.search-icon {
+    width: 20px;
+    height: 20px;
+    color: #999;
+    flex-shrink: 0;
+}
+
+.search-input {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-size: 15px;
+    color: #1a1a1a;
+    outline: none;
+}
+
+.search-input::placeholder {
+    color: #999;
+}
+
+/* Filter Section */
+.filter-section {
+    background: white;
+    padding: 12px 16px;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    border-bottom: 1px solid #e5e5e5;
+    scrollbar-width: none;
+}
+
+.filter-section::-webkit-scrollbar {
+    display: none;
+}
+
+.filter-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    background: #f5f5f5;
+    color: #666;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+
+.filter-btn.active {
+    background: #5A8EF4;
+    color: white;
+}
+
+.filter-btn:active {
+    transform: scale(0.95);
+}
+
+/* Transactions List - Grouped */
+.transactions-list-grouped {
+    padding: 0 0 16px;
+}
+
+.transaction-group {
+    margin-bottom: 24px;
+}
+
+.transaction-group-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1a1a1a;
+    padding: 16px 16px 12px;
+}
+
+.transaction-item {
+    background: white;
+    padding: 14px 16px;
+    border-bottom: 1px solid #f5f5f5;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.transaction-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 20px;
+}
+
+.transaction-icon.income {
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.transaction-icon.expense {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.transaction-icon.debt {
+    background: rgba(234, 179, 8, 0.1);
+}
+
+.transaction-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.transaction-info-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.transaction-amount-inline {
+    font-size: 16px;
+    font-weight: 700;
+}
+
+.transaction-amount-inline.income { color: #10b981; }
+.transaction-amount-inline.expense { color: #ef4444; }
+.transaction-amount-inline.debt { color: #eab308; }
+
+.transaction-time {
+    font-size: 12px;
+    color: #999;
+}
+
+.transaction-info-bottom {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.transaction-desc {
+    font-size: 14px;
+    color: #1a1a1a;
+    font-weight: 500;
+}
+
+.transaction-category-inline {
+    font-size: 12px;
+    color: #999;
+}
+
+/* Add Button */
+.add-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #5A8EF4;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.add-btn svg {
+    width: 20px;
+    height: 20px;
+    color: white;
+}
+
+.add-btn:active {
+    transform: scale(0.95);
+}
+
+/* Reminders List */
+.reminders-list {
+    padding: 16px;
+}
+
+.reminder-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    border-left: 4px solid #5A8EF4;
+    position: relative;
+}
+
+.reminder-card.completed {
+    opacity: 0.6;
+    border-left-color: #10b981;
+}
+
+.reminder-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+}
+
+.reminder-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+    flex: 1;
+}
+
+.reminder-checkbox {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    border: 2px solid #5A8EF4;
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.reminder-checkbox.checked {
+    background: #10b981;
+    border-color: #10b981;
+}
+
+.reminder-checkbox svg {
+    width: 14px;
+    height: 14px;
+    color: white;
+}
+
+.reminder-amount {
+    font-size: 18px;
+    font-weight: 700;
+    color: #5A8EF4;
+    margin-bottom: 8px;
+}
+
+.reminder-date {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 4px;
+}
+
+.reminder-repeat {
+    font-size: 12px;
+    color: #999;
+}
+
+/* Debts List */
+.debts-list {
+    padding: 16px;
+}
+
+.debt-card {
+    background: white;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.debt-card.given {
+    border-left: 4px solid #ef4444;
+}
+
+.debt-card.taken {
+    border-left: 4px solid #10b981;
+}
+
+.debt-person {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1a1a1a;
+    margin-bottom: 8px;
+}
+
+.debt-amount {
+    font-size: 20px;
+    font-weight: 700;
+    margin-bottom: 8px;
+}
+
+.debt-amount.given { color: #ef4444; }
+.debt-amount.taken { color: #10b981; }
+
+.debt-date {
+    font-size: 13px;
+    color: #666;
+}
+
+.debt-type-badge {
+    display: inline-block;
+    font-size: 11px;
+    padding: 4px 8px;
+    border-radius: 8px;
+    font-weight: 500;
+    margin-top: 8px;
+}
+
+.debt-type-badge.given {
+    background: rgba(239, 68, 68, 0.1);
+    color: #ef4444;
+}
+
+.debt-type-badge.taken {
+    background: rgba(16, 185, 129, 0.1);
+    color: #10b981;
+}
+
+/* Top Categories */
+.category-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid #f5f5f5;
+}
+
+.category-item:last-child {
+    border-bottom: none;
+}
+
+.category-name {
+    font-size: 15px;
+    color: #1a1a1a;
+    font-weight: 500;
+}
+
+.category-amount {
+    font-size: 16px;
+    font-weight: 700;
+    color: #ef4444;
+}
+

@@ -1,130 +1,231 @@
 # Balans AI - Telegram Mini App
 
-Telegram Mini App uchun moliyaviy hisobotlar va tranzaksiyalar boshqaruvi ilovasi.
+Moliyaviy boshqaruv tizimi - Telegram Mini App
 
-## Texnologiyalar
+## 📁 Loyiha Strukturasi
 
-- **Backend**: Python Flask
-- **Frontend**: HTML, Tailwind CSS, JavaScript
-- **Database**: MySQL
-- **Deployment**: Render
-
-## O'rnatish
-
-### Lokal rivojlanish
-
-1. Repository ni klon qiling:
-```bash
-git clone <repository-url>
-cd balansai_app
+```
+balansai_app/
+├── app.py                 # Flask backend server
+├── config.py              # Konfiguratsiya
+├── database.py            # Database funksiyalari
+├── requirements.txt       # Python dependencies
+├── Procfile              # Render deployment
+├── render.yaml           # Render konfiguratsiya
+├── .env                  # Environment variables (local)
+├── static/
+│   ├── css/
+│   │   └── style.css     # Barcha stillar
+│   ├── js/
+│   │   └── main.js       # Frontend JavaScript
+│   └── logo.png          # Logo
+└── templates/
+    └── index.html        # Asosiy HTML (SPA)
 ```
 
-2. Virtual environment yarating va aktivlashtiring:
+## 🎨 Frontend Arxitektura
+
+### Single Page Application (SPA)
+- **index.html** - Barcha sahifalar bitta faylda
+- **style.css** - Toza, modulli CSS
+- **main.js** - Sifatli JavaScript kod
+
+### Sahifalar
+1. **Asosiy** (Home) - Balans, valyutalar, tranzaksiyalar, statistika
+2. **Tranzaksiyalar** - Barcha tranzaksiyalar ro'yxati
+3. **Statistika** - Grafik va dashboardlar
+4. **Eslatmalar** - To'lov eslatmalari
+5. **Qarzlar** - Qarz boshqaruvi
+
+### UI Xususiyatlari
+- ✅ Minimalistik dizayn
+- ✅ Telegram Web App integratsiyasi
+- ✅ Haptic feedback
+- ✅ Smooth animations
+- ✅ Responsive layout
+- ✅ No text selection, zoom, scrollbars
+- ✅ Bottom navigation (rounded, open sides)
+
+## 🚀 Ishga Tushirish
+
+### Local Development
+
+1. Virtual environment yaratish:
 ```bash
-python3 -m venv .venv
-source .venv/bin/activate  # Linux/Mac
-# yoki
-.venv\Scripts\activate  # Windows
+python3 -m venv venv
+source venv/bin/activate  # MacOS/Linux
 ```
 
-3. Kerakli paketlarni o'rnating:
+2. Dependencies o'rnatish:
 ```bash
 pip install -r requirements.txt
 ```
 
-4. `.env` faylini yarating va sozlang:
-```bash
-cp .env.example .env
-# .env faylini o'zgartiring
-```
-
-5. Ilovani ishga tushiring:
-```bash
-python app.py
-```
-
-Ilova `http://localhost:5000` da ochiladi.
-
-## Render'ga Deploy qilish
-
-### 1. GitHub'ga yuklash
-
-Ilovangizni GitHub repository ga yuklang.
-
-### 2. Render'da yangi service yaratish
-
-1. [Render Dashboard](https://dashboard.render.com/) ga kiring
-2. "New +" tugmasini bosing va "Web Service" ni tanlang
-3. GitHub repository ni ulang
-4. Quyidagi sozlamalarni kiriting:
-   - **Name**: `balansai-app` (yoki xohlagan nomingiz)
-   - **Environment**: `Python 3`
-   - **Build Command**: `pip install -r requirements.txt`
-   - **Start Command**: `gunicorn app:app --bind 0.0.0.0:$PORT`
-
-### 3. Environment Variables
-
-Render Dashboard'da "Environment" bo'limiga quyidagi environment variables larni qo'shing:
-
-```
+3. `.env` fayl yaratish:
+```env
 MYSQL_HOST=146.103.126.207
 MYSQL_USER=phpmyadmin
 MYSQL_PASSWORD=PMA_Str0ng!2025
 MYSQL_DATABASE=BalansAiBot
 MYSQL_PORT=3306
-SECRET_KEY=<random-secret-key>
-DEBUG=False
-TELEGRAM_BOT_TOKEN=<your-telegram-bot-token>
+SECRET_KEY=your-secret-key-here
+DEBUG=True
+TELEGRAM_BOT_TOKEN=your_bot_token_here
 ```
 
-**Eslatma**: `SECRET_KEY` ni xavfsiz random string bilan almashtiring.
+4. Serverni ishga tushirish:
+```bash
+python app.py
+```
 
-### 4. Deploy
+5. Test uchun:
+```
+http://127.0.0.1:5000/?test_user_id=123
+```
 
-"Create Web Service" tugmasini bosing. Render avtomatik deploy qiladi.
+### Render Deployment
 
-### Alternativ: render.yaml orqali
+1. GitHub repository yaratish
+2. Render.com'ga ulash
+3. Environment variables qo'shish
+4. Deploy qilish
 
-Agar `render.yaml` faylidan foydalanmoqchi bo'lsangiz:
+## 🔧 Backend API
 
-1. Render Dashboard'da "New +" > "Blueprint"
-2. GitHub repository ni tanlang
-3. Render.yaml faylini avtomatik aniqlaydi va deploy qiladi
-
-## Environment Variables
-
-| Variable | Tavsif | Default |
-|----------|--------|---------|
-| `MYSQL_HOST` | MySQL server host | `146.103.126.207` |
-| `MYSQL_USER` | MySQL foydalanuvchi nomi | `phpmyadmin` |
-| `MYSQL_PASSWORD` | MySQL parol | - |
-| `MYSQL_DATABASE` | Database nomi | `BalansAiBot` |
-| `MYSQL_PORT` | MySQL port | `3306` |
-| `SECRET_KEY` | Flask secret key | - |
-| `DEBUG` | Debug mode | `False` |
-| `TELEGRAM_BOT_TOKEN` | Telegram bot token | - |
-
-## Xususiyatlar
-
-- ✅ Foydalanuvchi ma'lumotlarini ko'rsatish
-- ✅ Tranzaksiyalarni ko'rsatish (faqat o'qish)
-- ✅ Qarzlar ro'yxati
-- ✅ Eslatmalar
-- ✅ Statistika
-- ✅ Valyuta balanslari
-- ✅ Tarif tekshiruvi (Plus/Pro)
-- ✅ SPA (Single Page Application) - tez sahifalar o'tish
-- ✅ Lazy loading - sahifalar faqat bir marta yuklanadi
-
-## API Endpoints
+### Endpoints
 
 - `GET /` - Asosiy sahifa
-- `GET /api/user` - Foydalanuvchi ma'lumotlari
-- `GET /api/transactions` - Tranzaksiyalar ro'yxati
+- `GET /api/user` - User ma'lumotlari
+- `GET /api/transactions` - Tranzaksiyalar
+- `GET /api/balance` - Balans
 - `GET /api/statistics` - Statistika
-- `GET /api/debts` - Qarzlar ro'yxati
-- `GET /api/reminders` - Eslatmalar ro'yxati
+- `GET /api/statistics/income-trend` - Daromad dinamikasi
+- `GET /api/statistics/top-categories` - Top kategoriyalar
+- `GET /api/statistics/expense-by-category` - Xarajat taqsimoti
+- `GET /api/debts` - Qarzlar
+- `GET /api/reminders` - Eslatmalar
 
-## Litsenziya
+### Authentication
 
-Proprietary - Balans AI
+Telegram Mini App `initData` validatsiyasi:
+- Production: `X-Telegram-Init-Data` header
+- Development: `?test_user_id=123` query parameter
+
+## 📊 Database
+
+MySQL database strukturasi:
+- `users` - Foydalanuvchilar
+- `transactions` - Tranzaksiyalar
+- `debts` - Qarzlar
+- `reminders` - Eslatmalar
+- `currency_rates` - Valyuta kurslari
+
+## 🎯 Tariflar
+
+Qo'llab-quvvatlanadigan tariflar:
+- ✅ PLUS
+- ✅ PRO
+- ✅ FAMILY
+- ✅ FAMILY_PLUS
+- ✅ FAMILY_PRO
+- ❌ BUSINESS (alohida ilova)
+- ❌ NONE (tarif sotib olish kerak)
+
+## 📝 Kod Sifati
+
+### CSS
+- BEM metodologiyasi
+- Modulli struktura
+- Responsive design
+- Animation va transition
+
+### JavaScript
+- ES6+ syntax
+- Async/await
+- Error handling
+- Clean code principles
+
+### Python
+- PEP 8 standartlari
+- Type hints (optional)
+- Error handling
+- Database connection pooling
+
+## 🔐 Xavfsizlik
+
+- Telegram WebApp validatsiyasi
+- SQL injection himoyasi (parameterized queries)
+- XSS himoyasi
+- CORS sozlamalari
+
+## 📱 Telegram Mini App
+
+### Integration
+```javascript
+const tg = window.Telegram.WebApp;
+tg.ready();
+tg.expand();
+tg.enableClosingConfirmation();
+```
+
+### Haptic Feedback
+```javascript
+tg.HapticFeedback.impactOccurred('light');
+tg.HapticFeedback.notificationOccurred('success');
+```
+
+## 🐛 Debug
+
+### Local Testing
+```bash
+# Flask debug mode
+DEBUG=True python app.py
+
+# Test user
+http://127.0.0.1:5000/?test_user_id=123
+```
+
+### Logs
+```bash
+# Flask logs
+tail -f app.log
+
+# Database errors
+grep "ERROR" app.log
+```
+
+## 📦 Dependencies
+
+- Flask 3.0.0
+- PyMySQL 1.1.0
+- python-dotenv 1.0.0
+- Chart.js 4.4.0 (CDN)
+- Telegram Web App JS (CDN)
+
+## 🎨 Design System
+
+### Colors
+- Primary: `#5A8EF4` (Blue)
+- Success: `#10b981` (Green)
+- Error: `#ef4444` (Red)
+- Warning: `#F4D03F` (Gold)
+- Background: `#f5f5f5` (Light Gray)
+- Text: `#1a1a1a` (Dark)
+
+### Typography
+- Font: SF Pro / Segoe UI / Roboto
+- Sizes: 12px, 14px, 16px, 18px, 20px
+
+### Spacing
+- Base: 4px
+- Small: 8px
+- Medium: 16px
+- Large: 24px
+
+## 📄 License
+
+Private project - Balans AI
+
+## 👨‍💻 Developer
+
+Balans AI Team

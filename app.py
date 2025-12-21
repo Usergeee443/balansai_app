@@ -4,7 +4,8 @@ from config import Config
 from database import (
     get_user, get_transactions, add_transaction, get_balance,
     get_statistics, get_debts, add_debt, get_reminders,
-    get_balance_and_statistics
+    get_balance_and_statistics, get_income_trend, get_top_expense_categories,
+    get_expense_by_category, add_reminder, update_reminder_status
 )
 import os
 import hmac
@@ -316,6 +317,66 @@ def api_get_statistics():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/statistics/income-trend', methods=['GET'])
+def api_get_income_trend():
+    """Daromad dinamikasini olish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        period = request.args.get('period', 'auto')
+        trend = get_income_trend(user_id, period)
+        
+        return jsonify(trend)
+    except Exception as e:
+        print(f"❌ API: Daromad dinamikasini olishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/statistics/top-categories', methods=['GET'])
+def api_get_top_categories():
+    """Top kategoriyalarni olish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        days = int(request.args.get('days', 30))
+        limit = int(request.args.get('limit', 5))
+        categories = get_top_expense_categories(user_id, limit, days)
+        
+        # Decimal ni float ga konvertatsiya
+        for cat in categories:
+            if isinstance(cat.get('amount_original'), Decimal):
+                cat['amount_original'] = float(cat['amount_original'])
+        
+        return jsonify(categories)
+    except Exception as e:
+        print(f"❌ API: Top kategoriyalarni olishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/statistics/expense-by-category', methods=['GET'])
+def api_get_expense_by_category():
+    """Kategoriya bo'yicha xarajatlar"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        days = int(request.args.get('days', 30))
+        categories = get_expense_by_category(user_id, days)
+        
+        return jsonify(categories)
+    except Exception as e:
+        print(f"❌ API: Kategoriya bo'yicha xarajatlarni olishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/debts', methods=['GET'])
 def api_get_debts():
     """Qarzlar ro'yxatini olish"""
@@ -344,46 +405,94 @@ def api_get_debts():
 #     """Yangi qarz qo'shish - O'CHIRILGAN (faqat ko'rsatish rejimi)"""
 #     return jsonify({'error': 'Qo\'shish funksiyasi o\'chirilgan'}), 403
 
-@app.route('/api/reminders', methods=['GET'])
-def api_get_reminders():
-    """Eslatmalarni olish"""
+@app.route('/api/reminders', methods=['GET', 'POST'])
+def api_reminders():
+    """Eslatmalarni olish va qo'shish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    if request.method == 'GET':
+        try:
+            limit = int(request.args.get('limit', 20))
+            reminders = get_reminders(user_id, limit)
+            
+            # Agar reminders bo'sh bo'lsa yoki None bo'lsa
+            if not reminders:
+                return jsonify([])
+            
+            # Decimal ni float ga konvertatsiya qilish va boshqa turdagi ma'lumotlarni JSON ga moslashtirish
+            for r in reminders:
+                for key, value in r.items():
+                    if isinstance(value, Decimal):
+                        r[key] = float(value)
+                    elif isinstance(value, type(None)):
+                        r[key] = None
+                    elif isinstance(value, datetime):
+                        r[key] = value.isoformat()
+                    elif isinstance(value, (date, time)):
+                        r[key] = str(value)
+                    elif isinstance(value, timedelta):
+                        # timedelta ni sekundlarga konvertatsiya qilish
+                        r[key] = value.total_seconds()
+                    elif isinstance(value, bool):
+                        r[key] = value
+                    elif isinstance(value, (int, float, str)):
+                        r[key] = value
+                    else:
+                        # Boshqa turdagi ma'lumotlarni string ga konvertatsiya qilish
+                        r[key] = str(value)
+            
+            return jsonify(reminders)
+        except Exception as e:
+            print(f"❌ API: Eslatmalarni olishda xatolik: {e}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({'error': str(e)}), 500
+    
+    elif request.method == 'POST':
+        try:
+            data = request.get_json()
+            title = data.get('title')
+            amount = data.get('amount')
+            currency = data.get('currency', 'UZS')
+            reminder_date = data.get('reminder_date')
+            repeat_interval = data.get('repeat_interval', 'none')
+            
+            if not title or not amount or not reminder_date:
+                return jsonify({'error': 'Title, amount va reminder_date majburiy'}), 400
+            
+            success = add_reminder(user_id, title, amount, currency, reminder_date, repeat_interval)
+            
+            if success:
+                return jsonify({'success': True, 'message': 'Eslatma qo\'shildi'}), 201
+            else:
+                return jsonify({'error': 'Eslatma qo\'shilmadi'}), 500
+        except Exception as e:
+            print(f"❌ API: Eslatma qo'shishda xatolik: {e}")
+            import traceback
+            traceback.print_exc()
+            return jsonify({'error': str(e)}), 500
+
+@app.route('/api/reminders/<int:reminder_id>', methods=['PATCH'])
+def api_update_reminder(reminder_id):
+    """Eslatma statusini yangilash"""
     try:
         user_id = get_user_id_from_request()
         if not user_id:
             return jsonify({'error': 'Unauthorized'}), 401
         
-        limit = int(request.args.get('limit', 20))
-        reminders = get_reminders(user_id, limit)
+        data = request.get_json()
+        is_completed = data.get('is_completed', False)
         
-        # Agar reminders bo'sh bo'lsa yoki None bo'lsa
-        if not reminders:
-            return jsonify([])
+        success = update_reminder_status(user_id, reminder_id, is_completed)
         
-        # Decimal ni float ga konvertatsiya qilish va boshqa turdagi ma'lumotlarni JSON ga moslashtirish
-        for r in reminders:
-            for key, value in r.items():
-                if isinstance(value, Decimal):
-                    r[key] = float(value)
-                elif isinstance(value, type(None)):
-                    r[key] = None
-                elif isinstance(value, datetime):
-                    r[key] = value.isoformat()
-                elif isinstance(value, (date, time)):
-                    r[key] = str(value)
-                elif isinstance(value, timedelta):
-                    # timedelta ni sekundlarga konvertatsiya qilish
-                    r[key] = value.total_seconds()
-                elif isinstance(value, bool):
-                    r[key] = value
-                elif isinstance(value, (int, float, str)):
-                    r[key] = value
-                else:
-                    # Boshqa turdagi ma'lumotlarni string ga konvertatsiya qilish
-                    r[key] = str(value)
-        
-        return jsonify(reminders)
+        if success:
+            return jsonify({'success': True, 'message': 'Eslatma yangilandi'})
+        else:
+            return jsonify({'error': 'Eslatma yangilanmadi'}), 500
     except Exception as e:
-        print(f"❌ API: Eslatmalarni olishda xatolik: {e}")
+        print(f"❌ API: Eslatma yangilashda xatolik: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500

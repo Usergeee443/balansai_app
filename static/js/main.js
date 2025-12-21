@@ -1,828 +1,47 @@
-// Telegram Mini App integratsiyasi va asosiy funksiyalar
+/**
+ * Balans AI - Main JavaScript
+ * Telegram Mini App moliyaviy boshqaruv tizimi
+ */
 
-// Telegram WebApp obyektini olish
+// ============================================
+// GLOBAL O'ZGARUVCHILAR
+// ============================================
+
 const tg = window.Telegram?.WebApp || null;
+let currentUser = null;
+let currentPage = 'home';
+let loadedPages = new Set(['home']);
+let statsChart = null;
 
-// Telegram WebApp ni ishga tushirish
+// ============================================
+// TELEGRAM WEB APP
+// ============================================
+
 if (tg) {
     tg.ready();
     tg.expand();
-    // Ilovaga o'xshash qilish
     tg.enableClosingConfirmation();
-    tg.setHeaderColor('#1E88E5');
+    tg.setHeaderColor('#5A8EF4');
     tg.setBackgroundColor('#f5f5f5');
-} else {
-    console.warn('Telegram WebApp mavjud emas. Browser mode ishlatilmoqda.');
 }
 
-// Global o'zgaruvchilar
-let currentUser = null;
-let currentTariff = null;
-let currentFilter = 'all';
-let loadedPages = new Set(['home']); // Yuklangan sahifalar
+// ============================================
+// UTILITY FUNCTIONS
+// ============================================
 
-// API base URL
-const API_BASE = '';
-
-// Haptic feedback
 function hapticFeedback(type = 'light') {
     if (tg && tg.HapticFeedback) {
-        if (type === 'light') {
-            tg.HapticFeedback.impactOccurred('light');
-        } else if (type === 'medium') {
-            tg.HapticFeedback.impactOccurred('medium');
-        } else if (type === 'heavy') {
-            tg.HapticFeedback.impactOccurred('heavy');
-        } else if (type === 'success') {
-            tg.HapticFeedback.notificationOccurred('success');
-        } else if (type === 'error') {
-            tg.HapticFeedback.notificationOccurred('error');
-        }
+        if (type === 'light') tg.HapticFeedback.impactOccurred('light');
+        else if (type === 'medium') tg.HapticFeedback.impactOccurred('medium');
+        else if (type === 'success') tg.HapticFeedback.notificationOccurred('success');
+        else if (type === 'error') tg.HapticFeedback.notificationOccurred('error');
     }
 }
 
-// Telegram initData ni olish
-function getInitData() {
-    if (tg && tg.initData) {
-        return tg.initData;
-    }
-    const urlParams = new URLSearchParams(window.location.search);
-    const testUserId = urlParams.get('test_user_id');
-    if (testUserId) {
-        return '';
-    }
-    return '';
-}
-
-// API so'rov yuborish
-async function apiRequest(endpoint, options = {}) {
-    const initData = getInitData();
-    const urlParams = new URLSearchParams(window.location.search);
-    const testUserId = urlParams.get('test_user_id');
-    let url = `${API_BASE}${endpoint}`;
-    if (testUserId && !initData) {
-        url += (url.includes('?') ? '&' : '?') + `test_user_id=${testUserId}`;
-    }
-    
-    const defaultOptions = {
-        headers: {
-            'Content-Type': 'application/json',
-            'X-Telegram-Init-Data': initData,
-            ...options.headers
-        }
-    };
-
-    try {
-        const response = await fetch(url, {
-            ...defaultOptions,
-            ...options,
-            headers: {
-                ...defaultOptions.headers,
-                ...options.headers
-            }
-        });
-
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Xatolik yuz berdi');
-        }
-
-        return await response.json();
-    } catch (error) {
-        console.error('API xatosi:', error);
-        throw error;
-    }
-}
-
-// Tarif tekshiruvi
-function checkTariff(tariff) {
-    const allowedTariffs = ['PLUS', 'PRO', 'FAMILY', 'FAMILY_PLUS', 'FAMILY_PRO'];
-    const businessTariffs = ['BUSINESS', 'BUSINESS_PLUS', 'BUSINESS_PRO'];
-    
-    if (!tariff || tariff === 'NONE') {
-        showTarifModal('Tarif topilmadi', 'Sizning tarifingiz bu ilova uchun mos emas. Tarif sotib olish uchun quyidagi havolaga o\'ting.', 'https://balansai.uz/payments');
-        return false;
-    }
-    
-    if (businessTariffs.some(bt => tariff.includes(bt) || tariff === bt)) {
-        showTarifModal('Siz uchun boshqa ilova bor', 'Sizning tarifingiz biznes tarifi. Biznes funksiyalari uchun boshqa ilovadan foydalaning.', 'https://balansai.uz');
-        return false;
-    }
-    
-    if (!allowedTariffs.some(at => tariff.includes(at) || tariff === at)) {
-        showTarifModal('Tarif topilmadi', 'Sizning tarifingiz bu ilova uchun mos emas. Tarif sotib olish uchun quyidagi havolaga o\'ting.', 'https://balansai.uz/payments');
-        return false;
-    }
-    
-    return true;
-}
-
-// Tarif modal ko'rsatish
-function showTarifModal(title, text, url) {
-    document.getElementById('tarifModalTitle').textContent = title;
-    document.getElementById('tarifModalText').textContent = text;
-    document.getElementById('tarifModalBtn').onclick = () => {
-        window.open(url, '_blank');
-        if (tg && tg.close) {
-            tg.close();
-        }
-    };
-    document.getElementById('tarifModal').classList.add('active');
-}
-
-// Loading screen ko'rsatish/yashirish (faqat asosiy sahifada)
-function showLoading(show) {
-    const loadingScreen = document.getElementById('loadingScreen');
-    if (loadingScreen) {
-        if (show) {
-            loadingScreen.style.display = 'flex';
-        } else {
-            loadingScreen.style.display = 'none';
-        }
-    }
-}
-
-// Top loading bar ko'rsatish/yashirish (boshqa sahifalar uchun)
-function showTopLoading(show) {
-    const topLoadingBar = document.getElementById('topLoadingBar');
-    if (topLoadingBar) {
-        if (show) {
-            topLoadingBar.style.display = 'block';
-            // Body padding-top qo'shish
-            document.body.style.paddingTop = '48px';
-        } else {
-            topLoadingBar.style.display = 'none';
-            // Body padding-top olib tashlash
-            document.body.style.paddingTop = '0';
-        }
-    }
-}
-
-// Foydalanuvchi ma'lumotlarini yuklash
-async function loadUserInfo() {
-    try {
-        const user = await apiRequest('/api/user');
-        currentUser = user;
-        currentTariff = user.tariff;
-        
-        // Tarif tekshiruvi
-        if (!checkTariff(user.tariff)) {
-            showLoading(false);
-            return false;
-        }
-        
-        // User ma'lumotlarini darhol ko'rsatish
-        const userNameEl = document.getElementById('userName');
-        const userInitialEl = document.getElementById('userInitial');
-        if (userNameEl) {
-            userNameEl.textContent = user.name || user.first_name || 'Foydalanuvchi';
-        }
-        if (userInitialEl) {
-            userInitialEl.textContent = (user.name || user.first_name || 'U')[0].toUpperCase();
-        }
-        
-        // Balance ni darhol ko'rsatish (user API dan kelgan)
-        const balanceEl = document.getElementById('balanceAmount');
-        if (balanceEl && user.balance !== undefined) {
-            balanceEl.textContent = formatCurrencySimple(user.balance || 0, 'UZS');
-        }
-        
-        return true;
-    } catch (error) {
-        console.error('Foydalanuvchi ma\'lumotlarini yuklashda xatolik:', error);
-        
-        // 401 xatosi bo'lsa, test mode haqida xabar ko'rsatish
-        if (error.message && error.message.includes('Unauthorized')) {
-            const loadingScreen = document.getElementById('loadingScreen');
-            if (loadingScreen) {
-                const urlParams = new URLSearchParams(window.location.search);
-                const testUserId = urlParams.get('test_user_id');
-                
-                if (!testUserId) {
-                    loadingScreen.innerHTML = `
-                        <div style="text-align: center; padding: 20px;">
-                            <div style="font-size: 48px; margin-bottom: 16px;">🔐</div>
-                            <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #333;">Autentifikatsiya kerak</h2>
-                            <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Iltimos, Telegram orqali oching yoki</p>
-                            <p style="color: #999; font-size: 12px; margin-bottom: 20px;">Test mode uchun URL ga <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px;">?test_user_id=YOUR_ID</code> qo'shing</p>
-                            <p style="color: #666; font-size: 12px; margin-bottom: 16px;">Masalan: <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 4px;">?test_user_id=123456789</code></p>
-                            <button onclick="location.reload()" style="background: #1E88E5; color: white; border: none; border-radius: 12px; padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer;">
-                                Qayta urinish
-                            </button>
-                        </div>
-                    `;
-                }
-            }
-        }
-        
-        return false;
-    }
-}
-
-// Valyuta belgilari
-const currencySymbols = {
-    'USD': '$',
-    'EUR': '€',
-    'RUB': '₽',
-    'TRY': '₺',
-    'UZS': 'UZS'
-};
-
-const currencyIcons = {
-    'USD': '$',
-    'EUR': '€',
-    'RUB': '₽',
-    'TRY': '₺',
-    'UZS': 'UZS'
-};
-
-// Valyuta balanslarini ko'rsatish
-function renderCurrencyList(currencyBalances) {
-    const container = document.getElementById('currencyList');
-    if (!container) return;
-    
-    const currencies = ['USD', 'RUB', 'EUR', 'TRY', 'UZS'];
-    const currencyIconsMap = {
-        'USD': '$',
-        'RUB': '₽',
-        'EUR': '€',
-        'TRY': '₺',
-        'UZS': 'UZS'
-    };
-    
-    let html = '';
-    currencies.forEach(currency => {
-        const balance = currencyBalances[currency] || 0;
-        if (balance > 0 || currency === 'UZS') {
-            const icon = currencyIconsMap[currency] || currency;
-            const formattedBalance = formatCurrencySimple(balance, currency);
-            
-            html += `
-                <div class="currency-item" onclick="showCurrencyDetails('${currency}')">
-                    <div style="display: flex; align-items: center; gap: 12px;">
-                        <div style="width: 40px; height: 40px; background: #f0f0f0; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: #1E88E5;">
-                            ${icon}
-                        </div>
-                        <p style="font-size: 16px; font-weight: 500; color: #333; margin: 0;">${formattedBalance}</p>
-                    </div>
-                </div>
-            `;
-        }
-    });
-    
-    if (html === '') {
-        html = '<div style="padding: 20px; text-align: center; color: #999;">Valyuta balanslari mavjud emas</div>';
-    }
-    
-    container.innerHTML = html;
-}
-
-// Soddalashtirilgan valyuta formatlash (faqat raqam)
-function formatCurrencySimple(amount, currency = 'UZS') {
-    const formatter = new Intl.NumberFormat('uz-UZ', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 0
-    });
-    
-    const formatted = formatter.format(amount);
-    
-    if (currency === 'UZS') {
-        return `${formatted} so'm`;
-    }
-    
-    return formatted;
-}
-
-// Valyuta tafsilotlarini ko'rsatish
-function showCurrencyDetails(currency = null) {
-    hapticFeedback('light');
-    const modal = document.getElementById('currencyModal');
-    const title = document.getElementById('currencyModalTitle');
-    const content = document.getElementById('currencyModalContent');
-    
-    if (!currentUser || !currentUser.currency_balances) {
-        return;
-    }
-    
-    if (currency) {
-        // Bitta valyuta tafsilotlari
-        const balance = currentUser.currency_balances[currency] || 0;
-        const currencyNames = {
-            'USD': 'Dollar',
-            'RUB': 'Rubl',
-            'EUR': 'Yevro',
-            'TRY': 'Lira',
-            'UZS': 'So\'m'
-        };
-        
-        title.textContent = `${currencyNames[currency] || currency} tafsilotlari`;
-        content.innerHTML = `
-            <div style="text-align: center; padding: 20px 0;">
-                <div style="width: 80px; height: 80px; background: #f0f0f0; border-radius: 20px; display: flex; align-items: center; justify-content: center; font-size: 32px; font-weight: 600; margin: 0 auto 16px;">
-                    ${currencyIcons[currency] || currency}
-                </div>
-                <h3 style="font-size: 24px; font-weight: 700; margin: 0 0 8px;">${formatCurrency(balance, currency)}</h3>
-                <p style="color: #999; font-size: 14px; margin: 0;">${formatCurrency(balance * getCurrencyRate(currency), 'UZS')} (so'm)</p>
-            </div>
-        `;
-    } else {
-        // Barcha valyutalar tafsilotlari
-        title.textContent = 'Valyuta tafsilotlari';
-        const currencies = ['USD', 'RUB', 'EUR', 'TRY', 'UZS'];
-        const currencyNames = {
-            'USD': 'Dollar',
-            'RUB': 'Rubl',
-            'EUR': 'Yevro',
-            'TRY': 'Lira',
-            'UZS': 'So\'m'
-        };
-        
-        let html = '';
-        currencies.forEach(curr => {
-            const balance = currentUser.currency_balances[curr] || 0;
-            if (balance > 0 || curr === 'UZS') {
-                html += `
-                    <div style="display: flex; align-items: center; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #f0f0f0;">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="width: 40px; height: 40px; background: #f0f0f0; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600;">
-                                ${currencyIcons[curr] || curr}
-                            </div>
-                            <div>
-                                <p style="font-size: 14px; font-weight: 600; color: #333; margin: 0;">${currencyNames[curr] || curr}</p>
-                                <p style="font-size: 12px; color: #999; margin: 4px 0 0;">${formatCurrency(balance * getCurrencyRate(curr), 'UZS')}</p>
-                            </div>
-                        </div>
-                        <p style="font-size: 16px; font-weight: 700; color: #333; margin: 0;">${formatCurrency(balance, curr)}</p>
-                    </div>
-                `;
-            }
-        });
-        
-        content.innerHTML = html || '<div style="padding: 20px; text-align: center; color: #999;">Ma\'lumotlar mavjud emas</div>';
-    }
-    
-    modal.classList.add('active');
-}
-
-// Valyuta kursini olish (default qiymatlar)
-function getCurrencyRate(currency) {
-    const rates = {
-        'USD': 12750.0,
-        'EUR': 13800.0,
-        'RUB': 135.0,
-        'TRY': 370.0,
-        'UZS': 1.0
-    };
-    return rates[currency] || 1.0;
-}
-
-// So'nggi tranzaksiyalarni ko'rsatish (2 ta)
-async function loadRecentTransactions() {
-    try {
-        // Timeout qo'shish - 5 soniyadan keyin to'xtatish
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Timeout')), 5000)
-        );
-        
-        const transactions = await Promise.race([
-            apiRequest('/api/transactions?limit=2'),
-            timeoutPromise
-        ]);
-        
-        const container = document.getElementById('recentTransactions');
-        if (!container) return;
-        
-        if (transactions.length === 0) {
-            container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Tranzaksiyalar mavjud emas</div>';
-            return;
-        }
-        
-        container.innerHTML = transactions.slice(0, 2).map(transaction => {
-            const typeColor = transaction.transaction_type === 'income' ? '#10b981' : '#ef4444';
-            
-            const date = new Date(transaction.created_at);
-            const now = new Date();
-            const isToday = date.toDateString() === now.toDateString();
-            const timeStr = date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
-            const dateStr = isToday ? `Bugun ${timeStr} da` : formatDate(transaction.created_at);
-            
-            return `
-                <div class="transaction-card-mini">
-                    <p style="font-size: 18px; font-weight: 700; color: ${typeColor}; margin: 0 0 8px;">
-                        ${transaction.transaction_type === 'income' ? '+' : '-'}${formatCurrency(transaction.amount, transaction.currency)}
-                    </p>
-                    <p style="font-size: 14px; color: #333; margin: 0 0 4px; font-weight: 500;">${transaction.description || 'Tranzaksiya'}</p>
-                    <p style="font-size: 12px; color: #999; margin: 0;">${transaction.category || ''} • ${dateStr}</p>
-                </div>
-            `;
-        }).join('');
-    } catch (error) {
-        console.error('So\'nggi tranzaksiyalarni yuklashda xatolik:', error);
-        const container = document.getElementById('recentTransactions');
-        if (container) {
-            container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Tranzaksiyalar yuklanmadi</div>';
-        }
-    }
-}
-
-// Statistika grafigini yaratish
-let statisticsChart = null;
-async function loadStatisticsChart() {
-    try {
-        // Timeout qo'shish - 5 soniyadan keyin to'xtatish
-        const timeoutPromise = new Promise((_, reject) => 
-            setTimeout(() => reject(new Error('Timeout')), 5000)
-        );
-        
-        const stats = await Promise.race([
-            apiRequest('/api/statistics?days=30'),
-            timeoutPromise
-        ]);
-        
-        const ctx = document.getElementById('statisticsChart');
-        if (!ctx) return;
-        
-        // Oylik ma'lumotlar (mock data - keyinchalik API dan olinadi)
-        const months = ['Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
-        const data = [160, 170, 165, 180, 175]; // Mock data
-        
-        if (statisticsChart) {
-            statisticsChart.destroy();
-        }
-        
-        statisticsChart = new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: months,
-                datasets: [{
-                    label: 'Balans',
-                    data: data,
-                    borderColor: '#1E88E5',
-                    backgroundColor: 'rgba(30, 136, 229, 0.1)',
-                    borderWidth: 2,
-                    fill: true,
-                    tension: 0.4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        display: false
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: false,
-                        grid: {
-                            color: '#f0f0f0'
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                }
-            }
-        });
-    } catch (error) {
-        console.error('Statistika grafigini yuklashda xatolik:', error);
-        // Xatolik bo'lsa ham grafikni ko'rsatish (mock data bilan)
-        const ctx = document.getElementById('statisticsChart');
-        if (ctx && !statisticsChart) {
-            const months = ['Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
-            const data = [160, 170, 165, 180, 175];
-            
-            statisticsChart = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: months,
-                    datasets: [{
-                        label: 'Balans',
-                        data: data,
-                        borderColor: '#1E88E5',
-                        backgroundColor: 'rgba(30, 136, 229, 0.1)',
-                        borderWidth: 2,
-                        fill: true,
-                        tension: 0.4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: {
-                            display: false
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: false,
-                            grid: {
-                                color: '#f0f0f0'
-                            }
-                        },
-                        x: {
-                            grid: {
-                                display: false
-                            }
-                        }
-                    }
-                }
-            });
-        }
-    }
-}
-
-// Asosiy sahifa ma'lumotlarini yuklash (optimallashtirilgan - tezroq)
-async function loadHomePage() {
-    try {
-        // Valyuta balanslarini ko'rsatish
-        if (currentUser && currentUser.currency_balances) {
-            try {
-                renderCurrencyList(currentUser.currency_balances);
-            } catch (err) {
-                console.error('Valyuta ro\'yxatini ko\'rsatishda xatolik:', err);
-            }
-        } else {
-            // Agar currency_balances yo'q bo'lsa, bo'sh ro'yxat ko'rsatish
-            const container = document.getElementById('currencyList');
-            if (container) {
-                container.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Valyuta balanslari mavjud emas</div>';
-            }
-        }
-        
-        // Loading screen yashirish - asosiy ma'lumotlar yuklandi
-        showLoading(false);
-        
-        // So'nggi tranzaksiyalarni va statistika grafigini background'da yuklash (non-blocking)
-        setTimeout(() => {
-            Promise.all([
-                loadRecentTransactions().catch(err => console.error('Tranzaksiyalarni yuklashda xatolik:', err)),
-                loadStatisticsChart().catch(err => console.error('Statistika grafigini yuklashda xatolik:', err))
-            ]).catch(err => console.error('Background yuklashda xatolik:', err));
-        }, 100);
-        
-    } catch (error) {
-        console.error('Asosiy sahifa ma\'lumotlarini yuklashda xatolik:', error);
-        showLoading(false);
-    }
-}
-
-// Tranzaksiyalarni yuklash
-async function loadTransactions(filter = 'all') {
-    try {
-        const endpoint = filter === 'all' ? '/api/transactions' : `/api/transactions?type=${filter}`;
-        const transactions = await apiRequest(endpoint);
-        
-        const container = document.getElementById('transactionsList');
-        if (!container) return;
-        
-        if (transactions.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">📭</div>
-                    <p>Tranzaksiyalar mavjud emas</p>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = transactions.map(transaction => {
-            const typeClass = transaction.transaction_type === 'income' ? 'income' : 
-                            transaction.transaction_type === 'expense' ? 'expense' : 'debt';
-            const typeIcon = transaction.transaction_type === 'income' ? '📈' : 
-                           transaction.transaction_type === 'expense' ? '📉' : '💳';
-            const typeColor = transaction.transaction_type === 'income' ? '#10b981' : 
-                            transaction.transaction_type === 'expense' ? '#ef4444' : '#f59e0b';
-            
-            return `
-                <div class="transaction-item ${typeClass}">
-                    <div style="display: flex; justify-content: space-between; align-items: start;">
-                        <div style="flex: 1;">
-                            <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                                <span style="font-size: 20px; margin-right: 8px;">${typeIcon}</span>
-                                <span style="font-size: 12px; padding: 4px 8px; border-radius: 12px; background: ${typeColor}15; color: ${typeColor}; font-weight: 600;">
-                                    ${getTransactionTypeLabel(transaction.transaction_type)}
-                                </span>
-                                ${transaction.category ? `<span style="font-size: 11px; color: #999; margin-left: 8px;">${transaction.category}</span>` : ''}
-                            </div>
-                            ${transaction.description ? `<p style="font-size: 14px; color: #333; margin: 4px 0; font-weight: 500;">${transaction.description}</p>` : ''}
-                            <p style="font-size: 12px; color: #999; margin: 4px 0 0;">${formatDate(transaction.created_at)}</p>
-                        </div>
-                        <div style="text-align: right; margin-left: 16px;">
-                            <p style="font-size: 18px; font-weight: 700; color: ${typeColor}; margin: 0;">
-                                ${transaction.transaction_type === 'income' ? '+' : '-'}${formatCurrency(transaction.amount, transaction.currency)}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    } catch (error) {
-        console.error('Tranzaksiyalarni yuklashda xatolik:', error);
-        const container = document.getElementById('transactionsList');
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon">⚠️</div>
-                <p>Ma'lumotlarni yuklashda xatolik</p>
-            </div>
-        `;
-    }
-}
-
-// Statistika yuklash
-async function loadStatistics() {
-    try {
-        const stats = await apiRequest('/api/statistics?days=30');
-        const container = document.getElementById('statisticsContent');
-        if (!container) return;
-        
-        container.innerHTML = `
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
-                <div class="stat-item">
-                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                        <span style="font-size: 20px; margin-right: 8px;">📈</span>
-                        <span style="font-size: 12px; color: #666;">Kirim</span>
-                    </div>
-                    <p style="font-size: 20px; font-weight: 700; color: #10b981; margin: 0;">${formatCurrency(stats.income || 0, 'UZS')}</p>
-                </div>
-                <div class="stat-item">
-                    <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                        <span style="font-size: 20px; margin-right: 8px;">📉</span>
-                        <span style="font-size: 12px; color: #666;">Chiqim</span>
-                    </div>
-                    <p style="font-size: 20px; font-weight: 700; color: #ef4444; margin: 0;">${formatCurrency(stats.expense || 0, 'UZS')}</p>
-                </div>
-            </div>
-            <div class="stat-item">
-                <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                    <span style="font-size: 20px; margin-right: 8px;">💰</span>
-                    <span style="font-size: 12px; color: #666;">Balans</span>
-                </div>
-                <p style="font-size: 24px; font-weight: 700; color: #667eea; margin: 0;">${formatCurrency(stats.balance || 0, 'UZS')}</p>
-            </div>
-        `;
-    } catch (error) {
-        console.error('Statistikani yuklashda xatolik:', error);
-        const container = document.getElementById('statisticsContent');
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon">⚠️</div>
-                <p>Ma'lumotlarni yuklashda xatolik</p>
-            </div>
-        `;
-    }
-}
-
-// Qarzlar yuklash
-async function loadDebts() {
-    try {
-        const debts = await apiRequest('/api/debts');
-        const container = document.getElementById('debtsList');
-        if (!container) return;
-        
-        if (debts.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">📋</div>
-                    <p>Qarzlar mavjud emas</p>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = debts.map(debt => {
-            const isLent = debt.debt_type === 'lent';
-            const progress = debt.paid_amount > 0 ? (debt.paid_amount / debt.amount) * 100 : 0;
-            
-            return `
-                <div class="card" style="padding: 16px; margin-bottom: 12px; border-left: 4px solid ${isLent ? '#3b82f6' : '#f59e0b'};">
-                    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-                        <div style="flex: 1;">
-                            <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                                <span style="font-size: 20px; margin-right: 8px;">${isLent ? '💙' : '🧡'}</span>
-                                <span style="font-size: 12px; padding: 4px 8px; border-radius: 12px; background: ${isLent ? '#3b82f6' : '#f59e0b'}15; color: ${isLent ? '#3b82f6' : '#f59e0b'}; font-weight: 600;">
-                                    ${isLent ? 'Qarz berdim' : 'Qarz oldim'}
-                                </span>
-                            </div>
-                            <p style="font-size: 16px; font-weight: 700; color: #333; margin: 4px 0;">${debt.person_name}</p>
-                            ${debt.due_date ? `<p style="font-size: 12px; color: #999; margin: 4px 0;">Muddat: ${formatDate(debt.due_date)}</p>` : ''}
-                        </div>
-                        <div style="text-align: right; margin-left: 16px;">
-                            <p style="font-size: 18px; font-weight: 700; color: #333; margin: 0;">${formatCurrency(debt.amount, 'UZS')}</p>
-                            ${debt.paid_amount > 0 ? `
-                                <p style="font-size: 12px; color: #10b981; margin: 4px 0;">To'langan: ${formatCurrency(debt.paid_amount, 'UZS')}</p>
-                                <p style="font-size: 12px; color: #999; margin: 0;">Qoldiq: ${formatCurrency(debt.amount - debt.paid_amount, 'UZS')}</p>
-                            ` : ''}
-                        </div>
-                    </div>
-                    ${debt.paid_amount > 0 ? `
-                        <div style="margin-top: 12px;">
-                            <div style="width: 100%; height: 6px; background: #e5e5e5; border-radius: 3px; overflow: hidden;">
-                                <div style="height: 100%; background: linear-gradient(90deg, #10b981, #34d399); width: ${progress}%; transition: width 0.3s;"></div>
-                            </div>
-                            <p style="font-size: 11px; color: #999; text-align: right; margin: 4px 0 0;">${Math.round(progress)}% to'langan</p>
-                        </div>
-                    ` : ''}
-                </div>
-            `;
-        }).join('');
-    } catch (error) {
-        console.error('Qarzlarni yuklashda xatolik:', error);
-        const container = document.getElementById('debtsList');
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon">⚠️</div>
-                <p>Ma'lumotlarni yuklashda xatolik</p>
-            </div>
-        `;
-    }
-}
-
-// Eslatmalar yuklash
-async function loadReminders() {
-    try {
-        const reminders = await apiRequest('/api/reminders');
-        const container = document.getElementById('remindersList');
-        if (!container) return;
-        
-        if (reminders.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="empty-state-icon">⏰</div>
-                    <p>Eslatmalar mavjud emas</p>
-                </div>
-            `;
-            return;
-        }
-
-        container.innerHTML = reminders.map(reminder => {
-            const reminderDate = new Date(reminder.reminder_date);
-            const now = new Date();
-            const isPast = reminderDate < now;
-            const isToday = reminderDate.toDateString() === now.toDateString();
-            const borderColor = isPast ? '#ef4444' : isToday ? '#f59e0b' : '#3b82f6';
-            const icon = isPast ? '🔴' : isToday ? '🟡' : '🔵';
-            
-            return `
-                <div class="card" style="padding: 16px; margin-bottom: 12px; border-left: 4px solid ${borderColor};">
-                    <div style="display: flex; justify-content: space-between; align-items: start;">
-                        <div style="flex: 1;">
-                            <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                                <span style="font-size: 20px; margin-right: 8px;">${icon}</span>
-                                <h3 style="font-size: 16px; font-weight: 700; color: #333; margin: 0;">${reminder.title}</h3>
-                            </div>
-                            ${reminder.description ? `<p style="font-size: 14px; color: #666; margin: 4px 0;">${reminder.description}</p>` : ''}
-                            <div style="display: flex; gap: 16px; margin-top: 8px;">
-                                <span style="font-size: 12px; color: #999;">${formatDate(reminder.reminder_date)}</span>
-                                ${reminder.reminder_time ? `<span style="font-size: 12px; color: #999;">${reminder.reminder_time}</span>` : ''}
-                            </div>
-                        </div>
-                        ${reminder.amount ? `
-                            <div style="text-align: right; margin-left: 16px;">
-                                <p style="font-size: 18px; font-weight: 700; color: #333; margin: 0;">${formatCurrency(reminder.amount, reminder.currency || 'UZS')}</p>
-                            </div>
-                        ` : ''}
-                    </div>
-                </div>
-            `;
-        }).join('');
-    } catch (error) {
-        console.error('Eslatmalarni yuklashda xatolik:', error);
-        const container = document.getElementById('remindersList');
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="empty-state-icon">⚠️</div>
-                <p>Ma'lumotlarni yuklashda xatolik</p>
-            </div>
-        `;
-    }
-}
-
-// Helper funksiyalar
 function formatCurrency(amount, currency = 'UZS') {
-    const formatter = new Intl.NumberFormat('uz-UZ', {
-        minimumFractionDigits: 0,
-        maximumFractionDigits: 2
-    });
-    
-    const formatted = formatter.format(amount);
-    const symbols = {
-        'UZS': 'so\'m',
-        'USD': '$',
-        'EUR': '€',
-        'RUB': '₽',
-        'TRY': '₺'
-    };
-    
-    if (currency === 'UZS') {
-        return `${formatted} ${symbols[currency] || currency}`;
-    } else {
-        return `${symbols[currency] || currency} ${formatted}`;
-    }
+    const num = parseFloat(amount) || 0;
+    const formatted = new Intl.NumberFormat('uz-UZ').format(num);
+    return currency === 'UZS' ? `${formatted} so'm` : formatted;
 }
 
 function formatDate(dateString) {
@@ -835,138 +54,926 @@ function formatDate(dateString) {
     });
 }
 
-function getTransactionTypeLabel(type) {
-    const labels = {
-        'income': 'Kirim',
-        'expense': 'Chiqim',
-        'debt': 'Qarz'
-    };
-    return labels[type] || type;
+function showLoading(show) {
+    const loader = document.getElementById('loadingScreen');
+    if (loader) loader.style.display = show ? 'flex' : 'none';
 }
 
-// Sahifa o'zgartirish - SPA (silliq va tez)
-function switchPage(pageName) {
-    // Agar bir xil sahifaga o'tmoqchi bo'lsa, hech narsa qilmaymiz
-    if (currentPage === pageName) {
+// ============================================
+// API FUNCTIONS
+// ============================================
+
+function getInitData() {
+    if (tg && tg.initData) return tg.initData;
+    const params = new URLSearchParams(window.location.search);
+    return params.get('test_user_id') ? '' : '';
+}
+
+async function apiRequest(endpoint, options = {}) {
+    const initData = getInitData();
+    const params = new URLSearchParams(window.location.search);
+    const testUserId = params.get('test_user_id');
+    
+    let url = endpoint;
+    if (testUserId && !initData) {
+        url += (url.includes('?') ? '&' : '?') + `test_user_id=${testUserId}`;
+    }
+    
+    try {
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Telegram-Init-Data': initData,
+                ...options.headers
+            }
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Xatolik yuz berdi');
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('API xatosi:', error);
+        throw error;
+    }
+}
+
+// ============================================
+// USER DATA
+// ============================================
+
+async function loadUserData() {
+    try {
+        const user = await apiRequest('/api/user');
+        currentUser = user;
+        
+        // Tarif tekshiruvi
+        const allowed = ['PLUS', 'PRO', 'FAMILY', 'FAMILY_PLUS', 'FAMILY_PRO'];
+        if (!allowed.includes(user.tariff)) {
+            alert('Sizning tarifingiz bu ilova uchun mos emas');
+            return false;
+        }
+        
+        // Balansni ko'rsatish
+        const balanceEl = document.getElementById('totalBalance');
+        if (balanceEl) {
+            balanceEl.textContent = formatCurrency(user.balance || 0);
+        }
+        
+        return true;
+    } catch (error) {
+        console.error('User yuklanmadi:', error);
+        return false;
+    }
+}
+
+// ============================================
+// CURRENCIES
+// ============================================
+
+function renderCurrencies(balances) {
+    const container = document.getElementById('currencyList');
+    if (!container) return;
+    
+    const currencies = [
+        { code: 'USD', icon: '$', class: 'currency-symbol-usd' },
+        { code: 'RUB', icon: '₽', class: 'currency-symbol-rub' },
+        { code: 'EUR', icon: '€', class: 'currency-symbol-eur' },
+        { code: 'TRY', icon: '₺', class: 'currency-symbol-try' },
+        { code: 'UZS', icon: null, class: null }
+    ];
+    
+    let html = '';
+    
+    currencies.forEach(curr => {
+        const balance = balances[curr.code] || 0;
+        if (balance !== 0 || curr.code === 'UZS') {
+            const iconHtml = curr.icon 
+                ? `<span class="currency-symbol ${curr.class}">${curr.icon}</span>`
+                : `<div class="currency-badge">UZS</div>`;
+            
+            html += `
+                <div class="currency-item">
+                    <div class="currency-icon">${iconHtml}</div>
+                    <div class="currency-amount">${formatCurrency(balance, curr.code)}</div>
+                </div>
+            `;
+        }
+    });
+    
+    container.innerHTML = html || '<div class="empty-state">Ma\'lumot yo\'q</div>';
+}
+
+// ============================================
+// TRANSACTIONS
+// ============================================
+
+async function loadTransactions() {
+    try {
+        const transactions = await apiRequest('/api/transactions?limit=20');
+        const container = document.getElementById('transactionsList');
+        if (!container) return;
+        
+        if (!transactions || transactions.length === 0) {
+            container.innerHTML = `
+                <div class="transaction-card">
+                    <div class="empty-state">Tranzaksiyalar mavjud emas</div>
+                </div>`;
+            return;
+        }
+        
+        container.innerHTML = transactions.map(t => {
+            const isIncome = t.transaction_type === 'income';
+            const amountClass = isIncome ? 'income' : 'expense';
+            const sign = isIncome ? '+' : '-';
+            
+            const date = new Date(t.created_at);
+            const today = new Date();
+            const isToday = date.toDateString() === today.toDateString();
+            const time = date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+            const dateStr = isToday ? `Bugun ${time} da` : formatDate(t.created_at);
+            
+            return `
+                <div class="transaction-card">
+                    <div class="transaction-amount ${amountClass}">
+                        ${sign} ${formatCurrency(t.amount, t.currency)}
+                    </div>
+                    <div class="transaction-title">${t.description || 'Tranzaksiya'}</div>
+                    <div class="transaction-meta">${t.category || ''}${t.category ? ' • ' : ''}${dateStr}</div>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Tranzaksiyalar yuklanmadi:', error);
+    }
+}
+
+// ============================================
+// STATISTICS
+// ============================================
+
+async function loadStatistics() {
+    try {
+        const trend = await apiRequest('/api/statistics/income-trend?period=auto');
+        const ctx = document.getElementById('statsChart');
+        if (!ctx) return;
+        
+        let labels = trend.labels || ['Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
+        let data = trend.data || [111, 135, 160, 180, 170];
+        
+        // Format labels
+        if (trend.labels && trend.labels.length > 0) {
+            labels = trend.labels.map(label => {
+                if (trend.period === 'day') {
+                    const d = new Date(label);
+                    return d.toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric' });
+                } else if (trend.period === 'month') {
+                    const [year, month] = label.split('-');
+                    const d = new Date(year, month - 1);
+                    return d.toLocaleDateString('uz-UZ', { month: 'short' });
+                }
+                return label;
+            });
+        }
+        
+        if (statsChart) statsChart.destroy();
+        
+        statsChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    borderColor: '#5A8EF4',
+                    backgroundColor: (context) => {
+                        const ctx = context.chart.ctx;
+                        const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+                        gradient.addColorStop(0, 'rgba(90, 142, 244, 0.3)');
+                        gradient.addColorStop(1, 'rgba(90, 142, 244, 0.05)');
+                        return gradient;
+                    },
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: '#5A8EF4',
+                    pointHoverBorderColor: '#fff',
+                    pointHoverBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'white',
+                        titleColor: '#333',
+                        bodyColor: '#5A8EF4',
+                        borderColor: '#e5e5e5',
+                        borderWidth: 1,
+                        padding: 10,
+                        displayColors: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        position: 'right',
+                        grid: { color: '#f5f5f5' },
+                        ticks: { font: { size: 11 }, color: '#999' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 }, color: '#999' }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Statistika yuklanmadi:', error);
+    }
+}
+
+// ============================================
+// NAVIGATION
+// ============================================
+
+function navigateTo(pageName) {
+    hapticFeedback('light');
+    
+    if (currentPage === pageName) return;
+    
+    // Hide current page
+    const oldPage = document.getElementById(`page${currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}`);
+    if (oldPage) oldPage.classList.remove('active');
+    
+    // Show new page
+    const newPage = document.getElementById(`page${pageName.charAt(0).toUpperCase() + pageName.slice(1)}`);
+    if (newPage) newPage.classList.add('active');
+    
+    // Update nav
+    document.querySelectorAll('.nav-item').forEach(item => {
+        item.classList.remove('active');
+        if (item.getAttribute('data-page') === pageName) {
+            item.classList.add('active');
+        }
+    });
+    
+    currentPage = pageName;
+    
+    // Load page data if needed
+    if (!loadedPages.has(pageName)) {
+        loadedPages.add(pageName);
+        loadPageData(pageName);
+    }
+}
+
+async function loadPageData(pageName) {
+    try {
+        switch(pageName) {
+            case 'transactions':
+                await loadAllTransactions();
+                break;
+            case 'statistics':
+                await loadAllStatistics();
+                break;
+            case 'reminders':
+                await loadReminders();
+                break;
+            case 'debts':
+                await loadDebts();
+                break;
+        }
+    } catch (error) {
+        console.error(`Error loading ${pageName}:`, error);
+    }
+}
+
+function showBalanceDetails() {
+    hapticFeedback('light');
+    // Placeholder for modal
+    console.log('Show balance details');
+}
+
+// ============================================
+// ALL TRANSACTIONS PAGE
+// ============================================
+
+let currentTransactionFilter = 'all';
+let allTransactionsData = [];
+
+async function loadAllTransactions(filter = 'all', searchQuery = '') {
+    try {
+        // Agar data yuklanmagan bo'lsa, API dan olish
+        if (allTransactionsData.length === 0) {
+            allTransactionsData = await apiRequest('/api/transactions?limit=500');
+        }
+        
+        const container = document.getElementById('allTransactionsList');
+        if (!container) return;
+        
+        let filtered = allTransactionsData;
+        
+        // Filter by type
+        if (filter !== 'all') {
+            if (filter === 'debt_given' || filter === 'debt_taken') {
+                // Qarzlar uchun alohida logic (kelgusida API dan olish mumkin)
+                filtered = [];
+            } else {
+                filtered = filtered.filter(t => t.transaction_type === filter);
+            }
+        }
+        
+        // Search
+        if (searchQuery) {
+            filtered = filtered.filter(t => 
+                (t.description && t.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
+                (t.category && t.category.toLowerCase().includes(searchQuery.toLowerCase()))
+            );
+        }
+        
+        if (!filtered || filtered.length === 0) {
+            container.innerHTML = '<div class="empty-state">Tranzaksiyalar topilmadi</div>';
+            return;
+        }
+        
+        // Group by date
+        const grouped = groupTransactionsByDate(filtered);
+        
+        container.innerHTML = Object.keys(grouped).map(dateKey => {
+            const transactions = grouped[dateKey];
+            return `
+                <div class="transaction-group">
+                    <div class="transaction-group-title">${dateKey}</div>
+                    ${transactions.map(t => renderTransactionItem(t)).join('')}
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Tranzaksiyalar yuklanmadi:', error);
+        const container = document.getElementById('allTransactionsList');
+        if (container) container.innerHTML = '<div class="empty-state">Xatolik yuz berdi</div>';
+    }
+}
+
+function groupTransactionsByDate(transactions) {
+    const groups = {};
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    transactions.forEach(t => {
+        const date = new Date(t.created_at);
+        date.setHours(0, 0, 0, 0);
+        
+        let key;
+        if (date.getTime() === today.getTime()) {
+            key = 'Bugun';
+        } else if (date.getTime() === yesterday.getTime()) {
+            key = 'Kecha';
+        } else {
+            key = new Date(t.created_at).toLocaleDateString('uz-UZ', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+        }
+        
+        if (!groups[key]) groups[key] = [];
+        groups[key].push(t);
+    });
+    
+    return groups;
+}
+
+function renderTransactionItem(t) {
+    const isIncome = t.transaction_type === 'income';
+    const typeClass = isIncome ? 'income' : 'expense';
+    const sign = isIncome ? '+' : '-';
+    
+    const date = new Date(t.created_at);
+    const time = date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+    
+    // Icon emoji based on category or type
+    const icon = getTransactionIcon(t.category, isIncome);
+    
+    return `
+        <div class="transaction-item">
+            <div class="transaction-icon ${typeClass}">
+                ${icon}
+            </div>
+            <div class="transaction-info">
+                <div class="transaction-info-top">
+                    <span class="transaction-amount-inline ${typeClass}">
+                        ${sign} ${formatCurrency(t.amount, t.currency)}
+                    </span>
+                    <span class="transaction-time">${time}</span>
+                </div>
+                <div class="transaction-info-bottom">
+                    <span class="transaction-desc">${t.description || 'Tranzaksiya'}</span>
+                    ${t.category ? `<span class="transaction-category-inline"> • ${t.category}</span>` : ''}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function getTransactionIcon(category, isIncome) {
+    if (isIncome) return '💰';
+    
+    const iconMap = {
+        'Transport': '🚗',
+        'Food': '🍽️',
+        'Shopping': '🛍️',
+        'Health': '🏥',
+        'Entertainment': '🎮',
+        'Education': '📚',
+        'Bills': '💡',
+        'Qarz': '📋',
+        'Maosh': '💰',
+        'Oylik': '💰',
+        'default': '💳'
+    };
+    
+    return iconMap[category] || iconMap['default'];
+}
+
+// ============================================
+// STATISTICS PAGE
+// ============================================
+
+let incomeTrendChart = null;
+let expensePieChart = null;
+
+async function loadAllStatistics() {
+    try {
+        await Promise.all([
+            loadIncomeTrendChart(),
+            loadTopCategories(),
+            loadExpensePieChart()
+        ]);
+    } catch (error) {
+        console.error('Statistika yuklanmadi:', error);
+    }
+}
+
+async function loadIncomeTrendChart() {
+    try {
+        const trend = await apiRequest('/api/statistics/income-trend?period=auto');
+        const ctx = document.getElementById('incomeTrendChart');
+        if (!ctx) return;
+        
+        let labels = trend.labels || [];
+        let data = trend.data || [];
+        
+        if (trend.labels && trend.labels.length > 0) {
+            labels = trend.labels.map(label => {
+                if (trend.period === 'day') {
+                    const d = new Date(label);
+                    return d.toLocaleDateString('uz-UZ', { month: 'short', day: 'numeric' });
+                } else if (trend.period === 'month') {
+                    const [year, month] = label.split('-');
+                    const d = new Date(year, month - 1);
+                    return d.toLocaleDateString('uz-UZ', { year: 'numeric', month: 'short' });
+                }
+                return label;
+            });
+        }
+        
+        if (incomeTrendChart) incomeTrendChart.destroy();
+        
+        incomeTrendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Daromad',
+                    data: data,
+                    borderColor: '#10b981',
+                    backgroundColor: (context) => {
+                        const ctx = context.chart.ctx;
+                        const gradient = ctx.createLinearGradient(0, 0, 0, 200);
+                        gradient.addColorStop(0, 'rgba(16, 185, 129, 0.2)');
+                        gradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+                        return gradient;
+                    },
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 4,
+                    pointHoverRadius: 6,
+                    pointBackgroundColor: '#10b981',
+                    pointBorderColor: '#fff',
+                    pointBorderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'white',
+                        titleColor: '#333',
+                        bodyColor: '#10b981',
+                        borderColor: '#e5e5e5',
+                        borderWidth: 1,
+                        padding: 10
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#f5f5f5' },
+                        ticks: { font: { size: 11 }, color: '#999' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 }, color: '#999' }
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Income trend yuklanmadi:', error);
+    }
+}
+
+async function loadTopCategories() {
+    try {
+        const categories = await apiRequest('/api/statistics/top-categories?limit=5&days=30');
+        const container = document.getElementById('topCategoriesList');
+        if (!container) return;
+        
+        if (!categories || categories.length === 0) {
+            container.innerHTML = '<div class="empty-state">Ma\'lumot yo\'q</div>';
+            return;
+        }
+        
+        container.innerHTML = categories.map(cat => `
+            <div class="category-item">
+                <span class="category-name">${cat.category}</span>
+                <span class="category-amount">${formatCurrency(cat.amount, 'UZS')}</span>
+            </div>
+        `).join('');
+    } catch (error) {
+        console.error('Top categories yuklanmadi:', error);
+    }
+}
+
+async function loadExpensePieChart() {
+    try {
+        const expenses = await apiRequest('/api/statistics/expense-by-category?days=30');
+        const ctx = document.getElementById('expensePieChart');
+        if (!ctx) return;
+        
+        const labels = Object.keys(expenses);
+        const data = Object.values(expenses);
+        
+        if (labels.length === 0) {
+            return;
+        }
+        
+        if (expensePieChart) expensePieChart.destroy();
+        
+        const colors = [
+            '#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16',
+            '#22c55e', '#10b981', '#14b8a6', '#06b6d4', '#0ea5e9'
+        ];
+        
+        expensePieChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: data,
+                    backgroundColor: colors.slice(0, labels.length),
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            padding: 15,
+                            font: { size: 12 },
+                            color: '#666'
+                        }
+                    },
+                    tooltip: {
+                        backgroundColor: 'white',
+                        titleColor: '#333',
+                        bodyColor: '#666',
+                        borderColor: '#e5e5e5',
+                        borderWidth: 1,
+                        padding: 10
+                    }
+                }
+            }
+        });
+    } catch (error) {
+        console.error('Expense pie chart yuklanmadi:', error);
+    }
+}
+
+// ============================================
+// REMINDERS PAGE
+// ============================================
+
+let remindersData = [];
+
+async function loadReminders() {
+    try {
+        remindersData = await apiRequest('/api/reminders');
+        renderReminders();
+    } catch (error) {
+        console.error('Eslatmalar yuklanmadi:', error);
+        const container = document.getElementById('remindersList');
+        if (container) container.innerHTML = '<div class="empty-state">Xatolik yuz berdi</div>';
+    }
+}
+
+function renderReminders() {
+    const container = document.getElementById('remindersList');
+    if (!container) return;
+    
+    if (!remindersData || remindersData.length === 0) {
+        container.innerHTML = '<div class="empty-state">Eslatmalar yo\'q<br><small style="color: #ccc; margin-top: 8px;">Yuqoridagi + tugmasini bosing</small></div>';
         return;
     }
     
-    hapticFeedback('light');
-    
-    // Eski sahifani yashirish
-    const oldPageElement = document.getElementById(`page${currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}`);
-    if (oldPageElement) {
-        oldPageElement.classList.remove('active');
-    }
-    
-    // Eski nav itemni deaktivatsiya qilish
-    const oldNavItem = document.querySelector(`[data-page="${currentPage}"]`);
-    if (oldNavItem) {
-        oldNavItem.classList.remove('active');
-    }
-    
-    // Yangi sahifani ko'rsatish
-    currentPage = pageName;
-    const newPageElement = document.getElementById(`page${pageName.charAt(0).toUpperCase() + pageName.slice(1)}`);
-    if (newPageElement) {
-        newPageElement.classList.add('active');
-    }
-    
-    // Yangi nav itemni aktivatsiya qilish
-    const newNavItem = document.querySelector(`[data-page="${pageName}"]`);
-    if (newNavItem) {
-        newNavItem.classList.add('active');
-    }
-    
-    // Agar sahifa birinchi marta yuklanmoqchi bo'lsa, ma'lumotlarni yuklash
-    if (!loadedPages.has(pageName)) {
-        loadedPages.add(pageName);
+    container.innerHTML = remindersData.map(r => {
+        const date = new Date(r.reminder_date);
+        const dateStr = date.toLocaleDateString('uz-UZ', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+        });
         
-        if (pageName === 'transactions') {
-            loadTransactions(currentFilter);
-        } else if (pageName === 'statistics') {
-            loadStatistics();
-        } else if (pageName === 'reminders') {
-            loadReminders();
-        } else if (pageName === 'debts') {
-            loadDebts();
+        const repeatMap = {
+            'none': 'Takrorlanmaydi',
+            'daily': 'Har kuni',
+            'weekly': 'Har hafta',
+            'monthly': 'Har oy',
+            'yearly': 'Har yil'
+        };
+        
+        const isCompleted = r.is_completed || false;
+        
+        return `
+            <div class="reminder-card ${isCompleted ? 'completed' : ''}" data-id="${r.id}">
+                <div class="reminder-header">
+                    <div class="reminder-title">${r.title || 'Eslatma'}</div>
+                    <div class="reminder-checkbox ${isCompleted ? 'checked' : ''}" onclick="toggleReminder(${r.id}, ${!isCompleted})">
+                        ${isCompleted ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M5 12l5 5L20 7"/></svg>' : ''}
+                    </div>
+                </div>
+                <div class="reminder-amount">${formatCurrency(r.amount, r.currency)}</div>
+                <div class="reminder-date">📅 ${dateStr}</div>
+                <div class="reminder-repeat">🔄 ${repeatMap[r.repeat_interval] || 'Takrorlanmaydi'}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function showAddReminderModal() {
+    hapticFeedback('light');
+    const modal = document.getElementById('addReminderModal');
+    if (modal) {
+        modal.classList.add('active');
+        // Set default date to today
+        const dateInput = modal.querySelector('input[name="reminder_date"]');
+        if (dateInput) {
+            const today = new Date().toISOString().split('T')[0];
+            dateInput.value = today;
         }
     }
 }
 
-// Sahifa tekshiruvi - SPA uchun
-function getCurrentPage() {
-    return currentPage || 'home';
+function closeAddReminderModal() {
+    hapticFeedback('light');
+    const modal = document.getElementById('addReminderModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.getElementById('addReminderForm').reset();
+    }
 }
 
-// Event listenerlar
-document.addEventListener('DOMContentLoaded', async () => {
-    // Asosiy sahifa boshlang'ich holati
-    currentPage = 'home';
-    loadedPages.add('home');
+async function handleAddReminder(event) {
+    event.preventDefault();
+    hapticFeedback('medium');
     
-    // Asosiy loading screen
+    const form = event.target;
+    const formData = new FormData(form);
+    const data = {
+        title: formData.get('title'),
+        amount: parseFloat(formData.get('amount')),
+        currency: formData.get('currency'),
+        reminder_date: formData.get('reminder_date'),
+        repeat_interval: formData.get('repeat_interval')
+    };
+    
+    try {
+        // NOTE: Backend da POST /api/reminders endpoint qo'shish kerak
+        await apiRequest('/api/reminders', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        
+        hapticFeedback('success');
+        closeAddReminderModal();
+        await loadReminders();
+    } catch (error) {
+        hapticFeedback('error');
+        alert('Xatolik yuz berdi: ' + error.message);
+    }
+}
+
+async function toggleReminder(id, completed) {
+    hapticFeedback('light');
+    
+    try {
+        // NOTE: Backend da PATCH /api/reminders/:id endpoint qo'shish kerak
+        await apiRequest(`/api/reminders/${id}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ is_completed: completed })
+        });
+        
+        // Update local data
+        const reminder = remindersData.find(r => r.id === id);
+        if (reminder) {
+            reminder.is_completed = completed;
+            renderReminders();
+        }
+        
+        hapticFeedback('success');
+    } catch (error) {
+        console.error('Eslatma yangilanmadi:', error);
+        hapticFeedback('error');
+    }
+}
+
+// ============================================
+// DEBTS PAGE
+// ============================================
+
+let currentDebtFilter = 'all';
+
+async function loadDebts(filter = 'all') {
+    try {
+        const debts = await apiRequest('/api/debts');
+        const container = document.getElementById('debtsList');
+        if (!container) return;
+        
+        let filtered = debts;
+        if (filter !== 'all') {
+            filtered = debts.filter(d => d.debt_type === filter);
+        }
+        
+        if (!filtered || filtered.length === 0) {
+            container.innerHTML = '<div class="empty-state">Qarzlar yo\'q</div>';
+            return;
+        }
+        
+        container.innerHTML = filtered.map(d => {
+            const isGiven = d.debt_type === 'given';
+            const amountClass = isGiven ? 'given' : 'taken';
+            const sign = isGiven ? '-' : '+';
+            
+            const date = new Date(d.created_at);
+            const dateStr = date.toLocaleDateString('uz-UZ', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+            });
+            
+            return `
+                <div class="debt-card ${amountClass}">
+                    <div class="debt-person">${d.person_name}</div>
+                    <div class="debt-amount ${amountClass}">
+                        ${sign} ${formatCurrency(d.amount, d.currency)}
+                    </div>
+                    <div class="debt-date">${dateStr}</div>
+                    <span class="debt-type-badge ${amountClass}">
+                        ${isGiven ? 'Berdim' : 'Oldim'}
+                    </span>
+                </div>
+            `;
+        }).join('');
+    } catch (error) {
+        console.error('Qarzlar yuklanmadi:', error);
+        const container = document.getElementById('debtsList');
+        if (container) container.innerHTML = '<div class="empty-state">Xatolik yuz berdi</div>';
+    }
+}
+
+// ============================================
+// INITIALIZATION
+// ============================================
+
+document.addEventListener('DOMContentLoaded', async () => {
     showLoading(true);
     
     try {
-        // Foydalanuvchi ma'lumotlarini yuklash
-        const userLoaded = await loadUserInfo();
+        const userLoaded = await loadUserData();
         if (!userLoaded) {
-            // Xatolik bo'lsa, loading screen yashirish
             showLoading(false);
             return;
         }
         
-        // Asosiy sahifa ma'lumotlarini yuklash
-        await loadHomePage();
-    } catch (error) {
-        console.error('Yuklanishda xatolik:', error);
-        showLoading(false);
-        
-        // Xatolik xabari ko'rsatish
-        const loadingScreen = document.getElementById('loadingScreen');
-        if (loadingScreen) {
-            loadingScreen.innerHTML = `
-                <div style="text-align: center; padding: 20px;">
-                    <div style="font-size: 48px; margin-bottom: 16px;">⚠️</div>
-                    <h2 style="font-size: 20px; font-weight: 700; margin-bottom: 8px; color: #333;">Xatolik</h2>
-                    <p style="color: #666; font-size: 14px; margin-bottom: 12px;">Ilovani yuklashda xatolik yuz berdi.</p>
-                    <p style="color: #999; font-size: 12px; margin-bottom: 20px;">Iltimos, Telegram orqali oching yoki test mode uchun URL ga ?test_user_id=YOUR_ID qo'shing</p>
-                    <button onclick="location.reload()" style="background: #1E88E5; color: white; border: none; border-radius: 12px; padding: 12px 24px; font-size: 14px; font-weight: 600; cursor: pointer; margin-right: 8px;">
-                        Qayta urinish
-                    </button>
-                </div>
-            `;
+        // Load home page data
+        if (currentUser && currentUser.currency_balances) {
+            renderCurrencies(currentUser.currency_balances);
         }
+        
+        await Promise.all([
+            loadTransactions(),
+            loadStatistics()
+        ]);
+        
+        showLoading(false);
+    } catch (error) {
+        console.error('Initialization error:', error);
+        showLoading(false);
     }
     
-    // Nav itemlar - SPA o'tish
+    // Setup navigation
     document.querySelectorAll('.nav-item').forEach(item => {
-        item.addEventListener('click', (e) => {
-            e.preventDefault();
-            const pageName = e.currentTarget.getAttribute('data-page');
-            switchPage(pageName);
+        item.addEventListener('click', () => {
+            const page = item.getAttribute('data-page');
+            navigateTo(page);
         });
     });
     
-    // Filter buttonlar
-    document.querySelectorAll('.filter-btn').forEach(btn => {
-        btn.addEventListener('click', (e) => {
+    // Setup filters
+    setupFilters();
+    
+    // Setup search
+    setupSearch();
+});
+
+// ============================================
+// FILTERS
+// ============================================
+
+function setupFilters() {
+    // Transactions filter
+    document.querySelectorAll('#pageTransactions .filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
             hapticFeedback('light');
-            const filter = e.target.getAttribute('data-type');
-            currentFilter = filter;
+            const filter = btn.getAttribute('data-filter');
             
-            // Buttonlarni aktivatsiya qilish
-            document.querySelectorAll('.filter-btn').forEach(b => {
-                b.style.background = 'white';
-                b.style.color = '#666';
-                b.style.borderColor = '#e5e5e5';
-            });
-            e.target.style.background = '#1E88E5';
-            e.target.style.color = 'white';
-            e.target.style.borderColor = '#1E88E5';
+            // Update active state
+            document.querySelectorAll('#pageTransactions .filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
             
-            loadTransactions(filter);
+            // Load filtered data
+            currentTransactionFilter = filter;
+            const searchQuery = document.getElementById('transactionSearch')?.value || '';
+            loadAllTransactions(filter, searchQuery);
         });
     });
-});
+    
+    // Debts filter
+    document.querySelectorAll('#pageDebts .filter-btn').forEach(btn => {
+        btn.addEventListener('click', () => {
+            hapticFeedback('light');
+            const filter = btn.getAttribute('data-filter');
+            
+            // Update active state
+            document.querySelectorAll('#pageDebts .filter-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            
+            // Load filtered data
+            currentDebtFilter = filter;
+            loadDebts(filter);
+        });
+    });
+}
+
+// ============================================
+// SEARCH
+// ============================================
+
+function setupSearch() {
+    const searchInput = document.getElementById('transactionSearch');
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', (e) => {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                const query = e.target.value;
+                loadAllTransactions(currentTransactionFilter, query);
+            }, 300);
+        });
+    }
+}

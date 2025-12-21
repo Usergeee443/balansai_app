@@ -1,7 +1,7 @@
 # Database connection va helper funksiyalar
 import pymysql
 from config import Config
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date, time
 from decimal import Decimal
 from typing import Optional, List, Dict, Any
 
@@ -335,13 +335,225 @@ def get_reminders(user_id, limit=20):
         with connection.cursor() as cursor:
             cursor.execute("""
                 SELECT * FROM reminders 
-                WHERE user_id = %s AND is_completed = FALSE
-                ORDER BY reminder_date ASC, reminder_time ASC
+                WHERE user_id = %s
+                ORDER BY is_completed ASC, reminder_date ASC, reminder_time ASC
                 LIMIT %s
             """, (user_id, limit))
             return cursor.fetchall()
     except Exception as e:
         print(f"❌ Eslatmalarni olishda xatolik: {e}")
-        return []  # Xatolik bo'lsa bo'sh ro'yxat qaytarish
+        return []
+    finally:
+        connection.close()
+
+def add_reminder(user_id, title, amount, currency, reminder_date, repeat_interval='none'):
+    """Yangi eslatma qo'shish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO reminders 
+                (user_id, title, amount, currency, reminder_date, repeat_interval, is_completed)
+                VALUES (%s, %s, %s, %s, %s, %s, FALSE)
+            """, (user_id, title, amount, currency, reminder_date, repeat_interval))
+            connection.commit()
+            return True
+    except Exception as e:
+        print(f"❌ Eslatma qo'shishda xatolik: {e}")
+        connection.rollback()
+        return False
+    finally:
+        connection.close()
+
+def update_reminder_status(user_id, reminder_id, is_completed):
+    """Eslatma statusini yangilash"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                UPDATE reminders 
+                SET is_completed = %s
+                WHERE id = %s AND user_id = %s
+            """, (is_completed, reminder_id, user_id))
+            connection.commit()
+            return True
+    except Exception as e:
+        print(f"❌ Eslatma yangilashda xatolik: {e}")
+        connection.rollback()
+        return False
+    finally:
+        connection.close()
+
+def get_income_trend(user_id, period='auto'):
+    """
+    Daromad dinamikasini olish
+    period: 'day' (kunlar), 'month' (oylar), 'year' (yillar), 'auto' (avtomatik)
+    """
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Avval birinchi tranzaksiya sanasini topamiz
+            cursor.execute("""
+                SELECT MIN(DATE(created_at)) as first_date, MAX(DATE(created_at)) as last_date
+                FROM transactions 
+                WHERE user_id = %s AND transaction_type = 'income'
+            """, (user_id,))
+            date_range = cursor.fetchone()
+            
+            if not date_range or not date_range['first_date']:
+                return {'period': 'day', 'labels': [], 'data': []}
+            
+            first_date = date_range['first_date']
+            last_date = date_range['last_date']
+            # Date obyektlarini tekshirish
+            if isinstance(first_date, datetime):
+                first_date = first_date.date()
+            if isinstance(last_date, datetime):
+                last_date = last_date.date()
+            days_diff = (last_date - first_date).days if first_date and last_date else 0
+            
+            # Avtomatik period aniqlash
+            if period == 'auto':
+                if days_diff <= 30:
+                    period = 'day'
+                elif days_diff <= 365:
+                    period = 'month'
+                else:
+                    period = 'year'
+            
+            # Period bo'yicha GROUP BY
+            if period == 'day':
+                date_format = '%Y-%m-%d'
+                cursor.execute("""
+                    SELECT 
+                        DATE(created_at) as period_date,
+                        SUM(amount) as total,
+                        currency
+                    FROM transactions 
+                    WHERE user_id = %s AND transaction_type = 'income'
+                    GROUP BY DATE(created_at), currency
+                    ORDER BY period_date ASC
+                """, (user_id,))
+            elif period == 'month':
+                date_format = '%Y-%m'
+                cursor.execute("""
+                    SELECT 
+                        DATE_FORMAT(created_at, '%%Y-%%m') as period_date,
+                        SUM(amount) as total,
+                        currency
+                    FROM transactions 
+                    WHERE user_id = %s AND transaction_type = 'income'
+                    GROUP BY DATE_FORMAT(created_at, '%%Y-%%m'), currency
+                    ORDER BY period_date ASC
+                """, (user_id,))
+            else:  # year
+                date_format = '%Y'
+                cursor.execute("""
+                    SELECT 
+                        YEAR(created_at) as period_date,
+                        SUM(amount) as total,
+                        currency
+                    FROM transactions 
+                    WHERE user_id = %s AND transaction_type = 'income'
+                    GROUP BY YEAR(created_at), currency
+                    ORDER BY period_date ASC
+                """, (user_id,))
+            
+            results = cursor.fetchall()
+            
+            # Ma'lumotlarni guruhlash
+            period_data = {}
+            for row in results:
+                period_key = str(row['period_date'])
+                if period_key not in period_data:
+                    period_data[period_key] = 0.0
+                amount_uzs = convert_to_uzs(row['total'], row['currency'])
+                period_data[period_key] += amount_uzs
+            
+            # Label va data array'larni yaratish
+            labels = sorted(period_data.keys())
+            data = [period_data[label] for label in labels]
+            
+            return {
+                'period': period,
+                'labels': labels,
+                'data': data
+            }
+    except Exception as e:
+        print(f"❌ Daromad dinamikasini olishda xatolik: {e}")
+        return {'period': 'day', 'labels': [], 'data': []}
+    finally:
+        connection.close()
+
+def get_top_expense_categories(user_id, limit=5, days=30):
+    """Top eng ko'p xarajat qilinadigan kategoriyalar"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            date_from = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days)
+            cursor.execute("""
+                SELECT 
+                    category,
+                    currency,
+                    SUM(amount) as total
+                FROM transactions 
+                WHERE user_id = %s AND transaction_type = 'expense' 
+                    AND created_at >= %s
+                    AND category IS NOT NULL
+                    AND category != ''
+                GROUP BY category, currency
+                ORDER BY total DESC
+                LIMIT %s
+            """, (user_id, date_from, limit))
+            results = cursor.fetchall()
+            
+            categories = []
+            for row in results:
+                amount_uzs = convert_to_uzs(row['total'], row['currency'])
+                categories.append({
+                    'category': row['category'],
+                    'amount': amount_uzs,
+                    'amount_original': float(row['total']),
+                    'currency': row['currency']
+                })
+            
+            return categories
+    except Exception as e:
+        print(f"❌ Top kategoriyalarni olishda xatolik: {e}")
+        return []
+    finally:
+        connection.close()
+
+def get_expense_by_category(user_id, days=30):
+    """Kategoriya bo'yicha xarajatlar taqsimoti"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            date_from = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days)
+            cursor.execute("""
+                SELECT 
+                    COALESCE(category, 'Boshqa') as category,
+                    currency,
+                    SUM(amount) as total
+                FROM transactions 
+                WHERE user_id = %s AND transaction_type = 'expense' 
+                    AND created_at >= %s
+                GROUP BY category, currency
+                ORDER BY total DESC
+            """, (user_id, date_from))
+            results = cursor.fetchall()
+            
+            categories = {}
+            for row in results:
+                category = row['category'] or 'Boshqa'
+                if category not in categories:
+                    categories[category] = 0.0
+                amount_uzs = convert_to_uzs(row['total'], row['currency'])
+                categories[category] += amount_uzs
+            
+            return categories
+    except Exception as e:
+        print(f"❌ Kategoriya bo'yicha xarajatlarni olishda xatolik: {e}")
+        return {}
     finally:
         connection.close()
