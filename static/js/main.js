@@ -10,7 +10,7 @@
 const tg = window.Telegram?.WebApp || null;
 let currentUser = null;
 let currentPage = 'home';
-let loadedPages = new Set(['home']);
+let loadedPages = new Set(['home', 'transactions']);
 let statsChart = null;
 
 // ============================================
@@ -19,6 +19,7 @@ let statsChart = null;
 
 if (tg) {
     tg.ready();
+    // Doim fullscreen qilish
     tg.expand();
     tg.enableClosingConfirmation();
     tg.setHeaderColor('#5A8EF4');
@@ -57,6 +58,18 @@ function formatDate(dateString) {
 function showLoading(show) {
     const loader = document.getElementById('loadingScreen');
     if (loader) loader.style.display = show ? 'flex' : 'none';
+}
+
+function showPageLoading(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+    
+    container.innerHTML = `
+        <div class="page-loading">
+            <div class="spinner-small"></div>
+            <p style="margin-top: 16px; color: #999; font-size: 14px; text-align: center;">Yuklanmoqda...</p>
+        </div>
+    `;
 }
 
 // ============================================
@@ -337,7 +350,9 @@ async function loadPageData(pageName) {
     try {
         switch(pageName) {
             case 'transactions':
-                await loadAllTransactions();
+                // Data allaqachon yuklangan, faqat render qilish
+                const searchQuery = document.getElementById('transactionSearch')?.value || '';
+                await loadAllTransactions(currentTransactionFilter, searchQuery, false);
                 break;
             case 'statistics':
                 await loadAllStatistics();
@@ -346,7 +361,7 @@ async function loadPageData(pageName) {
                 await loadReminders();
                 break;
             case 'debts':
-                await loadDebts();
+                await loadDebts(currentDebtFilter);
                 break;
         }
     } catch (error) {
@@ -367,15 +382,20 @@ function showBalanceDetails() {
 let currentTransactionFilter = 'all';
 let allTransactionsData = [];
 
-async function loadAllTransactions(filter = 'all', searchQuery = '') {
+async function loadAllTransactions(filter = 'all', searchQuery = '', showLoadingState = true) {
+    const container = document.getElementById('allTransactionsList');
+    if (!container) return;
+    
     try {
+        // Loading ko'rsatish (faqat sahifaga kirganda)
+        if (showLoadingState && allTransactionsData.length === 0) {
+            showPageLoading('allTransactionsList');
+        }
+        
         // Agar data yuklanmagan bo'lsa, API dan olish
         if (allTransactionsData.length === 0) {
             allTransactionsData = await apiRequest('/api/transactions?limit=500');
         }
-        
-        const container = document.getElementById('allTransactionsList');
-        if (!container) return;
         
         let filtered = allTransactionsData;
         
@@ -416,7 +436,6 @@ async function loadAllTransactions(filter = 'all', searchQuery = '') {
         }).join('');
     } catch (error) {
         console.error('Tranzaksiyalar yuklanmadi:', error);
-        const container = document.getElementById('allTransactionsList');
         if (container) container.innerHTML = '<div class="empty-state">Xatolik yuz berdi</div>';
     }
 }
@@ -512,7 +531,29 @@ let incomeTrendChart = null;
 let expensePieChart = null;
 
 async function loadAllStatistics() {
+    const container = document.getElementById('statisticsContent');
+    if (!container) return;
+    
     try {
+        // Loading ko'rsatish
+        showPageLoading('statisticsContent');
+        
+        // Chart elementlarini yaratish (loading dan keyin)
+        container.innerHTML = `
+            <div class="stats-card" style="margin-bottom: 16px;">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a;">Daromad dinamikasi</h3>
+                <canvas id="incomeTrendChart" class="stats-canvas"></canvas>
+            </div>
+            <div class="stats-card" style="margin-bottom: 16px;">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a;">Eng ko'p xarajat</h3>
+                <div id="topCategoriesList"></div>
+            </div>
+            <div class="stats-card">
+                <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 12px; color: #1a1a1a;">Xarajat taqsimoti</h3>
+                <canvas id="expensePieChart" class="stats-canvas"></canvas>
+            </div>
+        `;
+        
         await Promise.all([
             loadIncomeTrendChart(),
             loadTopCategories(),
@@ -520,6 +561,7 @@ async function loadAllStatistics() {
         ]);
     } catch (error) {
         console.error('Statistika yuklanmadi:', error);
+        container.innerHTML = '<div class="empty-state">Xatolik yuz berdi</div>';
     }
 }
 
@@ -692,12 +734,15 @@ async function loadExpensePieChart() {
 let remindersData = [];
 
 async function loadReminders() {
+    const container = document.getElementById('remindersList');
     try {
+        // Loading ko'rsatish
+        showPageLoading('remindersList');
+        
         remindersData = await apiRequest('/api/reminders');
         renderReminders();
     } catch (error) {
         console.error('Eslatmalar yuklanmadi:', error);
-        const container = document.getElementById('remindersList');
         if (container) container.innerHTML = '<div class="empty-state">Xatolik yuz berdi</div>';
     }
 }
@@ -829,10 +874,14 @@ async function toggleReminder(id, completed) {
 let currentDebtFilter = 'all';
 
 async function loadDebts(filter = 'all') {
+    const container = document.getElementById('debtsList');
+    if (!container) return;
+    
     try {
+        // Loading ko'rsatish
+        showPageLoading('debtsList');
+        
         const debts = await apiRequest('/api/debts');
-        const container = document.getElementById('debtsList');
-        if (!container) return;
         
         let filtered = debts;
         if (filter !== 'all') {
@@ -895,9 +944,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             renderCurrencies(currentUser.currency_balances);
         }
         
+        // Boshida barcha asosiy ma'lumotlarni yuklash
         await Promise.all([
             loadTransactions(),
-            loadStatistics()
+            loadStatistics(),
+            loadAllTransactions('all', '', false) // Tranzaksiyalar sahifasi uchun (loading ko'rsatma)
         ]);
         
         showLoading(false);
@@ -939,7 +990,7 @@ function setupFilters() {
             // Load filtered data
             currentTransactionFilter = filter;
             const searchQuery = document.getElementById('transactionSearch')?.value || '';
-            loadAllTransactions(filter, searchQuery);
+            loadAllTransactions(filter, searchQuery, false); // Loading ko'rsatma, chunki data allaqachon bor
         });
     });
     
@@ -972,7 +1023,7 @@ function setupSearch() {
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
                 const query = e.target.value;
-                loadAllTransactions(currentTransactionFilter, query);
+                loadAllTransactions(currentTransactionFilter, query, false); // Loading ko'rsatma
             }, 300);
         });
     }
