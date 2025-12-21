@@ -60,16 +60,115 @@ function showLoading(show) {
     if (loader) loader.style.display = show ? 'flex' : 'none';
 }
 
-function showPageLoading(containerId) {
+function showPageLoading(containerId, type = 'default') {
     const container = document.getElementById(containerId);
     if (!container) return;
     
-    container.innerHTML = `
-        <div class="page-loading">
-            <div class="spinner-small"></div>
-            <p style="margin-top: 16px; color: #999; font-size: 14px; text-align: center;">Yuklanmoqda...</p>
+    let skeletonHTML = '';
+    
+    switch(type) {
+        case 'transactions':
+            skeletonHTML = getTransactionsSkeleton();
+            break;
+        case 'statistics':
+            skeletonHTML = getStatisticsSkeleton();
+            break;
+        case 'reminders':
+            skeletonHTML = getRemindersSkeleton();
+            break;
+        case 'debts':
+            skeletonHTML = getDebtsSkeleton();
+            break;
+        default:
+            skeletonHTML = `
+                <div class="page-loading">
+                    <div class="spinner-small"></div>
+                    <p style="margin-top: 16px; color: #999; font-size: 14px; text-align: center;">Yuklanmoqda...</p>
+                </div>
+            `;
+    }
+    
+    container.innerHTML = skeletonHTML;
+}
+
+function getTransactionsSkeleton() {
+    return `
+        <div class="transaction-group">
+            <div class="skeleton skeleton-title"></div>
+            ${Array(5).fill(0).map(() => `
+                <div class="skeleton-transaction">
+                    <div class="skeleton skeleton-transaction-icon"></div>
+                    <div class="skeleton-transaction-content">
+                        <div class="skeleton skeleton-text skeleton-transaction-amount"></div>
+                        <div class="skeleton skeleton-text skeleton-transaction-desc"></div>
+                        <div class="skeleton skeleton-text skeleton-transaction-meta"></div>
+                    </div>
+                </div>
+            `).join('')}
         </div>
     `;
+}
+
+function getStatisticsSkeleton() {
+    return `
+        <div class="stats-card" style="margin-bottom: 16px;">
+            <div class="skeleton skeleton-title" style="margin-bottom: 12px;"></div>
+            <div class="skeleton skeleton-chart"></div>
+        </div>
+        <div class="stats-card" style="margin-bottom: 16px;">
+            <div class="skeleton skeleton-title" style="margin-bottom: 12px;"></div>
+            ${Array(5).fill(0).map(() => `
+                <div class="skeleton-category-item">
+                    <div class="skeleton skeleton-category-name"></div>
+                    <div class="skeleton skeleton-category-amount"></div>
+                </div>
+            `).join('')}
+        </div>
+        <div class="stats-card">
+            <div class="skeleton skeleton-title" style="margin-bottom: 12px;"></div>
+            <div class="skeleton skeleton-chart" style="height: 250px;"></div>
+        </div>
+    `;
+}
+
+function getRemindersSkeleton() {
+    return Array(3).fill(0).map(() => `
+        <div class="skeleton-reminder-card">
+            <div class="skeleton-reminder-header">
+                <div class="skeleton skeleton-reminder-title"></div>
+                <div class="skeleton skeleton-reminder-checkbox"></div>
+            </div>
+            <div class="skeleton skeleton-reminder-amount"></div>
+            <div class="skeleton skeleton-reminder-date"></div>
+            <div class="skeleton skeleton-text short" style="margin-top: 8px;"></div>
+        </div>
+    `).join('');
+}
+
+function getDebtsSkeleton() {
+    return Array(3).fill(0).map(() => `
+        <div class="skeleton-debt-card">
+            <div class="skeleton skeleton-text medium" style="height: 18px; margin-bottom: 12px;"></div>
+            <div class="skeleton skeleton-text long" style="height: 22px; margin-bottom: 12px;"></div>
+            <div class="skeleton skeleton-text short" style="height: 14px; margin-bottom: 8px;"></div>
+            <div class="skeleton skeleton-text short" style="width: 80px; height: 24px; border-radius: 12px;"></div>
+        </div>
+    `).join('');
+}
+
+function getHomeSkeleton() {
+    return {
+        transactions: Array(3).fill(0).map(() => `
+            <div class="transaction-card">
+                <div class="skeleton skeleton-text" style="height: 18px; width: 120px; margin-bottom: 8px;"></div>
+                <div class="skeleton skeleton-text" style="height: 14px; width: 80%; margin-bottom: 4px;"></div>
+                <div class="skeleton skeleton-text" style="height: 12px; width: 60%;"></div>
+            </div>
+        `).join(''),
+        chart: `
+            <div class="skeleton skeleton-chart" style="height: 180px;"></div>
+        `
+    };
 }
 
 // ============================================
@@ -144,6 +243,50 @@ async function loadUserData() {
 }
 
 // ============================================
+// HOME PAGE SKELETON
+// ============================================
+
+function showHomePageSkeleton() {
+    // Balance skeleton
+    const balanceEl = document.getElementById('totalBalance');
+    if (balanceEl) {
+        balanceEl.innerHTML = '<div class="skeleton skeleton-text" style="height: 20px; width: 150px; display: inline-block;"></div>';
+    }
+    
+    // Currency list skeleton
+    const currencyContainer = document.getElementById('currencyList');
+    if (currencyContainer) {
+        currencyContainer.innerHTML = Array(5).fill(0).map(() => `
+            <div class="currency-item">
+                <div class="currency-icon">
+                    <div class="skeleton skeleton-circle"></div>
+                </div>
+                <div class="skeleton skeleton-text" style="height: 18px; width: 120px;"></div>
+            </div>
+        `).join('');
+    }
+    
+    // Transactions skeleton (agar container bo'sh bo'lsa)
+    const transactionsContainer = document.getElementById('transactionsList');
+    if (transactionsContainer && !transactionsContainer.innerHTML.trim()) {
+        const homeSkeleton = getHomeSkeleton();
+        transactionsContainer.innerHTML = homeSkeleton.transactions;
+    }
+    
+    // Statistics skeleton
+    const statsCanvas = document.getElementById('statsChart');
+    if (statsCanvas && statsCanvas.parentElement) {
+        const canvasContainer = statsCanvas.parentElement;
+        // Canvas elementni saqlab qolish, skeleton qo'shish
+        if (!canvasContainer.querySelector('.skeleton-chart')) {
+            const homeSkeleton = getHomeSkeleton();
+            statsCanvas.style.display = 'none';
+            canvasContainer.insertAdjacentHTML('beforeend', homeSkeleton.chart);
+        }
+    }
+}
+
+// ============================================
 // CURRENCIES
 // ============================================
 
@@ -185,10 +328,17 @@ function renderCurrencies(balances) {
 // ============================================
 
 async function loadTransactions() {
+    const container = document.getElementById('transactionsList');
+    if (!container) return;
+    
+    // Skeleton loading ko'rsatish (agar bo'sh bo'lsa)
+    if (!container.innerHTML.trim() || container.innerHTML.includes('skeleton')) {
+        const homeSkeleton = getHomeSkeleton();
+        container.innerHTML = homeSkeleton.transactions;
+    }
+    
     try {
         const transactions = await apiRequest('/api/transactions?limit=20');
-        const container = document.getElementById('transactionsList');
-        if (!container) return;
         
         if (!transactions || transactions.length === 0) {
             container.innerHTML = `
@@ -229,10 +379,22 @@ async function loadTransactions() {
 // ============================================
 
 async function loadStatistics() {
+    // Canvas elementini topish (skeleton ichida yashiringan bo'lishi mumkin)
+    let ctx = document.getElementById('statsChart');
+    const canvasContainer = ctx?.parentElement;
+    
     try {
         const trend = await apiRequest('/api/statistics/income-trend?period=auto');
-        const ctx = document.getElementById('statsChart');
-        if (!ctx) return;
+        
+        // Agar canvas topilmasa
+        if (!ctx || !canvasContainer) return;
+        
+        // Skeleton ni olib tashlash va canvas ni ko'rsatish
+        const skeletonEl = canvasContainer.querySelector('.skeleton-chart');
+        if (skeletonEl) {
+            skeletonEl.remove();
+            ctx.style.display = 'block';
+        }
         
         let labels = trend.labels || ['Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
         let data = trend.data || [111, 135, 160, 180, 170];
@@ -389,7 +551,7 @@ async function loadAllTransactions(filter = 'all', searchQuery = '', showLoading
     try {
         // Loading ko'rsatish (faqat sahifaga kirganda)
         if (showLoadingState && allTransactionsData.length === 0) {
-            showPageLoading('allTransactionsList');
+            showPageLoading('allTransactionsList', 'transactions');
         }
         
         // Agar data yuklanmagan bo'lsa, API dan olish
@@ -536,7 +698,7 @@ async function loadAllStatistics() {
     
     try {
         // Loading ko'rsatish
-        showPageLoading('statisticsContent');
+        showPageLoading('statisticsContent', 'statistics');
         
         // Chart elementlarini yaratish (loading dan keyin)
         container.innerHTML = `
@@ -737,7 +899,7 @@ async function loadReminders() {
     const container = document.getElementById('remindersList');
     try {
         // Loading ko'rsatish
-        showPageLoading('remindersList');
+        showPageLoading('remindersList', 'reminders');
         
         remindersData = await apiRequest('/api/reminders');
         renderReminders();
@@ -879,7 +1041,7 @@ async function loadDebts(filter = 'all') {
     
     try {
         // Loading ko'rsatish
-        showPageLoading('debtsList');
+        showPageLoading('debtsList', 'debts');
         
         const debts = await apiRequest('/api/debts');
         
@@ -930,32 +1092,33 @@ async function loadDebts(filter = 'all') {
 // ============================================
 
 document.addEventListener('DOMContentLoaded', async () => {
-    showLoading(true);
+    // Ilova darhol ochilsin, skeleton loading bilan
+    // Home page skeleton ko'rsatish
+    showHomePageSkeleton();
     
-    try {
-        const userLoaded = await loadUserData();
-        if (!userLoaded) {
-            showLoading(false);
-            return;
+    // Background'da data yuklash (non-blocking)
+    (async () => {
+        try {
+            const userLoaded = await loadUserData();
+            if (!userLoaded) {
+                return;
+            }
+            
+            // Load home page data
+            if (currentUser && currentUser.currency_balances) {
+                renderCurrencies(currentUser.currency_balances);
+            }
+            
+            // Barcha ma'lumotlarni parallel yuklash
+            await Promise.all([
+                loadTransactions(),
+                loadStatistics(),
+                loadAllTransactions('all', '', false) // Tranzaksiyalar sahifasi uchun
+            ]);
+        } catch (error) {
+            console.error('Initialization error:', error);
         }
-        
-        // Load home page data
-        if (currentUser && currentUser.currency_balances) {
-            renderCurrencies(currentUser.currency_balances);
-        }
-        
-        // Boshida barcha asosiy ma'lumotlarni yuklash
-        await Promise.all([
-            loadTransactions(),
-            loadStatistics(),
-            loadAllTransactions('all', '', false) // Tranzaksiyalar sahifasi uchun (loading ko'rsatma)
-        ]);
-        
-        showLoading(false);
-    } catch (error) {
-        console.error('Initialization error:', error);
-        showLoading(false);
-    }
+    })();
     
     // Setup navigation
     document.querySelectorAll('.nav-item').forEach(item => {
