@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Profil - Balans AI</title>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/profile.css">
+    
+    <!-- Scripts -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="profile-header">
+        <h1 class="profile-title">Profil</h1>
+    </header>
+
+    <!-- User Info Card -->
+    <div class="profile-section">
+        <div class="user-card">
+            <div class="user-avatar">
+                <div class="avatar-placeholder">
+                    <span id="userInitials">U</span>
+                </div>
+            </div>
+            <div class="user-info">
+                <h2 class="user-name" id="userName">Foydalanuvchi</h2>
+                <p class="user-username" id="userUsername">@username</p>
+                <div class="user-id">ID: <span id="userId">-</span></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarif Card -->
+    <div class="profile-section">
+        <div class="tariff-card">
+            <div class="tariff-header">
+                <h3 class="tariff-title">Tarif</h3>
+                <span class="tariff-badge" id="tariffBadge">NONE</span>
+            </div>
+            <div class="tariff-info">
+                <div class="tariff-item">
+                    <span class="tariff-label">Tarif turi:</span>
+                    <span class="tariff-value" id="tariffType">-</span>
+                </div>
+                <div class="tariff-item">
+                    <span class="tariff-label">Muddati:</span>
+                    <span class="tariff-value" id="tariffExpires">-</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Sozlamalar -->
+    <div class="profile-section">
+        <h3 class="section-title">Sozlamalar</h3>
+        <div class="settings-list">
+            <div class="setting-item" onclick="showSettingsModal('language')">
+                <div class="setting-icon">🌐</div>
+                <div class="setting-content">
+                    <span class="setting-name">Til</span>
+                    <span class="setting-value">O'zbek</span>
+                </div>
+                <svg class="setting-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18l6-6-6-6"/>
+                </svg>
+            </div>
+            <div class="setting-item" onclick="showSettingsModal('currency')">
+                <div class="setting-icon">💱</div>
+                <div class="setting-content">
+                    <span class="setting-name">Asosiy valyuta</span>
+                    <span class="setting-value">UZS</span>
+                </div>
+                <svg class="setting-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18l6-6-6-6"/>
+                </svg>
+            </div>
+            <div class="setting-item" onclick="showSettingsModal('notifications')">
+                <div class="setting-icon">🔔</div>
+                <div class="setting-content">
+                    <span class="setting-name">Bildirishnomalar</span>
+                    <span class="setting-value">Yoqilgan</span>
+                </div>
+                <svg class="setting-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18l6-6-6-6"/>
+                </svg>
+            </div>
+            <div class="setting-item" onclick="showSettingsModal('theme')">
+                <div class="setting-icon">🎨</div>
+                <div class="setting-content">
+                    <span class="setting-name">Mavzu</span>
+                    <span class="setting-value">Yorug'</span>
+                </div>
+                <svg class="setting-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 18l6-6-6-6"/>
+                </svg>
+            </div>
+        </div>
+    </div>
+
+    <!-- To'lovlar tarixi -->
+    <div class="profile-section">
+        <div class="section-header">
+            <h3 class="section-title">To'lovlar tarixi</h3>
+            <button class="view-all-btn" onclick="showAllPayments()">Barchasi</button>
+        </div>
+        <div class="payments-list" id="paymentsList">
+            <div class="loading-state">Yuklanmoqda...</div>
+        </div>
+    </div>
+
+    <!-- Qo'shimcha ma'lumotlar -->
+    <div class="profile-section">
+        <h3 class="section-title">Qo'shimcha ma'lumotlar</h3>
+        <div class="info-list">
+            <div class="info-item">
+                <span class="info-label">Ro'yxatdan o'tgan sana:</span>
+                <span class="info-value" id="registeredDate">-</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">Oxirgi faollik:</span>
+                <span class="info-value" id="lastActivity">-</span>
+            </div>
+            {% comment %} <div class="info-item">
+                <span class="info-label">Valyuta balanslari:</span>
+                <div class="currency-badges" id="currencyBadges"></div>
+            </div> {% endcomment %}
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title" id="modalTitle">Sozlama</h3>
+                <button class="modal-close" onclick="closeSettingsModal()">✕</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Main JavaScript -->
+    <script src="/static/js/profile.js"></script>
+</body>
+</html>
+

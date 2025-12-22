@@ -614,3 +614,66 @@ def get_expense_by_category(user_id, days=30):
         return {}
     finally:
         connection.close()
+
+def get_subscription_payments(user_id, limit=50, offset=0):
+    """Tarif uchun to'langan pullarni olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Avval subscription_payments jadvalini tekshiramiz
+            # Agar yo'q bo'lsa, transactions jadvalidan tarif to'lovlarini olamiz
+            
+            # Subscription payments jadvalini tekshirish
+            try:
+                cursor.execute("""
+                    SELECT id, user_id, amount, currency, description, created_at, payment_method, status
+                    FROM subscription_payments 
+                    WHERE user_id = %s 
+                    ORDER BY created_at DESC 
+                    LIMIT %s OFFSET %s
+                """, (user_id, limit, offset))
+                results = cursor.fetchall()
+                if results and len(results) > 0:
+                    return results
+            except Exception as e:
+                # Agar subscription_payments jadvali yo'q bo'lsa, transactions'dan olamiz
+                print(f"[DEBUG] subscription_payments jadvali topilmadi, transactions'dan olinmoqda: {e}")
+                pass
+            
+            # Transactions jadvalidan tarif to'lovlarini olish
+            # Category yoki description'da "tarif", "subscription", "payment" so'zlari bo'lsa
+            cursor.execute("""
+                SELECT 
+                    id, user_id, amount, currency, 
+                    COALESCE(description, category, 'Tarif to\'lovi') as description, 
+                    created_at,
+                    NULL as payment_method, 
+                    'completed' as status
+                FROM transactions 
+                WHERE user_id = %s 
+                    AND (
+                        (category IS NOT NULL AND (
+                            LOWER(category) LIKE '%%tarif%%' 
+                            OR LOWER(category) LIKE '%%subscription%%'
+                            OR LOWER(category) LIKE '%%payment%%'
+                            OR category = 'Tarif'
+                            OR category = 'Subscription'
+                        ))
+                        OR (description IS NOT NULL AND (
+                            LOWER(description) LIKE '%%tarif%%'
+                            OR LOWER(description) LIKE '%%subscription%%'
+                            OR LOWER(description) LIKE '%%to\'lov%%'
+                        ))
+                    )
+                ORDER BY created_at DESC 
+                LIMIT %s OFFSET %s
+            """, (user_id, limit, offset))
+            
+            return cursor.fetchall()
+    except Exception as e:
+        print(f"❌ Tarif to'lovlarini olishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return []
+    finally:
+        connection.close()

@@ -5,7 +5,8 @@ from database import (
     get_user, get_transactions, add_transaction, get_balance,
     get_statistics, get_debts, add_debt, get_reminders,
     get_balance_and_statistics, get_income_trend, get_top_expense_categories,
-    get_expense_by_category, add_reminder, update_reminder_status
+    get_expense_by_category, add_reminder, update_reminder_status,
+    get_subscription_payments
 )
 import os
 import hmac
@@ -139,6 +140,11 @@ def validate_telegram_webapp(init_data):
 def index():
     """Asosiy sahifa (SPA)"""
     return render_template('index.html')
+
+@app.route('/profile')
+def profile():
+    """Profile sahifasi (alohida mini ilova)"""
+    return render_template('profile.html')
 
 def get_telegram_init_data():
     """Telegram Mini App init_data ni olish (header yoki query parameter dan)"""
@@ -493,6 +499,77 @@ def api_update_reminder(reminder_id):
             return jsonify({'error': 'Eslatma yangilanmadi'}), 500
     except Exception as e:
         print(f"❌ API: Eslatma yangilashda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/profile/stats', methods=['GET'])
+def api_get_profile_stats():
+    """Profile uchun statistika"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        # Tranzaksiyalar soni
+        transactions = get_transactions(user_id, limit=1000)
+        total_transactions = len(transactions) if transactions else 0
+        
+        # Balans va statistika
+        balance_stats = get_balance_and_statistics(user_id, days=30)
+        
+        # User ma'lumotlari
+        user = get_user(user_id)
+        
+        registered_at = None
+        if user and user.get('created_at'):
+            if isinstance(user['created_at'], datetime):
+                registered_at = user['created_at'].isoformat()
+            else:
+                registered_at = str(user['created_at'])
+        
+        return jsonify({
+            'total_transactions': total_transactions,
+            'balance': balance_stats['balance'],
+            'income': balance_stats['income'],
+            'expense': balance_stats['expense'],
+            'currency_balances': balance_stats.get('currency_balances', {}),
+            'registered_at': registered_at,
+            'last_activity': datetime.now().isoformat()
+        })
+    except Exception as e:
+        print(f"❌ API: Profile statistika olishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/profile/payments', methods=['GET'])
+def api_get_payments_history():
+    """Tarif uchun to'langan pullar tarixi"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        limit = int(request.args.get('limit', 50))
+        offset = int(request.args.get('offset', 0))
+        
+        # Tarif to'lovlarini olish
+        payments = get_subscription_payments(user_id, limit, offset)
+        
+        # Decimal ni float ga konvertatsiya qilish
+        for p in payments:
+            for key, value in p.items():
+                if isinstance(value, Decimal):
+                    p[key] = float(value)
+                elif isinstance(value, datetime):
+                    p[key] = value.isoformat()
+                elif value is None:
+                    p[key] = None
+        
+        return jsonify(payments)
+    except Exception as e:
+        print(f"❌ API: Tarif to'lovlarini olishda xatolik: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
