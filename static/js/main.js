@@ -19,11 +19,103 @@ let statsChart = null;
 
 if (tg) {
     tg.ready();
-    // Doim fullscreen qilish
-    tg.expand();
+    
+    // 1. Doim fullscreen qilish (yarim va to'liq formatlardan fullscreen'ga o'tkazish)
+    function ensureFullscreen() {
+        if (!tg.isExpanded) {
+            tg.expand();
+        }
+    }
+    
+    // Dastlabki fullscreen
+    ensureFullscreen();
+    
+    // Viewport balandligini sozlash (fullscreen uchun)
+    if (tg.viewportStableHeight !== undefined) {
+        tg.viewportStableHeight = window.innerHeight;
+    }
+    
+    // 2. Pull-to-close'ni bloklash (surib chiqib ketishni oldini olish)
+    if (tg.disableVerticalSwipes) {
+        tg.disableVerticalSwipes();
+    }
+    
+    // BackButton'ni yashirish (faqat X tugmasi qoladi)
+    if (tg.BackButton) {
+        tg.BackButton.hide();
+    }
+    
+    // Chiqishni tasdiqlash (allaqachon bor, lekin qayta ta'minlash)
     tg.enableClosingConfirmation();
+    
+    // Header va background ranglari
     tg.setHeaderColor('#5A8EF4');
     tg.setBackgroundColor('#f5f5f5');
+    
+    // Viewport o'zgarganda fullscreen'ni saqlash
+    window.addEventListener('resize', () => {
+        ensureFullscreen();
+    });
+    
+    // Scroll event'ida ham tekshirish (viewport o'zgarganda)
+    let scrollCheckTimeout;
+    window.addEventListener('scroll', () => {
+        clearTimeout(scrollCheckTimeout);
+        scrollCheckTimeout = setTimeout(() => {
+            ensureFullscreen();
+        }, 100);
+    });
+    
+    // Ilova ochilganda fullscreen'ni ta'minlash
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            ensureFullscreen();
+        }, 100);
+    });
+    
+    // DOMContentLoaded'da ham tekshirish
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                ensureFullscreen();
+            }, 50);
+        });
+    } else {
+        setTimeout(() => {
+            ensureFullscreen();
+        }, 50);
+    }
+    
+    // Periodic check (viewport o'zgarishi uchun)
+    setInterval(() => {
+        ensureFullscreen();
+    }, 500);
+    
+    // Pull-to-close'ni to'liq bloklash (touch event'larni bloklash)
+    let touchStartY = 0;
+    let touchStartX = 0;
+    
+    document.addEventListener('touchstart', (e) => {
+        touchStartY = e.touches[0].clientY;
+        touchStartX = e.touches[0].clientX;
+    }, { passive: true });
+    
+    document.addEventListener('touchmove', (e) => {
+        const touchY = e.touches[0].clientY;
+        const touchX = e.touches[0].clientX;
+        const deltaY = touchY - touchStartY;
+        const deltaX = Math.abs(touchX - touchStartX);
+        
+        // Agar yuqoriga surilayotgan bo'lsa va gorizontal harakat kam bo'lsa (pull-to-close)
+        if (deltaY < -50 && deltaX < 30) {
+            // Scroll top'da bo'lsa, pull-to-close'ni bloklash
+            if (window.scrollY <= 0) {
+                e.preventDefault();
+                e.stopPropagation();
+                return false;
+            }
+        }
+    }, { passive: false });
 }
 
 // ============================================

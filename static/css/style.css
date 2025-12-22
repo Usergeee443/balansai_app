@@ -17,6 +17,23 @@ body {
     min-height: 100vh;
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
+    /* Pull-to-close'ni bloklash */
+    overscroll-behavior-y: none;
+    overscroll-behavior: none;
+    touch-action: pan-y pinch-zoom;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    overflow-y: auto;
+}
+
+html {
+    /* Pull-to-close'ni bloklash */
+    overscroll-behavior-y: none;
+    overscroll-behavior: none;
+    touch-action: pan-y pinch-zoom;
+    height: 100%;
+    overflow: hidden;
 }
 
 ::-webkit-scrollbar {
