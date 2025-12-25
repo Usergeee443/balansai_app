@@ -615,7 +615,7 @@ async function loadPageData(pageName) {
                 await loadReminders();
                 break;
             case 'debts':
-                await loadDebts(currentDebtFilter);
+                await loadContacts();
                 break;
         }
     } catch (error) {
@@ -1122,61 +1122,595 @@ async function toggleReminder(id, completed) {
 }
 
 // ============================================
-// DEBTS PAGE
+// DEBTS PAGE - Kontaktli tizim
 // ============================================
 
 let currentDebtFilter = 'all';
+let currentContactId = null;
+let contactsData = [];
+let debtsData = [];
 
-async function loadDebts(filter = 'all') {
-    const container = document.getElementById('debtsList');
+// Kontaktlar ro'yxatini yuklash
+async function loadContacts() {
+    const container = document.getElementById('contactsList');
     if (!container) return;
     
     try {
-        // Loading ko'rsatish
-        showPageLoading('debtsList', 'debts');
+        showPageLoading('contactsList', 'debts');
         
-        const debts = await apiRequest('/api/debts');
+        contactsData = await apiRequest('/api/contacts');
         
-        let filtered = debts;
-        if (filter !== 'all') {
-            filtered = debts.filter(d => d.debt_type === filter);
-        }
-        
-        if (!filtered || filtered.length === 0) {
-            container.innerHTML = '<div class="empty-state">Qarzlar yo\'q</div>';
+        if (!contactsData || contactsData.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p>Kontaktlar yo'q</p>
+                    <p style="font-size: 12px; color: #999; margin-top: 8px;">Yangi kontakt qo'shish uchun + tugmasini bosing</p>
+                </div>
+            `;
             return;
         }
         
-        container.innerHTML = filtered.map(d => {
-            const isGiven = d.debt_type === 'given';
-            const amountClass = isGiven ? 'given' : 'taken';
-            const sign = isGiven ? '-' : '+';
-            
-            const date = new Date(d.created_at);
-            const dateStr = date.toLocaleDateString('uz-UZ', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric'
-            });
+        container.innerHTML = contactsData.map((contact, index) => {
+            const name = contact.name || 'Nomsiz';
+            const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().substring(0, 2);
+            const debtsCount = contact.debts_count || 0;
+            const contactId = contact.id || contact.name || `contact_${index}`;
+            const contactIdStr = typeof contactId === 'string' ? `'${contactId.replace(/'/g, "\\'")}'` : contactId;
             
             return `
-                <div class="debt-card ${amountClass}">
-                    <div class="debt-person">${d.person_name}</div>
-                    <div class="debt-amount ${amountClass}">
-                        ${sign} ${formatCurrency(d.amount, d.currency)}
+                <div class="contact-item" onclick="selectContact(${contactIdStr}, '${name.replace(/'/g, "\\'")}')">
+                    <div class="contact-avatar">${initials}</div>
+                    <div class="contact-info">
+                        <div class="contact-name">${name}</div>
+                        <div class="contact-meta">
+                            ${contact.phone ? `<span>${contact.phone}</span>` : ''}
+                            ${debtsCount > 0 ? `<span class="contact-debts-count">${debtsCount} qarz</span>` : ''}
+                        </div>
                     </div>
-                    <div class="debt-date">${dateStr}</div>
-                    <span class="debt-type-badge ${amountClass}">
-                        ${isGiven ? 'Berdim' : 'Oldim'}
-                    </span>
+                    <svg class="contact-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
                 </div>
             `;
         }).join('');
     } catch (error) {
-        console.error('Qarzlar yuklanmadi:', error);
-        const container = document.getElementById('debtsList');
+        console.error('Kontaktlar yuklanmadi:', error);
         if (container) container.innerHTML = '<div class="empty-state">Xatolik yuz berdi</div>';
     }
+}
+
+// Kontakt tanlash
+async function selectContact(contactId, contactName) {
+    hapticFeedback('light');
+    currentContactId = contactId;
+    
+    // Qarzlar ro'yxatini ko'rsatish
+    const contactsList = document.getElementById('contactsList');
+    const debtsList = document.getElementById('debtsList');
+    
+    if (contactsList) contactsList.style.display = 'none';
+    if (debtsList) {
+        debtsList.style.display = 'block';
+        await loadDebtsForContact(contactId, contactName);
+    }
+}
+
+// Kontakt uchun qarzlar
+async function loadDebtsForContact(contactId, contactName) {
+    const container = document.getElementById('debtsList');
+    if (!container) return;
+    
+    try {
+        showPageLoading('debtsList', 'debts');
+        
+        const contactIdParam = typeof contactId === 'number' ? contactId : null;
+        const url = contactIdParam ? `/api/debts?contact_id=${contactIdParam}` : '/api/debts';
+        debtsData = await apiRequest(url);
+        
+        // Agar contact_id number bo'lmasa, person_name bo'yicha filterlash
+        if (!contactIdParam && typeof contactId === 'string') {
+            debtsData = debtsData.filter(d => d.person_name === contactId || d.contact_name === contactId);
+        }
+        
+        const displayName = contactName || contactId;
+        
+        if (!debtsData || debtsData.length === 0) {
+            container.innerHTML = `
+                <div style="padding: 16px; background: white; border-bottom: 1px solid rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 10;">
+                    <button onclick="backToContacts()" style="background: none; border: none; color: #5A8EF4; font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
+                        </svg>
+                        Orqaga
+                    </button>
+                    <h3 style="margin: 8px 0 0 0; font-size: 18px; font-weight: 600;">${displayName}</h3>
+                </div>
+                <div class="empty-state">
+                    <p>Qarzlar yo'q</p>
+                    <button class="btn-primary" onclick="showAddDebtModal()" style="margin-top: 16px; width: auto; padding: 12px 24px;">Yangi qarz qo'shish</button>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = `
+            <div style="padding: 16px; background: white; border-bottom: 1px solid rgba(0,0,0,0.1); position: sticky; top: 0; z-index: 10;">
+                <button onclick="backToContacts()" style="background: none; border: none; color: #5A8EF4; font-size: 16px; cursor: pointer; display: flex; align-items: center; gap: 8px;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M19 12H5M12 19l-7-7 7-7"/>
+                    </svg>
+                    Orqaga
+                </button>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 600;">${displayName}</h3>
+                    <button class="add-btn" onclick="showAddDebtModal()" style="width: 36px; height: 36px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            ${debtsData.map(d => renderDebtCard(d)).join('')}
+        `;
+    } catch (error) {
+        console.error('Qarzlar yuklanmadi:', error);
+        if (container) container.innerHTML = '<div class="empty-state">Xatolik yuz berdi</div>';
+    }
+}
+
+// Qarz kartasini render qilish
+function renderDebtCard(d) {
+    const isGiven = d.debt_type === 'given';
+    const amountClass = isGiven ? 'given' : 'taken';
+    const sign = isGiven ? '-' : '+';
+    const remaining = (d.amount || 0) - (d.paid_amount || 0);
+    
+    const date = new Date(d.created_at);
+    const dateStr = date.toLocaleDateString('uz-UZ', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric'
+    });
+    
+    return `
+        <div class="debt-card ${amountClass}" onclick="showDebtDetail(${d.id})">
+            <div class="debt-header">
+                <div>
+                    <div class="debt-amount ${amountClass}">
+                        ${sign} ${formatCurrency(remaining, d.currency || 'UZS')}
+                    </div>
+                    ${d.description ? `<div class="debt-description">${d.description}</div>` : ''}
+                </div>
+                <div class="debt-actions">
+                    <button class="debt-action-btn" onclick="event.stopPropagation(); editDebt(${d.id})">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <div class="debt-meta">
+                <span>${dateStr}</span>
+                <span>${isGiven ? 'Berdim' : 'Oldim'}</span>
+            </div>
+        </div>
+    `;
+}
+
+// Orqaga (kontaktlar ro'yxatiga)
+function backToContacts() {
+    hapticFeedback('light');
+    currentContactId = null;
+    const contactsList = document.getElementById('contactsList');
+    const debtsList = document.getElementById('debtsList');
+    
+    if (contactsList) contactsList.style.display = 'block';
+    if (debtsList) debtsList.style.display = 'none';
+}
+
+// Modal funksiyalari
+function showAddContactModal() {
+    hapticFeedback('light');
+    const modal = document.getElementById('addContactModal');
+    if (modal) modal.classList.add('active');
+}
+
+function closeAddContactModal() {
+    hapticFeedback('light');
+    const modal = document.getElementById('addContactModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.getElementById('addContactForm').reset();
+    }
+}
+
+async function handleAddContact(event) {
+    event.preventDefault();
+    hapticFeedback('medium');
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    const data = {
+        name: formData.get('name'),
+        phone: formData.get('phone') || null,
+        notes: formData.get('notes') || null
+    };
+    
+    try {
+        await apiRequest('/api/contacts', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        
+        hapticFeedback('success');
+        closeAddContactModal();
+        await loadContacts();
+    } catch (error) {
+        hapticFeedback('error');
+        alert('Xatolik yuz berdi: ' + error.message);
+    }
+}
+
+function showAddDebtModal() {
+    hapticFeedback('light');
+    const modal = document.getElementById('addDebtModal');
+    if (modal) modal.classList.add('active');
+}
+
+function closeAddDebtModal() {
+    hapticFeedback('light');
+    const modal = document.getElementById('addDebtModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.getElementById('addDebtForm').reset();
+    }
+}
+
+async function handleAddDebt(event) {
+    event.preventDefault();
+    hapticFeedback('medium');
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    const data = {
+        debt_type: formData.get('debt_type'),
+        amount: parseFloat(formData.get('amount')),
+        currency: formData.get('currency'),
+        description: formData.get('description') || null,
+        due_date: formData.get('due_date') || null
+    };
+    
+    // Contact ID yoki person_name
+    if (currentContactId) {
+        if (typeof currentContactId === 'number') {
+            data.contact_id = currentContactId;
+        } else {
+            data.person_name = currentContactId;
+        }
+    }
+    
+    try {
+        await apiRequest('/api/debts', {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        
+        hapticFeedback('success');
+        closeAddDebtModal();
+        if (currentContactId) {
+            await loadDebtsForContact(currentContactId);
+        } else {
+            await loadContacts();
+        }
+    } catch (error) {
+        hapticFeedback('error');
+        alert('Xatolik yuz berdi: ' + error.message);
+    }
+}
+
+// Qarz ma'lumotlarini ko'rsatish
+async function showDebtDetail(debtId) {
+    hapticFeedback('light');
+    const modal = document.getElementById('debtDetailModal');
+    const content = document.getElementById('debtDetailContent');
+    
+    if (!modal || !content) return;
+    
+    try {
+        const debt = debtsData.find(d => d.id === debtId);
+        if (!debt) {
+            // API dan olish
+            const allDebts = await apiRequest('/api/debts');
+            const foundDebt = allDebts.find(d => d.id === debtId);
+            if (foundDebt) {
+                await renderDebtDetail(foundDebt, content);
+                modal.classList.add('active');
+            }
+            return;
+        }
+        
+        await renderDebtDetail(debt, content);
+        modal.classList.add('active');
+    } catch (error) {
+        console.error('Qarz ma\'lumotlarini olishda xatolik:', error);
+        alert('Xatolik yuz berdi');
+    }
+}
+
+// Qarz ma'lumotlarini render qilish
+async function renderDebtDetail(debt, container) {
+    const isGiven = debt.debt_type === 'given';
+    const remaining = (debt.amount || 0) - (debt.paid_amount || 0);
+    const date = new Date(debt.created_at);
+    const dateStr = date.toLocaleDateString('uz-UZ', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+    });
+    
+    // Eslatmalarni olish
+    let reminders = [];
+    try {
+        reminders = await apiRequest(`/api/debts/${debt.id}/reminders`);
+    } catch (e) {
+        console.log('Eslatmalar olinmadi');
+    }
+    
+    container.innerHTML = `
+        <div style="margin-bottom: 20px;">
+            <div style="font-size: 14px; color: #666; margin-bottom: 8px;">Qarz turi</div>
+            <div style="font-size: 18px; font-weight: 600; color: ${isGiven ? '#ef4444' : '#10b981'};">
+                ${isGiven ? 'Berdim' : 'Oldim'}
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <div style="font-size: 14px; color: #666; margin-bottom: 8px;">Summa</div>
+            <div style="font-size: 24px; font-weight: 700; color: #1a1a1a;">
+                ${formatCurrency(debt.amount, debt.currency || 'UZS')}
+            </div>
+        </div>
+        
+        ${debt.paid_amount > 0 ? `
+        <div style="margin-bottom: 20px;">
+            <div style="font-size: 14px; color: #666; margin-bottom: 8px;">To'langan</div>
+            <div style="font-size: 18px; font-weight: 600; color: #10b981;">
+                ${formatCurrency(debt.paid_amount, debt.currency || 'UZS')}
+            </div>
+        </div>
+        
+        <div style="margin-bottom: 20px;">
+            <div style="font-size: 14px; color: #666; margin-bottom: 8px;">Qolgan</div>
+            <div style="font-size: 18px; font-weight: 600; color: #1a1a1a;">
+                ${formatCurrency(remaining, debt.currency || 'UZS')}
+            </div>
+        </div>
+        ` : ''}
+        
+        ${debt.description ? `
+        <div style="margin-bottom: 20px;">
+            <div style="font-size: 14px; color: #666; margin-bottom: 8px;">Izoh</div>
+            <div style="font-size: 16px; color: #1a1a1a;">${debt.description}</div>
+        </div>
+        ` : ''}
+        
+        <div style="margin-bottom: 20px;">
+            <div style="font-size: 14px; color: #666; margin-bottom: 8px;">Sana</div>
+            <div style="font-size: 16px; color: #1a1a1a;">${dateStr}</div>
+        </div>
+        
+        ${debt.due_date ? `
+        <div style="margin-bottom: 20px;">
+            <div style="font-size: 14px; color: #666; margin-bottom: 8px;">Muddat</div>
+            <div style="font-size: 16px; color: #1a1a1a;">${formatDate(debt.due_date)}</div>
+        </div>
+        ` : ''}
+        
+        <div style="margin-top: 24px; padding-top: 20px; border-top: 1px solid rgba(0,0,0,0.1);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div style="font-size: 16px; font-weight: 600;">Eslatmalar</div>
+                <button onclick="showAddDebtReminderModal(${debt.id})" style="background: #5A8EF4; color: white; border: none; padding: 8px 16px; border-radius: 8px; font-size: 14px; cursor: pointer;">
+                    + Qo'shish
+                </button>
+            </div>
+            <div id="debtRemindersList">
+                ${reminders.length > 0 ? reminders.map(r => `
+                    <div style="background: #f5f5f5; padding: 12px; border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-size: 14px; font-weight: 500;">${formatDate(r.reminder_date)}</div>
+                            ${r.notes ? `<div style="font-size: 12px; color: #666; margin-top: 4px;">${r.notes}</div>` : ''}
+                        </div>
+                        <button onclick="deleteDebtReminder(${r.id}, ${debt.id})" style="background: none; border: none; color: #ef4444; cursor: pointer; padding: 4px 8px;">
+                            ✕
+                        </button>
+                    </div>
+                `).join('') : '<div style="color: #999; font-size: 14px;">Eslatmalar yo\'q</div>'}
+            </div>
+        </div>
+        
+        <div class="modal-actions" style="margin-top: 24px;">
+            <button class="btn-cancel" onclick="closeDebtDetailModal()">Yopish</button>
+            <button class="btn-primary" onclick="editDebt(${debt.id})">Tahrirlash</button>
+        </div>
+    `;
+}
+
+function closeDebtDetailModal() {
+    hapticFeedback('light');
+    const modal = document.getElementById('debtDetailModal');
+    if (modal) modal.classList.remove('active');
+}
+
+// Qarzni tahrirlash
+async function editDebt(debtId) {
+    hapticFeedback('light');
+    closeDebtDetailModal();
+    
+    const debt = debtsData.find(d => d.id === debtId);
+    if (!debt) return;
+    
+    // Tahrirlash modal yaratish
+    const editModal = document.createElement('div');
+    editModal.className = 'modal active';
+    editModal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Qarzni tahrirlash</h3>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">✕</button>
+            </div>
+            <form onsubmit="handleUpdateDebt(event, ${debtId})">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Summa</label>
+                        <input type="number" name="amount" value="${debt.amount}" required step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>To'langan summa</label>
+                        <input type="number" name="paid_amount" value="${debt.paid_amount || 0}" step="0.01">
+                    </div>
+                    <div class="form-group">
+                        <label>Izoh</label>
+                        <input type="text" name="description" value="${debt.description || ''}">
+                    </div>
+                    <div class="form-group">
+                        <label>Muddat</label>
+                        <input type="date" name="due_date" value="${debt.due_date ? debt.due_date.split('T')[0] : ''}">
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="this.closest('.modal').remove()">Bekor qilish</button>
+                    <button type="submit" class="btn-primary">Saqlash</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(editModal);
+}
+
+async function handleUpdateDebt(event, debtId) {
+    event.preventDefault();
+    hapticFeedback('medium');
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    const data = {
+        amount: parseFloat(formData.get('amount')),
+        paid_amount: parseFloat(formData.get('paid_amount') || 0),
+        description: formData.get('description') || null,
+        due_date: formData.get('due_date') || null
+    };
+    
+    try {
+        await apiRequest(`/api/debts/${debtId}`, {
+            method: 'PATCH',
+            body: JSON.stringify(data)
+        });
+        
+        hapticFeedback('success');
+        event.target.closest('.modal').remove();
+        if (currentContactId) {
+            await loadDebtsForContact(currentContactId);
+        } else {
+            await loadContacts();
+        }
+    } catch (error) {
+        hapticFeedback('error');
+        alert('Xatolik yuz berdi: ' + error.message);
+    }
+}
+
+// Qarz eslatmasi qo'shish
+function showAddDebtReminderModal(debtId) {
+    hapticFeedback('light');
+    const modal = document.createElement('div');
+    modal.className = 'modal active';
+    modal.innerHTML = `
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Eslatma qo'shish</h3>
+                <button class="modal-close" onclick="this.closest('.modal').remove()">✕</button>
+            </div>
+            <form onsubmit="handleAddDebtReminder(event, ${debtId})">
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Sana</label>
+                        <input type="date" name="reminder_date" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Vaqt (ixtiyoriy)</label>
+                        <input type="time" name="reminder_time">
+                    </div>
+                    <div class="form-group">
+                        <label>Izoh (ixtiyoriy)</label>
+                        <textarea name="notes" rows="3" placeholder="Eslatma haqida izoh"></textarea>
+                    </div>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn-cancel" onclick="this.closest('.modal').remove()">Bekor qilish</button>
+                    <button type="submit" class="btn-primary">Qo'shish</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    
+    // Bugungi sanani default qilish
+    const dateInput = modal.querySelector('input[name="reminder_date"]');
+    if (dateInput) {
+        dateInput.value = new Date().toISOString().split('T')[0];
+    }
+}
+
+async function handleAddDebtReminder(event, debtId) {
+    event.preventDefault();
+    hapticFeedback('medium');
+    
+    const form = event.target;
+    const formData = new FormData(form);
+    const data = {
+        reminder_date: formData.get('reminder_date'),
+        reminder_time: formData.get('reminder_time') || null,
+        notes: formData.get('notes') || null
+    };
+    
+    try {
+        await apiRequest(`/api/debts/${debtId}/reminders`, {
+            method: 'POST',
+            body: JSON.stringify(data)
+        });
+        
+        hapticFeedback('success');
+        event.target.closest('.modal').remove();
+        // Qarz ma'lumotlarini yangilash
+        await showDebtDetail(debtId);
+    } catch (error) {
+        hapticFeedback('error');
+        alert('Xatolik yuz berdi: ' + error.message);
+    }
+}
+
+async function deleteDebtReminder(reminderId, debtId) {
+    hapticFeedback('light');
+    
+    if (!confirm('Eslatmani o\'chirishni tasdiqlaysizmi?')) return;
+    
+    try {
+        await apiRequest(`/api/debts/reminders/${reminderId}`, {
+            method: 'DELETE'
+        });
+        
+        hapticFeedback('success');
+        await showDebtDetail(debtId);
+    } catch (error) {
+        hapticFeedback('error');
+        alert('Xatolik yuz berdi: ' + error.message);
+    }
+}
+
+// Eski funksiya (backward compatibility)
+async function loadDebts(filter = 'all') {
+    await loadContacts();
 }
 
 // ============================================

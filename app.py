@@ -6,7 +6,10 @@ from database import (
     get_statistics, get_debts, add_debt, get_reminders,
     get_balance_and_statistics, get_income_trend, get_top_expense_categories,
     get_expense_by_category, add_reminder, update_reminder_status,
-    get_subscription_payments
+    get_subscription_payments,
+    get_contacts, get_contact_by_id, add_contact, update_contact, delete_contact,
+    get_debt_by_id, update_debt, delete_debt,
+    get_debt_reminders, add_debt_reminder, delete_debt_reminder
 )
 import os
 import hmac
@@ -383,6 +386,104 @@ def api_get_expense_by_category():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/contacts', methods=['GET'])
+def api_get_contacts():
+    """Kontaktlar ro'yxatini olish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        contacts = get_contacts(user_id)
+        
+        # Datetime ni string ga konvertatsiya qilish
+        for c in contacts:
+            for key, value in c.items():
+                if isinstance(value, datetime):
+                    c[key] = value.isoformat()
+                elif isinstance(value, type(None)):
+                    c[key] = None
+        
+        return jsonify(contacts)
+    except Exception as e:
+        print(f"❌ API: Kontaktlarni olishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/contacts', methods=['POST'])
+def api_add_contact():
+    """Yangi kontakt qo'shish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        data = request.get_json()
+        name = data.get('name')
+        phone = data.get('phone')
+        notes = data.get('notes')
+        
+        if not name:
+            return jsonify({'error': 'Name majburiy'}), 400
+        
+        contact_id = add_contact(user_id, name, phone, notes)
+        
+        if contact_id:
+            return jsonify({'success': True, 'id': contact_id}), 201
+        else:
+            return jsonify({'success': True, 'id': None, 'message': 'Kontakt qo\'shildi (faqat nom bilan)'}), 201
+    except Exception as e:
+        print(f"❌ API: Kontakt qo'shishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/contacts/<int:contact_id>', methods=['PUT', 'PATCH'])
+def api_update_contact(contact_id):
+    """Kontaktni yangilash"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        data = request.get_json()
+        name = data.get('name')
+        phone = data.get('phone')
+        notes = data.get('notes')
+        
+        success = update_contact(user_id, contact_id, name, phone, notes)
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Kontakt yangilandi'})
+        else:
+            return jsonify({'error': 'Kontakt yangilanmadi'}), 500
+    except Exception as e:
+        print(f"❌ API: Kontakt yangilashda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/contacts/<int:contact_id>', methods=['DELETE'])
+def api_delete_contact(contact_id):
+    """Kontaktni o'chirish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        success = delete_contact(user_id, contact_id)
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Kontakt o\'chirildi'})
+        else:
+            return jsonify({'error': 'Kontakt o\'chirilmadi'}), 500
+    except Exception as e:
+        print(f"❌ API: Kontakt o'chirishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/debts', methods=['GET'])
 def api_get_debts():
     """Qarzlar ro'yxatini olish"""
@@ -391,25 +492,183 @@ def api_get_debts():
         if not user_id:
             return jsonify({'error': 'Unauthorized'}), 401
         
-        debts = get_debts(user_id)
+        contact_id = request.args.get('contact_id')
+        if contact_id:
+            contact_id = int(contact_id)
+        
+        debts = get_debts(user_id, contact_id)
         
         # Decimal ni float ga konvertatsiya qilish
         for d in debts:
             for key, value in d.items():
                 if isinstance(value, Decimal):
                     d[key] = float(value)
+                elif isinstance(value, datetime):
+                    d[key] = value.isoformat()
                 elif isinstance(value, type(None)):
                     d[key] = None
         
         return jsonify(debts)
     except Exception as e:
+        print(f"❌ API: Qarzlarni olishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-# POST endpoint'lar olib tashlandi - faqat ko'rsatish rejimi
-# @app.route('/api/debts', methods=['POST'])
-# def api_add_debt():
-#     """Yangi qarz qo'shish - O'CHIRILGAN (faqat ko'rsatish rejimi)"""
-#     return jsonify({'error': 'Qo\'shish funksiyasi o\'chirilgan'}), 403
+@app.route('/api/debts', methods=['POST'])
+def api_add_debt():
+    """Yangi qarz qo'shish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        data = request.get_json()
+        debt_type = data.get('debt_type')  # 'given' yoki 'taken'
+        amount = data.get('amount')
+        contact_id = data.get('contact_id')
+        person_name = data.get('person_name')
+        currency = data.get('currency', 'UZS')
+        description = data.get('description')
+        due_date = data.get('due_date')
+        
+        if not debt_type or not amount:
+            return jsonify({'error': 'debt_type va amount majburiy'}), 400
+        
+        if not contact_id and not person_name:
+            return jsonify({'error': 'contact_id yoki person_name majburiy'}), 400
+        
+        debt_id = add_debt(user_id, debt_type, amount, contact_id, person_name, currency, description, due_date)
+        
+        if debt_id:
+            return jsonify({'success': True, 'id': debt_id}), 201
+        else:
+            return jsonify({'error': 'Qarz qo\'shilmadi'}), 500
+    except Exception as e:
+        print(f"❌ API: Qarz qo'shishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/debts/<int:debt_id>', methods=['PUT', 'PATCH'])
+def api_update_debt(debt_id):
+    """Qarzni yangilash"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        data = request.get_json()
+        amount = data.get('amount')
+        paid_amount = data.get('paid_amount')
+        description = data.get('description')
+        due_date = data.get('due_date')
+        status = data.get('status')
+        
+        success = update_debt(user_id, debt_id, amount, paid_amount, description, due_date, status)
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Qarz yangilandi'})
+        else:
+            return jsonify({'error': 'Qarz yangilanmadi'}), 500
+    except Exception as e:
+        print(f"❌ API: Qarz yangilashda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/debts/<int:debt_id>', methods=['DELETE'])
+def api_delete_debt(debt_id):
+    """Qarzni o'chirish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        success = delete_debt(user_id, debt_id)
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Qarz o\'chirildi'})
+        else:
+            return jsonify({'error': 'Qarz o\'chirilmadi'}), 500
+    except Exception as e:
+        print(f"❌ API: Qarz o'chirishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/debts/<int:debt_id>/reminders', methods=['GET'])
+def api_get_debt_reminders(debt_id):
+    """Qarz eslatmalarini olish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        reminders = get_debt_reminders(user_id, debt_id)
+        
+        # Datetime ni string ga konvertatsiya qilish
+        for r in reminders:
+            for key, value in r.items():
+                if isinstance(value, datetime):
+                    r[key] = value.isoformat()
+                elif isinstance(value, type(None)):
+                    r[key] = None
+        
+        return jsonify(reminders)
+    except Exception as e:
+        print(f"❌ API: Qarz eslatmalarini olishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/debts/<int:debt_id>/reminders', methods=['POST'])
+def api_add_debt_reminder(debt_id):
+    """Qarz uchun eslatma qo'shish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        data = request.get_json()
+        reminder_date = data.get('reminder_date')
+        reminder_time = data.get('reminder_time')
+        notes = data.get('notes')
+        
+        if not reminder_date:
+            return jsonify({'error': 'reminder_date majburiy'}), 400
+        
+        reminder_id = add_debt_reminder(user_id, debt_id, reminder_date, reminder_time, notes)
+        
+        if reminder_id:
+            return jsonify({'success': True, 'id': reminder_id}), 201
+        else:
+            return jsonify({'error': 'Eslatma qo\'shilmadi'}), 500
+    except Exception as e:
+        print(f"❌ API: Qarz eslatmasi qo'shishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/debts/reminders/<int:reminder_id>', methods=['DELETE'])
+def api_delete_debt_reminder(reminder_id):
+    """Qarz eslatmasini o'chirish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        success = delete_debt_reminder(user_id, reminder_id)
+        
+        if success:
+            return jsonify({'success': True, 'message': 'Eslatma o\'chirildi'})
+        else:
+            return jsonify({'error': 'Eslatma o\'chirilmadi'}), 500
+    except Exception as e:
+        print(f"❌ API: Qarz eslatmasini o'chirishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/reminders', methods=['GET', 'POST'])
 def api_reminders():

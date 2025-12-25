@@ -354,34 +354,367 @@ def get_statistics(user_id, days=30):
     finally:
         connection.close()
 
-def get_debts(user_id):
-    """Qarzlar ro'yxatini olish"""
+def get_contacts(user_id):
+    """Kontaktlar ro'yxatini olish"""
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
+            # Avval contacts jadvalini tekshiramiz
+            try:
+                cursor.execute("""
+                    SELECT * FROM contacts 
+                    WHERE user_id = %s 
+                    ORDER BY name ASC
+                """, (user_id,))
+                contacts = cursor.fetchall()
+                if contacts:
+                    return contacts
+            except:
+                # Agar contacts jadvali yo'q bo'lsa, debts'dan kontaktlarni olamiz
+                pass
+            
+            # Debts jadvalidan noyob kontaktlarni olish
             cursor.execute("""
-                SELECT * FROM debts 
-                WHERE user_id = %s AND status = 'active'
-                ORDER BY created_at DESC
+                SELECT DISTINCT person_name as name, 
+                       MIN(created_at) as created_at,
+                       COUNT(*) as debts_count
+                FROM debts 
+                WHERE user_id = %s AND person_name IS NOT NULL AND person_name != ''
+                GROUP BY person_name
+                ORDER BY name ASC
             """, (user_id,))
-            return cursor.fetchall()
+            results = cursor.fetchall()
+            
+            # Formatlash
+            contacts = []
+            for row in results:
+                contacts.append({
+                    'id': None,
+                    'user_id': user_id,
+                    'name': row['name'],
+                    'phone': None,
+                    'notes': None,
+                    'created_at': row['created_at'],
+                    'debts_count': row['debts_count']
+                })
+            
+            return contacts
     except Exception as e:
-        print(f"❌ Qarzlarni olishda xatolik: {e}")
+        print(f"❌ Kontaktlarni olishda xatolik: {e}")
         return []
     finally:
         connection.close()
 
-def add_debt(user_id, debt_type, amount, person_name, due_date=None):
+def get_contact_by_id(user_id, contact_id):
+    """Kontaktni ID bo'yicha olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT * FROM contacts 
+                WHERE id = %s AND user_id = %s
+            """, (contact_id, user_id))
+            return cursor.fetchone()
+    except Exception as e:
+        print(f"❌ Kontaktni olishda xatolik: {e}")
+        return None
+    finally:
+        connection.close()
+
+def add_contact(user_id, name, phone=None, notes=None):
+    """Yangi kontakt qo'shish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Avval contacts jadvalini tekshiramiz
+            try:
+                query = """INSERT INTO contacts (user_id, name, phone, notes, created_at)
+                           VALUES (%s, %s, %s, %s, %s)"""
+                cursor.execute(query, (user_id, name, phone, notes, datetime.now()))
+                connection.commit()
+                return cursor.lastrowid
+            except:
+                # Agar contacts jadvali yo'q bo'lsa, faqat ID qaytaramiz
+                return None
+    except Exception as e:
+        print(f"❌ Kontakt qo'shishda xatolik: {e}")
+        return None
+    finally:
+        connection.close()
+
+def update_contact(user_id, contact_id, name=None, phone=None, notes=None):
+    """Kontaktni yangilash"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            updates = []
+            params = []
+            
+            if name is not None:
+                updates.append("name = %s")
+                params.append(name)
+            if phone is not None:
+                updates.append("phone = %s")
+                params.append(phone)
+            if notes is not None:
+                updates.append("notes = %s")
+                params.append(notes)
+            
+            if not updates:
+                return False
+            
+            params.extend([contact_id, user_id])
+            query = f"UPDATE contacts SET {', '.join(updates)} WHERE id = %s AND user_id = %s"
+            cursor.execute(query, params)
+            connection.commit()
+            return cursor.rowcount > 0
+    except Exception as e:
+        print(f"❌ Kontaktni yangilashda xatolik: {e}")
+        return False
+    finally:
+        connection.close()
+
+def delete_contact(user_id, contact_id):
+    """Kontaktni o'chirish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                DELETE FROM contacts 
+                WHERE id = %s AND user_id = %s
+            """, (contact_id, user_id))
+            connection.commit()
+            return cursor.rowcount > 0
+    except Exception as e:
+        print(f"❌ Kontaktni o'chirishda xatolik: {e}")
+        return False
+    finally:
+        connection.close()
+
+def get_debts(user_id, contact_id=None):
+    """Qarzlar ro'yxatini olish (kontakt bo'yicha filterlash mumkin)"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            if contact_id:
+                # Contact ID bo'yicha qarzlar
+                cursor.execute("""
+                    SELECT d.*, c.name as contact_name, c.phone as contact_phone
+                    FROM debts d
+                    LEFT JOIN contacts c ON d.contact_id = c.id
+                    WHERE d.user_id = %s AND d.contact_id = %s AND d.status = 'active'
+                    ORDER BY d.created_at DESC
+                """, (user_id, contact_id))
+            else:
+                # Barcha qarzlar
+                cursor.execute("""
+                    SELECT d.*, 
+                           COALESCE(c.name, d.person_name) as contact_name,
+                           c.phone as contact_phone
+                    FROM debts d
+                    LEFT JOIN contacts c ON d.contact_id = c.id
+                    WHERE d.user_id = %s AND d.status = 'active'
+                    ORDER BY d.created_at DESC
+                """, (user_id,))
+            return cursor.fetchall()
+    except Exception as e:
+        # Agar contact_id ustuni yo'q bo'lsa, eski usul
+        try:
+            if contact_id:
+                # Person name bo'yicha filterlash
+                cursor.execute("""
+                    SELECT * FROM debts 
+                    WHERE user_id = %s AND person_name = %s AND status = 'active'
+                    ORDER BY created_at DESC
+                """, (user_id, contact_id))
+            else:
+                cursor.execute("""
+                    SELECT * FROM debts 
+                    WHERE user_id = %s AND status = 'active'
+                    ORDER BY created_at DESC
+                """, (user_id,))
+            return cursor.fetchall()
+        except Exception as e2:
+            print(f"❌ Qarzlarni olishda xatolik: {e2}")
+            return []
+    finally:
+        connection.close()
+
+def get_debt_by_id(user_id, debt_id):
+    """Qarzni ID bo'yicha olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT d.*, 
+                       COALESCE(c.name, d.person_name) as contact_name,
+                       c.phone as contact_phone
+                FROM debts d
+                LEFT JOIN contacts c ON d.contact_id = c.id
+                WHERE d.id = %s AND d.user_id = %s
+            """, (debt_id, user_id))
+            return cursor.fetchone()
+    except:
+        try:
+            cursor.execute("""
+                SELECT * FROM debts 
+                WHERE id = %s AND user_id = %s
+            """, (debt_id, user_id))
+            return cursor.fetchone()
+        except Exception as e:
+            print(f"❌ Qarzni olishda xatolik: {e}")
+            return None
+    finally:
+        connection.close()
+
+def add_debt(user_id, debt_type, amount, contact_id=None, person_name=None, currency='UZS', description=None, due_date=None):
     """Yangi qarz qo'shish"""
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            query = """INSERT INTO debts 
-                       (user_id, debt_type, amount, paid_amount, person_name, due_date, status, created_at, updated_at)
-                       VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"""
-            cursor.execute(query, (user_id, debt_type, amount, 0, person_name, due_date, 'active', datetime.now(), datetime.now()))
+            # Contact name ni olish
+            contact_name = person_name
+            if contact_id:
+                contact = get_contact_by_id(user_id, contact_id)
+                if contact:
+                    contact_name = contact.get('name')
+            
+            # Contact ID yoki person_name bo'yicha qarz qo'shish
+            try:
+                query = """INSERT INTO debts 
+                           (user_id, debt_type, amount, paid_amount, contact_id, person_name, currency, description, due_date, status, created_at, updated_at)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                cursor.execute(query, (user_id, debt_type, amount, 0, contact_id, contact_name, currency, description, due_date, 'active', datetime.now(), datetime.now()))
+            except:
+                # Agar contact_id ustuni yo'q bo'lsa
+                query = """INSERT INTO debts 
+                           (user_id, debt_type, amount, paid_amount, person_name, currency, description, due_date, status, created_at, updated_at)
+                           VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"""
+                cursor.execute(query, (user_id, debt_type, amount, 0, contact_name, currency, description, due_date, 'active', datetime.now(), datetime.now()))
+            
             connection.commit()
             return cursor.lastrowid
+    except Exception as e:
+        print(f"❌ Qarz qo'shishda xatolik: {e}")
+        return None
+    finally:
+        connection.close()
+
+def update_debt(user_id, debt_id, amount=None, paid_amount=None, description=None, due_date=None, status=None):
+    """Qarzni yangilash"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            updates = []
+            params = []
+            
+            if amount is not None:
+                updates.append("amount = %s")
+                params.append(amount)
+            if paid_amount is not None:
+                updates.append("paid_amount = %s")
+                params.append(paid_amount)
+            if description is not None:
+                updates.append("description = %s")
+                params.append(description)
+            if due_date is not None:
+                updates.append("due_date = %s")
+                params.append(due_date)
+            if status is not None:
+                updates.append("status = %s")
+                params.append(status)
+            
+            if not updates:
+                return False
+            
+            updates.append("updated_at = %s")
+            params.append(datetime.now())
+            params.extend([debt_id, user_id])
+            
+            query = f"UPDATE debts SET {', '.join(updates)} WHERE id = %s AND user_id = %s"
+            cursor.execute(query, params)
+            connection.commit()
+            return cursor.rowcount > 0
+    except Exception as e:
+        print(f"❌ Qarzni yangilashda xatolik: {e}")
+        return False
+    finally:
+        connection.close()
+
+def delete_debt(user_id, debt_id):
+    """Qarzni o'chirish (yoki status'ni 'deleted' qilish)"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Status'ni 'deleted' qilish (soft delete)
+            cursor.execute("""
+                UPDATE debts 
+                SET status = 'deleted', updated_at = %s
+                WHERE id = %s AND user_id = %s
+            """, (datetime.now(), debt_id, user_id))
+            connection.commit()
+            return cursor.rowcount > 0
+    except Exception as e:
+        print(f"❌ Qarzni o'chirishda xatolik: {e}")
+        return False
+    finally:
+        connection.close()
+
+def get_debt_reminders(user_id, debt_id=None):
+    """Qarz eslatmalarini olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            if debt_id:
+                cursor.execute("""
+                    SELECT * FROM debt_reminders 
+                    WHERE user_id = %s AND debt_id = %s
+                    ORDER BY reminder_date ASC
+                """, (user_id, debt_id))
+            else:
+                cursor.execute("""
+                    SELECT * FROM debt_reminders 
+                    WHERE user_id = %s
+                    ORDER BY reminder_date ASC
+                """, (user_id,))
+            return cursor.fetchall()
+    except:
+        # Agar debt_reminders jadvali yo'q bo'lsa
+        return []
+    finally:
+        connection.close()
+
+def add_debt_reminder(user_id, debt_id, reminder_date, reminder_time=None, notes=None):
+    """Qarz uchun eslatma qo'shish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            query = """INSERT INTO debt_reminders 
+                       (user_id, debt_id, reminder_date, reminder_time, notes, is_completed, created_at)
+                       VALUES (%s, %s, %s, %s, %s, FALSE, %s)"""
+            cursor.execute(query, (user_id, debt_id, reminder_date, reminder_time, notes, datetime.now()))
+            connection.commit()
+            return cursor.lastrowid
+    except Exception as e:
+        print(f"❌ Qarz eslatmasi qo'shishda xatolik: {e}")
+        return None
+    finally:
+        connection.close()
+
+def delete_debt_reminder(user_id, reminder_id):
+    """Qarz eslatmasini o'chirish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                DELETE FROM debt_reminders 
+                WHERE id = %s AND user_id = %s
+            """, (reminder_id, user_id))
+            connection.commit()
+            return cursor.rowcount > 0
+    except Exception as e:
+        print(f"❌ Qarz eslatmasini o'chirishda xatolik: {e}")
+        return False
     finally:
         connection.close()
 
