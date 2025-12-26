@@ -19,4 +19,5 @@ class Config:
     
     # Telegram Mini App konfiguratsiyasi
     TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
+    TELEGRAM_BOT_USERNAME = os.getenv('TELEGRAM_BOT_USERNAME', 'BalansAiBot')  # Bot username (@username)
 

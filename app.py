@@ -144,6 +144,13 @@ def index():
     """Asosiy sahifa (SPA)"""
     return render_template('index.html')
 
+@app.route('/api/config', methods=['GET'])
+def get_config():
+    """Ilova konfiguratsiyasini olish"""
+    return jsonify({
+        'bot_username': Config.TELEGRAM_BOT_USERNAME
+    })
+
 @app.route('/profile')
 def profile():
     """Profile sahifasi (alohida mini ilova)"""
@@ -226,7 +233,11 @@ def get_user_info():
         
         user = get_user(user_id)
         if not user:
-            return jsonify({'error': 'User not found'}), 404
+            return jsonify({
+                'error': 'User not found',
+                'message': 'Ro\'yxatdan o\'tmagansiz. Iltimos, avval Telegram bot orqali ro\'yxatdan o\'ting.',
+                'code': 'USER_NOT_FOUND'
+            }), 404
         
         tariff_expires_at = user.get('tariff_expires_at')
         if tariff_expires_at and isinstance(tariff_expires_at, datetime):

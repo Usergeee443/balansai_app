@@ -13,6 +13,16 @@ let currentPage = 'home';
 let loadedPages = new Set(['home', 'transactions']);
 let statsChart = null;
 
+// Pull to Refresh
+let pullToRefreshState = {
+    isPulling: false,
+    startY: 0,
+    currentY: 0,
+    threshold: 120, // Threshold'ni oshirdik
+    isRefreshing: false,
+    hasPulled: false // Pull qilinganligini kuzatish
+};
+
 // ============================================
 // TELEGRAM WEB APP
 // ============================================
@@ -23,7 +33,7 @@ if (tg) {
     // 1. Doim fullscreen qilish (yarim va to'liq formatlardan fullscreen'ga o'tkazish)
     function ensureFullscreen() {
         if (!tg.isExpanded) {
-            tg.expand();
+    tg.expand();
         }
     }
     
@@ -92,30 +102,240 @@ if (tg) {
     }, 500);
     
     // Pull-to-close'ni to'liq bloklash (touch event'larni bloklash)
+    // Bu funksiya pull-to-refresh bilan birga ishlaydi
+    // Pull-to-refresh pastga tortish, pull-to-close yuqoriga tortish
+}
+
+// ============================================
+// PULL TO REFRESH
+// ============================================
+
+function initPullToRefresh() {
+    const pullIndicator = document.getElementById('pullToRefresh');
+    if (!pullIndicator) return;
+    
     let touchStartY = 0;
     let touchStartX = 0;
+    let isPulling = false;
+    let pullDistance = 0;
+    let hasStartedPull = false;
     
+    // Touch start - faqat scroll top'da
     document.addEventListener('touchstart', (e) => {
-        touchStartY = e.touches[0].clientY;
-        touchStartX = e.touches[0].clientX;
+        // Faqat scroll top'da bo'lsa va refresh bo'lmasa
+        if (window.scrollY <= 3 && !pullToRefreshState.isRefreshing) {
+            touchStartY = e.touches[0].clientY;
+            touchStartX = e.touches[0].clientX;
+            isPulling = false;
+            pullDistance = 0;
+            hasStartedPull = false;
+            pullToRefreshState.hasPulled = false;
+        }
     }, { passive: true });
     
+    // Touch move - pastga tortishni detect qilish
     document.addEventListener('touchmove', (e) => {
+        // Agar scroll top'da emas yoki refresh bo'lsa, ishlamaydi
+        if (window.scrollY > 3 || pullToRefreshState.isRefreshing) {
+            if (isPulling) {
+                // Agar pull qilingan bo'lsa, to'xtatish
+                pullIndicator.classList.remove('active');
+                pullIndicator.style.opacity = '0';
+                const icon = pullIndicator.querySelector('.pull-to-refresh-icon');
+                if (icon) icon.style.transform = 'rotate(0deg)';
+                isPulling = false;
+                pullDistance = 0;
+            }
+            return;
+        }
+        
         const touchY = e.touches[0].clientY;
         const touchX = e.touches[0].clientX;
         const deltaY = touchY - touchStartY;
         const deltaX = Math.abs(touchX - touchStartX);
         
-        // Agar yuqoriga surilayotgan bo'lsa va gorizontal harakat kam bo'lsa (pull-to-close)
-        if (deltaY < -50 && deltaX < 30) {
-            // Scroll top'da bo'lsa, pull-to-close'ni bloklash
-            if (window.scrollY <= 0) {
-                e.preventDefault();
-                e.stopPropagation();
-                return false;
+        // Agar yuqoriga surilayotgan bo'lsa (pull-to-close), bloklash
+        if (deltaY < -20 && deltaX < 30 && window.scrollY <= 0) {
+            if (isPulling) {
+                // Agar pull qilingan bo'lsa, to'xtatish
+                pullIndicator.classList.remove('active');
+                pullIndicator.style.opacity = '0';
+                const icon = pullIndicator.querySelector('.pull-to-refresh-icon');
+                if (icon) icon.style.transform = 'rotate(0deg)';
+                isPulling = false;
+                pullDistance = 0;
             }
+            e.preventDefault();
+            e.stopPropagation();
+            return false;
+        }
+        
+        // Pastga tortilayotgan bo'lsa va gorizontal harakat kam bo'lsa
+        // Minimum 20px tortilishi kerak (accidental touch'larni oldini olish)
+        if (deltaY > 20 && deltaX < 50 && window.scrollY <= 0) {
+            e.preventDefault();
+            
+            if (!hasStartedPull) {
+                hasStartedPull = true;
+                pullToRefreshState.hasPulled = true;
+                hapticFeedback('light'); // Birinchi marta pull qilinganda
+            }
+            
+            isPulling = true;
+            // Pull distance'ni cheklash va smooth qilish (resistance effect)
+            // deltaY'ni 0.5 ga ko'paytiramiz (resistance)
+            const resistance = 0.5;
+            pullDistance = Math.min((deltaY - 20) * resistance + 20, pullToRefreshState.threshold * 1.2);
+            
+            // Progress hisoblash
+            const progress = Math.min(pullDistance / pullToRefreshState.threshold, 1);
+            
+            // Indicator ko'rsatish (faqat progress 0.1 dan katta bo'lsa)
+            if (progress > 0.1) {
+                pullIndicator.classList.add('active');
+                pullIndicator.style.opacity = Math.min(progress * 1.1, 1);
+                
+                // Icon rotation (180 gradusgacha)
+                const icon = pullIndicator.querySelector('.pull-to-refresh-icon');
+                if (icon) {
+                    icon.style.transform = `rotate(${progress * 180}deg)`;
+                }
+                
+                // Text o'zgartirish
+                const text = pullIndicator.querySelector('.pull-to-refresh-text');
+                if (text) {
+                    if (pullDistance >= pullToRefreshState.threshold) {
+                        text.textContent = 'Qo\'yib bering';
+                        text.style.color = '#5A8EF4';
+                        text.style.fontWeight = '600';
+                    } else {
+                        text.textContent = 'Yuklash uchun torting';
+                        text.style.color = '#666';
+                        text.style.fontWeight = '500';
+                    }
+                }
+            }
+        } else if (isPulling && deltaY <= 15) {
+            // Agar orqaga qaytilsa (15px dan kam), pull'ni to'xtatish
+            pullIndicator.classList.remove('active');
+            pullIndicator.style.opacity = '0';
+            const icon = pullIndicator.querySelector('.pull-to-refresh-icon');
+            if (icon) icon.style.transform = 'rotate(0deg)';
+            const text = pullIndicator.querySelector('.pull-to-refresh-text');
+            if (text) {
+                text.textContent = 'Yuklash uchun torting';
+                text.style.color = '#666';
+                text.style.fontWeight = '500';
+            }
+            isPulling = false;
+            pullDistance = 0;
+            hasStartedPull = false;
+            pullToRefreshState.hasPulled = false;
         }
     }, { passive: false });
+    
+    // Touch end - refresh qilish yoki qaytarish
+    document.addEventListener('touchend', async (e) => {
+        // Agar pull qilinmagan bo'lsa yoki refresh bo'lsa
+        if (!isPulling || pullToRefreshState.isRefreshing || !pullToRefreshState.hasPulled) {
+            if (isPulling) {
+                pullIndicator.classList.remove('active');
+                pullIndicator.style.opacity = '0';
+                const icon = pullIndicator.querySelector('.pull-to-refresh-icon');
+                if (icon) icon.style.transform = 'rotate(0deg)';
+            }
+            isPulling = false;
+            pullDistance = 0;
+            hasStartedPull = false;
+            pullToRefreshState.hasPulled = false;
+            return;
+        }
+        
+        // Threshold'dan oshgan bo'lsa, refresh qilish
+        if (pullDistance >= pullToRefreshState.threshold) {
+            pullToRefreshState.isRefreshing = true;
+            pullIndicator.classList.add('refreshing');
+            const textEl = pullIndicator.querySelector('.pull-to-refresh-text');
+            if (textEl) {
+                textEl.textContent = 'Yuklanmoqda...';
+                textEl.style.color = '#5A8EF4';
+            }
+            
+            hapticFeedback('medium');
+            
+            // Joriy sahifani refresh qilish
+            await refreshCurrentPage();
+            
+            // Refresh tugagach
+            setTimeout(() => {
+                pullToRefreshState.isRefreshing = false;
+                pullIndicator.classList.remove('active', 'refreshing');
+                pullIndicator.style.opacity = '0';
+                
+                const icon = pullIndicator.querySelector('.pull-to-refresh-icon');
+                if (icon) icon.style.transform = 'rotate(0deg)';
+                
+                if (textEl) {
+                    textEl.textContent = 'Yuklash uchun torting';
+                    textEl.style.color = '#666';
+                }
+                
+                hapticFeedback('success');
+            }, 300);
+        } else {
+            // Threshold'dan kam bo'lsa, qaytarish
+            pullIndicator.classList.remove('active');
+            pullIndicator.style.opacity = '0';
+            const icon = pullIndicator.querySelector('.pull-to-refresh-icon');
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        }
+        
+        isPulling = false;
+        pullDistance = 0;
+        hasStartedPull = false;
+        pullToRefreshState.hasPulled = false;
+    }, { passive: true });
+}
+
+// Joriy sahifani refresh qilish
+async function refreshCurrentPage() {
+    try {
+        switch(currentPage) {
+            case 'home':
+                await Promise.all([
+                    loadUserData(),
+                    loadTransactions(),
+                    loadStatistics()
+                ]);
+                // Currency balances
+                if (currentUser && currentUser.currency_balances) {
+                    renderCurrencies(currentUser.currency_balances);
+                }
+                break;
+            case 'transactions':
+                allTransactionsData = []; // Cache'ni tozalash
+                await loadAllTransactions(currentTransactionFilter, 
+                    document.getElementById('transactionSearch')?.value || '', 
+                    false);
+                break;
+            case 'statistics':
+                await loadAllStatistics();
+                break;
+            case 'reminders':
+                await loadReminders();
+                break;
+            case 'debts':
+                if (currentContactId) {
+                    await loadDebtsForContact(currentContactId, currentContactName);
+                } else {
+                    await loadContacts();
+                }
+                break;
+        }
+    } catch (error) {
+        console.error('Refresh xatosi:', error);
+        hapticFeedback('error');
+    }
 }
 
 // ============================================
@@ -294,8 +514,17 @@ async function apiRequest(endpoint, options = {}) {
         });
         
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Xatolik yuz berdi');
+            const error = await response.json().catch(() => ({ error: 'Xatolik yuz berdi' }));
+            
+            // User not found xatoligini alohida handle qilish
+            if (response.status === 404 && (error.error === 'User not found' || error.code === 'USER_NOT_FOUND')) {
+                const customError = new Error(error.error || 'User not found');
+                customError.code = 'USER_NOT_FOUND';
+                customError.status = 404;
+                throw customError;
+            }
+            
+            throw new Error(error.error || error.message || 'Xatolik yuz berdi');
         }
         
         return await response.json();
@@ -330,7 +559,51 @@ async function loadUserData() {
         return true;
     } catch (error) {
         console.error('User yuklanmadi:', error);
+        
+        // Agar user topilmasa (404), ro'yxatdan o'tmagan sahifani ko'rsatish
+        if (error.message && (error.message.includes('User not found') || error.message.includes('404'))) {
+            showNotRegisteredModal();
         return false;
+        }
+        
+        return false;
+    }
+}
+
+function showNotRegisteredModal() {
+    const modal = document.getElementById('notRegisteredModal');
+    if (modal) {
+        modal.classList.add('active');
+        // Barcha sahifalarni yashirish
+        document.querySelectorAll('.page').forEach(page => {
+            page.classList.remove('active');
+        });
+        // Bottom navigation'ni yashirish
+        const bottomNav = document.querySelector('.bottom-nav');
+        if (bottomNav) bottomNav.style.display = 'none';
+    }
+}
+
+async function openTelegramBot() {
+    hapticFeedback('medium');
+    
+    // Bot username'ni config'dan olish
+    let botUsername = 'BalansAiBot'; // Default
+    try {
+        const config = await apiRequest('/api/config');
+        if (config && config.bot_username) {
+            botUsername = config.bot_username;
+        }
+    } catch (error) {
+        console.log('Config olinmadi, default ishlatilmoqda');
+    }
+    
+    // Telegram bot'ga o'tish
+    if (tg && tg.openTelegramLink) {
+        tg.openTelegramLink(`https://t.me/${botUsername}`);
+    } else {
+        // Agar Telegram WebApp bo'lmasa, oddiy link
+        window.open(`https://t.me/${botUsername}`, '_blank');
     }
 }
 
@@ -1127,6 +1400,7 @@ async function toggleReminder(id, completed) {
 
 let currentDebtFilter = 'all';
 let currentContactId = null;
+let currentContactName = null;
 let contactsData = [];
 let debtsData = [];
 
@@ -1183,6 +1457,7 @@ async function loadContacts() {
 async function selectContact(contactId, contactName) {
     hapticFeedback('light');
     currentContactId = contactId;
+    currentContactName = contactName;
     
     // Qarzlar ro'yxatini ko'rsatish
     const contactsList = document.getElementById('contactsList');
@@ -1260,19 +1535,19 @@ async function loadDebtsForContact(contactId, contactName) {
 
 // Qarz kartasini render qilish
 function renderDebtCard(d) {
-    const isGiven = d.debt_type === 'given';
-    const amountClass = isGiven ? 'given' : 'taken';
-    const sign = isGiven ? '-' : '+';
+            const isGiven = d.debt_type === 'given';
+            const amountClass = isGiven ? 'given' : 'taken';
+            const sign = isGiven ? '-' : '+';
     const remaining = (d.amount || 0) - (d.paid_amount || 0);
-    
-    const date = new Date(d.created_at);
-    const dateStr = date.toLocaleDateString('uz-UZ', {
-        year: 'numeric',
+            
+            const date = new Date(d.created_at);
+            const dateStr = date.toLocaleDateString('uz-UZ', {
+                year: 'numeric',
         month: 'short',
-        day: 'numeric'
-    });
-    
-    return `
+                day: 'numeric'
+            });
+            
+            return `
         <div class="debt-card ${amountClass}" onclick="showDebtDetail(${d.id})">
             <div class="debt-header">
                 <div>
@@ -1302,6 +1577,7 @@ function renderDebtCard(d) {
 function backToContacts() {
     hapticFeedback('light');
     currentContactId = null;
+    currentContactName = null;
     const contactsList = document.getElementById('contactsList');
     const debtsList = document.getElementById('debtsList');
     
@@ -1399,7 +1675,7 @@ async function handleAddDebt(event) {
         hapticFeedback('success');
         closeAddDebtModal();
         if (currentContactId) {
-            await loadDebtsForContact(currentContactId);
+            await loadDebtsForContact(currentContactId, currentContactName);
         } else {
             await loadContacts();
         }
@@ -1461,7 +1737,7 @@ async function renderDebtDetail(debt, container) {
         <div style="margin-bottom: 20px;">
             <div style="font-size: 14px; color: #666; margin-bottom: 8px;">Qarz turi</div>
             <div style="font-size: 18px; font-weight: 600; color: ${isGiven ? '#ef4444' : '#10b981'};">
-                ${isGiven ? 'Berdim' : 'Oldim'}
+                        ${isGiven ? 'Berdim' : 'Oldim'}
             </div>
         </div>
         
@@ -1532,8 +1808,8 @@ async function renderDebtDetail(debt, container) {
         <div class="modal-actions" style="margin-top: 24px;">
             <button class="btn-cancel" onclick="closeDebtDetailModal()">Yopish</button>
             <button class="btn-primary" onclick="editDebt(${debt.id})">Tahrirlash</button>
-        </div>
-    `;
+                </div>
+            `;
 }
 
 function closeDebtDetailModal() {
@@ -1610,7 +1886,7 @@ async function handleUpdateDebt(event, debtId) {
         hapticFeedback('success');
         event.target.closest('.modal').remove();
         if (currentContactId) {
-            await loadDebtsForContact(currentContactId);
+            await loadDebtsForContact(currentContactId, currentContactName);
         } else {
             await loadContacts();
         }
@@ -1718,6 +1994,9 @@ async function loadDebts(filter = 'all') {
 // ============================================
 
 document.addEventListener('DOMContentLoaded', async () => {
+    // Pull to refresh'ni ishga tushirish
+    initPullToRefresh();
+    
     // Ilova darhol ochilsin, skeleton loading bilan
     // Home page skeleton ko'rsatish
     showHomePageSkeleton();

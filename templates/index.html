@@ -15,6 +15,16 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
+    <!-- Pull to Refresh Indicator -->
+    <div id="pullToRefresh" class="pull-to-refresh">
+        <div class="pull-to-refresh-icon">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+            </svg>
+        </div>
+        <div class="pull-to-refresh-text">Yuklash uchun torting</div>
+    </div>
+
     <!-- Asosiy Sahifa -->
     <div id="pageHome" class="page active">
         <!-- Header -->
@@ -289,6 +299,20 @@
             <div class="modal-body" id="debtDetailContent">
                 <!-- JavaScript orqali yuklanadi -->
             </div>
+        </div>
+    </div>
+
+    <!-- Not Registered Modal -->
+    <div id="notRegisteredModal" class="modal not-registered-modal">
+        <div class="modal-content not-registered-content">
+            <div class="not-registered-icon">👤</div>
+            <h2 class="not-registered-title">Ro'yxatdan o'tmagansiz</h2>
+            <p class="not-registered-message">
+                Ilovadan foydalanish uchun avval Telegram botimiz orqali ro'yxatdan o'tishingiz kerak.
+            </p>
+            <button class="btn-primary not-registered-btn" onclick="openTelegramBot()">
+                Botga o'tish
+            </button>
         </div>
     </div>
 
