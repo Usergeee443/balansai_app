@@ -13,15 +13,6 @@ let currentPage = 'home';
 let loadedPages = new Set(['home', 'transactions']);
 let statsChart = null;
 
-// Pull to Refresh
-let pullToRefreshState = {
-    isPulling: false,
-    startY: 0,
-    currentY: 0,
-    threshold: 120, // Threshold'ni oshirdik
-    isRefreshing: false,
-    hasPulled: false // Pull qilinganligini kuzatish
-};
 
 // ============================================
 // TELEGRAM WEB APP
@@ -100,243 +91,8 @@ if (tg) {
     setInterval(() => {
         ensureFullscreen();
     }, 500);
-    
-    // Pull-to-close'ni to'liq bloklash (touch event'larni bloklash)
-    // Bu funksiya pull-to-refresh bilan birga ishlaydi
-    // Pull-to-refresh pastga tortish, pull-to-close yuqoriga tortish
 }
 
-// ============================================
-// PULL TO REFRESH
-// ============================================
-
-function initPullToRefresh() {
-    const pullIndicator = document.getElementById('pullToRefresh');
-    if (!pullIndicator) return;
-    
-    let touchStartY = 0;
-    let touchStartX = 0;
-    let isPulling = false;
-    let pullDistance = 0;
-    let hasStartedPull = false;
-    
-    // Touch start - faqat scroll top'da
-    document.addEventListener('touchstart', (e) => {
-        // Faqat scroll top'da bo'lsa va refresh bo'lmasa
-        if (window.scrollY <= 3 && !pullToRefreshState.isRefreshing) {
-            touchStartY = e.touches[0].clientY;
-            touchStartX = e.touches[0].clientX;
-            isPulling = false;
-            pullDistance = 0;
-            hasStartedPull = false;
-            pullToRefreshState.hasPulled = false;
-        }
-    }, { passive: true });
-    
-    // Touch move - pastga tortishni detect qilish
-    document.addEventListener('touchmove', (e) => {
-        // Agar scroll top'da emas yoki refresh bo'lsa, ishlamaydi
-        if (window.scrollY > 3 || pullToRefreshState.isRefreshing) {
-            if (isPulling) {
-                // Agar pull qilingan bo'lsa, to'xtatish
-                pullIndicator.classList.remove('active');
-                pullIndicator.style.opacity = '0';
-                const icon = pullIndicator.querySelector('.pull-to-refresh-icon');
-                if (icon) icon.style.transform = 'rotate(0deg)';
-                isPulling = false;
-                pullDistance = 0;
-            }
-            return;
-        }
-        
-        const touchY = e.touches[0].clientY;
-        const touchX = e.touches[0].clientX;
-        const deltaY = touchY - touchStartY;
-        const deltaX = Math.abs(touchX - touchStartX);
-        
-        // Agar yuqoriga surilayotgan bo'lsa (pull-to-close), bloklash
-        if (deltaY < -20 && deltaX < 30 && window.scrollY <= 0) {
-            if (isPulling) {
-                // Agar pull qilingan bo'lsa, to'xtatish
-                pullIndicator.classList.remove('active');
-                pullIndicator.style.opacity = '0';
-                const icon = pullIndicator.querySelector('.pull-to-refresh-icon');
-                if (icon) icon.style.transform = 'rotate(0deg)';
-                isPulling = false;
-                pullDistance = 0;
-            }
-            e.preventDefault();
-            e.stopPropagation();
-            return false;
-        }
-        
-        // Pastga tortilayotgan bo'lsa va gorizontal harakat kam bo'lsa
-        // Minimum 20px tortilishi kerak (accidental touch'larni oldini olish)
-        if (deltaY > 20 && deltaX < 50 && window.scrollY <= 0) {
-            e.preventDefault();
-            
-            if (!hasStartedPull) {
-                hasStartedPull = true;
-                pullToRefreshState.hasPulled = true;
-                hapticFeedback('light'); // Birinchi marta pull qilinganda
-            }
-            
-            isPulling = true;
-            // Pull distance'ni cheklash va smooth qilish (resistance effect)
-            // deltaY'ni 0.5 ga ko'paytiramiz (resistance)
-            const resistance = 0.5;
-            pullDistance = Math.min((deltaY - 20) * resistance + 20, pullToRefreshState.threshold * 1.2);
-            
-            // Progress hisoblash
-            const progress = Math.min(pullDistance / pullToRefreshState.threshold, 1);
-            
-            // Indicator ko'rsatish (faqat progress 0.1 dan katta bo'lsa)
-            if (progress > 0.1) {
-                pullIndicator.classList.add('active');
-                pullIndicator.style.opacity = Math.min(progress * 1.1, 1);
-                
-                // Icon rotation (180 gradusgacha)
-                const icon = pullIndicator.querySelector('.pull-to-refresh-icon');
-                if (icon) {
-                    icon.style.transform = `rotate(${progress * 180}deg)`;
-                }
-                
-                // Text o'zgartirish
-                const text = pullIndicator.querySelector('.pull-to-refresh-text');
-                if (text) {
-                    if (pullDistance >= pullToRefreshState.threshold) {
-                        text.textContent = 'Qo\'yib bering';
-                        text.style.color = '#5A8EF4';
-                        text.style.fontWeight = '600';
-                    } else {
-                        text.textContent = 'Yuklash uchun torting';
-                        text.style.color = '#666';
-                        text.style.fontWeight = '500';
-                    }
-                }
-            }
-        } else if (isPulling && deltaY <= 15) {
-            // Agar orqaga qaytilsa (15px dan kam), pull'ni to'xtatish
-            pullIndicator.classList.remove('active');
-            pullIndicator.style.opacity = '0';
-            const icon = pullIndicator.querySelector('.pull-to-refresh-icon');
-            if (icon) icon.style.transform = 'rotate(0deg)';
-            const text = pullIndicator.querySelector('.pull-to-refresh-text');
-            if (text) {
-                text.textContent = 'Yuklash uchun torting';
-                text.style.color = '#666';
-                text.style.fontWeight = '500';
-            }
-            isPulling = false;
-            pullDistance = 0;
-            hasStartedPull = false;
-            pullToRefreshState.hasPulled = false;
-        }
-    }, { passive: false });
-    
-    // Touch end - refresh qilish yoki qaytarish
-    document.addEventListener('touchend', async (e) => {
-        // Agar pull qilinmagan bo'lsa yoki refresh bo'lsa
-        if (!isPulling || pullToRefreshState.isRefreshing || !pullToRefreshState.hasPulled) {
-            if (isPulling) {
-                pullIndicator.classList.remove('active');
-                pullIndicator.style.opacity = '0';
-                const icon = pullIndicator.querySelector('.pull-to-refresh-icon');
-                if (icon) icon.style.transform = 'rotate(0deg)';
-            }
-            isPulling = false;
-            pullDistance = 0;
-            hasStartedPull = false;
-            pullToRefreshState.hasPulled = false;
-            return;
-        }
-        
-        // Threshold'dan oshgan bo'lsa, refresh qilish
-        if (pullDistance >= pullToRefreshState.threshold) {
-            pullToRefreshState.isRefreshing = true;
-            pullIndicator.classList.add('refreshing');
-            const textEl = pullIndicator.querySelector('.pull-to-refresh-text');
-            if (textEl) {
-                textEl.textContent = 'Yuklanmoqda...';
-                textEl.style.color = '#5A8EF4';
-            }
-            
-            hapticFeedback('medium');
-            
-            // Joriy sahifani refresh qilish
-            await refreshCurrentPage();
-            
-            // Refresh tugagach
-            setTimeout(() => {
-                pullToRefreshState.isRefreshing = false;
-                pullIndicator.classList.remove('active', 'refreshing');
-                pullIndicator.style.opacity = '0';
-                
-                const icon = pullIndicator.querySelector('.pull-to-refresh-icon');
-                if (icon) icon.style.transform = 'rotate(0deg)';
-                
-                if (textEl) {
-                    textEl.textContent = 'Yuklash uchun torting';
-                    textEl.style.color = '#666';
-                }
-                
-                hapticFeedback('success');
-            }, 300);
-        } else {
-            // Threshold'dan kam bo'lsa, qaytarish
-            pullIndicator.classList.remove('active');
-            pullIndicator.style.opacity = '0';
-            const icon = pullIndicator.querySelector('.pull-to-refresh-icon');
-            if (icon) icon.style.transform = 'rotate(0deg)';
-        }
-        
-        isPulling = false;
-        pullDistance = 0;
-        hasStartedPull = false;
-        pullToRefreshState.hasPulled = false;
-    }, { passive: true });
-}
-
-// Joriy sahifani refresh qilish
-async function refreshCurrentPage() {
-    try {
-        switch(currentPage) {
-            case 'home':
-                await Promise.all([
-                    loadUserData(),
-                    loadTransactions(),
-                    loadStatistics()
-                ]);
-                // Currency balances
-                if (currentUser && currentUser.currency_balances) {
-                    renderCurrencies(currentUser.currency_balances);
-                }
-                break;
-            case 'transactions':
-                allTransactionsData = []; // Cache'ni tozalash
-                await loadAllTransactions(currentTransactionFilter, 
-                    document.getElementById('transactionSearch')?.value || '', 
-                    false);
-                break;
-            case 'statistics':
-                await loadAllStatistics();
-                break;
-            case 'reminders':
-                await loadReminders();
-                break;
-            case 'debts':
-                if (currentContactId) {
-                    await loadDebtsForContact(currentContactId, currentContactName);
-                } else {
-                    await loadContacts();
-                }
-                break;
-        }
-    } catch (error) {
-        console.error('Refresh xatosi:', error);
-        hapticFeedback('error');
-    }
-}
 
 // ============================================
 // UTILITY FUNCTIONS
@@ -503,6 +259,8 @@ async function apiRequest(endpoint, options = {}) {
         url += (url.includes('?') ? '&' : '?') + `test_user_id=${testUserId}`;
     }
     
+    console.log(`API Request: ${url}`, { initData: initData ? 'mavjud' : 'yo\'q', testUserId });
+    
     try {
         const response = await fetch(url, {
             ...options,
@@ -513,8 +271,11 @@ async function apiRequest(endpoint, options = {}) {
             }
         });
         
+        console.log(`API Response status: ${response.status}`, response.statusText);
+        
         if (!response.ok) {
             const error = await response.json().catch(() => ({ error: 'Xatolik yuz berdi' }));
+            console.error('API Error:', error, 'Status:', response.status);
             
             // User not found xatoligini alohida handle qilish
             if (response.status === 404 && (error.error === 'User not found' || error.code === 'USER_NOT_FOUND')) {
@@ -527,9 +288,16 @@ async function apiRequest(endpoint, options = {}) {
             throw new Error(error.error || error.message || 'Xatolik yuz berdi');
         }
         
-        return await response.json();
+        const data = await response.json();
+        console.log(`API Success: ${url}`, data);
+        return data;
     } catch (error) {
         console.error('API xatosi:', error);
+        console.error('Error details:', {
+            message: error.message,
+            stack: error.stack,
+            endpoint: url
+        });
         throw error;
     }
 }
@@ -540,12 +308,15 @@ async function apiRequest(endpoint, options = {}) {
 
 async function loadUserData() {
     try {
+        console.log('API request /api/user ga yuborilmoqda...');
         const user = await apiRequest('/api/user');
+        console.log('User data olindi:', user);
         currentUser = user;
         
         // Tarif tekshiruvi
         const allowed = ['PLUS', 'PRO', 'FAMILY', 'FAMILY_PLUS', 'FAMILY_PRO'];
         if (!allowed.includes(user.tariff)) {
+            console.warn('Tarif mos emas:', user.tariff);
             alert('Sizning tarifingiz bu ilova uchun mos emas');
             return false;
         }
@@ -554,14 +325,20 @@ async function loadUserData() {
         const balanceEl = document.getElementById('totalBalance');
         if (balanceEl) {
             balanceEl.textContent = formatCurrency(user.balance || 0);
+            console.log('Balance ko\'rsatildi:', user.balance);
+        } else {
+            console.warn('Balance element topilmadi');
         }
         
         return true;
     } catch (error) {
         console.error('User yuklanmadi:', error);
+        console.error('Error message:', error.message);
+        console.error('Error code:', error.code);
         
         // Agar user topilmasa (404), ro'yxatdan o'tmagan sahifani ko'rsatish
-        if (error.message && (error.message.includes('User not found') || error.message.includes('404'))) {
+        if (error.message && (error.message.includes('User not found') || error.message.includes('404') || error.code === 'USER_NOT_FOUND')) {
+            console.log('User topilmadi, modal ko\'rsatilmoqda');
             showNotRegisteredModal();
         return false;
         }
@@ -694,7 +471,10 @@ function renderCurrencies(balances) {
 
 async function loadTransactions() {
     const container = document.getElementById('transactionsList');
-    if (!container) return;
+    if (!container) {
+        console.warn('transactionsList container topilmadi');
+        return;
+    }
     
     // Skeleton loading ko'rsatish (agar bo'sh bo'lsa)
     if (!container.innerHTML.trim() || container.innerHTML.includes('skeleton')) {
@@ -703,7 +483,9 @@ async function loadTransactions() {
     }
     
     try {
+        console.log('Transactions API ga so\'rov yuborilmoqda...');
         const transactions = await apiRequest('/api/transactions?limit=20');
+        console.log('Transactions olindi:', transactions?.length || 0);
         
         if (!transactions || transactions.length === 0) {
             container.innerHTML = `
@@ -734,8 +516,10 @@ async function loadTransactions() {
                 </div>
             `;
         }).join('');
+        console.log('Transactions render qilindi');
     } catch (error) {
         console.error('Tranzaksiyalar yuklanmadi:', error);
+        console.error('Error details:', error.message);
     }
 }
 
@@ -748,11 +532,15 @@ async function loadStatistics() {
     let ctx = document.getElementById('statsChart');
     const canvasContainer = ctx?.parentElement;
     
+    if (!ctx || !canvasContainer) {
+        console.warn('Stats chart element topilmadi');
+        return;
+    }
+    
     try {
+        console.log('Statistics API ga so\'rov yuborilmoqda...');
         const trend = await apiRequest('/api/statistics/income-trend?period=auto');
-        
-        // Agar canvas topilmasa
-        if (!ctx || !canvasContainer) return;
+        console.log('Statistics olindi:', trend);
         
         // Skeleton ni olib tashlash va canvas ni ko'rsatish
         const skeletonEl = canvasContainer.querySelector('.skeleton-chart');
@@ -781,6 +569,7 @@ async function loadStatistics() {
         
         if (statsChart) statsChart.destroy();
         
+        console.log('Chart yaratilmoqda...');
         statsChart = new Chart(ctx, {
             type: 'line',
             data: {
@@ -834,8 +623,10 @@ async function loadStatistics() {
                 }
             }
         });
+        console.log('Chart yaratildi');
     } catch (error) {
         console.error('Statistika yuklanmadi:', error);
+        console.error('Error details:', error.message, error.stack);
     }
 }
 
@@ -853,8 +644,13 @@ function navigateTo(pageName) {
     if (oldPage) oldPage.classList.remove('active');
     
     // Show new page
-    const newPage = document.getElementById(`page${pageName.charAt(0).toUpperCase() + pageName.slice(1)}`);
-    if (newPage) newPage.classList.add('active');
+    const pageId = `page${pageName.charAt(0).toUpperCase() + pageName.slice(1)}`;
+    const newPage = document.getElementById(pageId);
+    if (newPage) {
+        newPage.classList.add('active');
+    } else {
+        console.error(`Page not found: ${pageId}`);
+    }
     
     // Update nav
     document.querySelectorAll('.nav-item').forEach(item => {
@@ -890,16 +686,165 @@ async function loadPageData(pageName) {
             case 'debts':
                 await loadContacts();
                 break;
+            case 'balanceDetails':
+                await loadBalanceDetails();
+                break;
         }
     } catch (error) {
         console.error(`Error loading ${pageName}:`, error);
     }
 }
 
-function showBalanceDetails() {
+async function showBalanceDetails() {
     hapticFeedback('light');
-    // Placeholder for modal
-    console.log('Show balance details');
+    
+    // Hide current page
+    const oldPage = document.getElementById(`page${currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}`);
+    if (oldPage) oldPage.classList.remove('active');
+    
+    // Show balance details page
+    const balancePage = document.getElementById('pageBalanceDetails');
+    if (balancePage) {
+        balancePage.classList.add('active');
+        currentPage = 'balanceDetails';
+        
+        // Load data
+        await loadBalanceDetails();
+    } else {
+        console.error('Balance details page not found');
+    }
+}
+
+// ============================================
+// BALANCE DETAILS PAGE
+// ============================================
+
+async function loadBalanceDetails() {
+    const container = document.getElementById('balanceDetailsContent');
+    if (!container) return;
+    
+    try {
+        showPageLoading('balanceDetailsContent', 'default');
+        
+        // User data va currency rates olish
+        const [user, currencyRates] = await Promise.all([
+            apiRequest('/api/user'),
+            getCurrencyRates()
+        ]);
+        
+        if (!user || !user.currency_balances) {
+            container.innerHTML = '<div class="empty-state">Ma\'lumot topilmadi</div>';
+            return;
+        }
+        
+        const balances = user.currency_balances;
+        const totalBalance = user.balance || 0;
+        
+        // Har bir valyutani so'mga chiqarish
+        let currencyDetails = [];
+        let totalInUzs = 0;
+        
+        const currencies = ['USD', 'EUR', 'RUB', 'TRY', 'UZS'];
+        const currencyNames = {
+            'USD': 'AQSH dollari',
+            'EUR': 'Yevro',
+            'RUB': 'Rossiya rubli',
+            'TRY': 'Turkiya lirasi',
+            'UZS': 'O\'zbek so\'mi'
+        };
+        
+        currencies.forEach(code => {
+            const balance = balances[code] || 0;
+            if (balance !== 0 || code === 'UZS') {
+                let amountInUzs = 0;
+                if (code === 'UZS') {
+                    amountInUzs = balance;
+                } else {
+                    const rate = currencyRates[code] || 1;
+                    amountInUzs = balance * rate;
+                }
+                totalInUzs += amountInUzs;
+                
+                currencyDetails.push({
+                    code,
+                    name: currencyNames[code],
+                    balance,
+                    rate: code === 'UZS' ? 1 : (currencyRates[code] || 1),
+                    amountInUzs
+                });
+            }
+        });
+        
+        // HTML yaratish
+        let html = `
+            <div style="background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px;">
+                <h3 style="font-size: 16px; font-weight: 600; color: #666; margin-bottom: 8px;">Umumiy balans</h3>
+                <div style="font-size: 28px; font-weight: 700; color: #1a1a1a;">${formatCurrency(totalBalance)}</div>
+            </div>
+            
+            <div style="background: white; border-radius: 16px; padding: 20px; margin-bottom: 16px;">
+                <h3 style="font-size: 16px; font-weight: 600; color: #666; margin-bottom: 16px;">Valyuta tafsilotlari</h3>
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+        `;
+        
+        currencyDetails.forEach(curr => {
+            const currencyIcon = curr.code === 'USD' ? '$' : 
+                                curr.code === 'EUR' ? '€' : 
+                                curr.code === 'RUB' ? '₽' : 
+                                curr.code === 'TRY' ? '₺' : 'UZS';
+            
+            html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px; background: #f9f9f9; border-radius: 12px;">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #5A8EF4 0%, #7BA5F7 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 600; color: white;">
+                            ${currencyIcon}
+                        </div>
+                        <div>
+                            <div style="font-size: 16px; font-weight: 600; color: #1a1a1a;">${curr.name}</div>
+                            <div style="font-size: 14px; color: #666;">${formatCurrency(curr.balance, curr.code)}</div>
+                        </div>
+                    </div>
+                    <div style="text-align: right;">
+                        <div style="font-size: 16px; font-weight: 600; color: #1a1a1a;">${formatCurrency(curr.amountInUzs)}</div>
+                        ${curr.code !== 'UZS' ? `<div style="font-size: 12px; color: #999;">Kurs: ${formatCurrency(curr.rate)}</div>` : ''}
+                    </div>
+                </div>
+            `;
+        });
+        
+        html += `
+                </div>
+            </div>
+            
+            <div style="background: #f0f7ff; border-radius: 16px; padding: 16px; border-left: 4px solid #5A8EF4;">
+                <div style="font-size: 14px; color: #666; margin-bottom: 4px;">Qanday hisoblanadi?</div>
+                <div style="font-size: 13px; color: #888; line-height: 1.5;">
+                    Umumiy balans barcha valyutalardagi mablag'lar yig'indisidir. Har bir valyuta joriy kurs bo'yicha O'zbek so'miga aylantiriladi va umumiy balansga qo'shiladi.
+                </div>
+            </div>
+        `;
+        
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Balans tafsilotlari yuklanmadi:', error);
+        container.innerHTML = '<div class="empty-state">Xatolik yuz berdi</div>';
+    }
+}
+
+async function getCurrencyRates() {
+    try {
+        const rates = await apiRequest('/api/currency-rates');
+        return rates || {};
+    } catch (error) {
+        console.error('Valyuta kurslari olinmadi:', error);
+        // Default kurslar
+        return {
+            'USD': 12750,
+            'EUR': 13800,
+            'RUB': 135,
+            'TRY': 370
+        };
+    }
 }
 
 // ============================================
@@ -1318,17 +1263,8 @@ function renderReminders() {
 }
 
 function showAddReminderModal() {
-    hapticFeedback('light');
-    const modal = document.getElementById('addReminderModal');
-    if (modal) {
-        modal.classList.add('active');
-        // Set default date to today
-        const dateInput = modal.querySelector('input[name="reminder_date"]');
-        if (dateInput) {
-            const today = new Date().toISOString().split('T')[0];
-            dateInput.value = today;
-        }
-    }
+    // Funksiya o'chirilgan - faqat ko'rish uchun
+    return;
 }
 
 function closeAddReminderModal() {
@@ -1341,8 +1277,9 @@ function closeAddReminderModal() {
 }
 
 async function handleAddReminder(event) {
+    // Funksiya o'chirilgan - faqat ko'rish uchun
     event.preventDefault();
-    hapticFeedback('medium');
+    return;
     
     const form = event.target;
     const formData = new FormData(form);
@@ -1502,7 +1439,6 @@ async function loadDebtsForContact(contactId, contactName) {
                 </div>
                 <div class="empty-state">
                     <p>Qarzlar yo'q</p>
-                    <button class="btn-primary" onclick="showAddDebtModal()" style="margin-top: 16px; width: auto; padding: 12px 24px;">Yangi qarz qo'shish</button>
                 </div>
             `;
             return;
@@ -1518,11 +1454,6 @@ async function loadDebtsForContact(contactId, contactName) {
                 </button>
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 8px;">
                     <h3 style="margin: 0; font-size: 18px; font-weight: 600;">${displayName}</h3>
-                    <button class="add-btn" onclick="showAddDebtModal()" style="width: 36px; height: 36px;">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 5v14M5 12h14"/>
-                        </svg>
-                    </button>
                 </div>
             </div>
             ${debtsData.map(d => renderDebtCard(d)).join('')}
@@ -1587,9 +1518,8 @@ function backToContacts() {
 
 // Modal funksiyalari
 function showAddContactModal() {
-    hapticFeedback('light');
-    const modal = document.getElementById('addContactModal');
-    if (modal) modal.classList.add('active');
+    // Funksiya o'chirilgan - faqat ko'rish uchun
+    return;
 }
 
 function closeAddContactModal() {
@@ -1602,36 +1532,14 @@ function closeAddContactModal() {
 }
 
 async function handleAddContact(event) {
+    // Funksiya o'chirilgan - faqat ko'rish uchun
     event.preventDefault();
-    hapticFeedback('medium');
-    
-    const form = event.target;
-    const formData = new FormData(form);
-    const data = {
-        name: formData.get('name'),
-        phone: formData.get('phone') || null,
-        notes: formData.get('notes') || null
-    };
-    
-    try {
-        await apiRequest('/api/contacts', {
-            method: 'POST',
-            body: JSON.stringify(data)
-        });
-        
-        hapticFeedback('success');
-        closeAddContactModal();
-        await loadContacts();
-    } catch (error) {
-        hapticFeedback('error');
-        alert('Xatolik yuz berdi: ' + error.message);
-    }
+    return;
 }
 
 function showAddDebtModal() {
-    hapticFeedback('light');
-    const modal = document.getElementById('addDebtModal');
-    if (modal) modal.classList.add('active');
+    // Funksiya o'chirilgan - faqat ko'rish uchun
+    return;
 }
 
 function closeAddDebtModal() {
@@ -1994,8 +1902,7 @@ async function loadDebts(filter = 'all') {
 // ============================================
 
 document.addEventListener('DOMContentLoaded', async () => {
-    // Pull to refresh'ni ishga tushirish
-    initPullToRefresh();
+    console.log('DOMContentLoaded - initialization boshlandi');
     
     // Ilova darhol ochilsin, skeleton loading bilan
     // Home page skeleton ko'rsatish
@@ -2004,24 +1911,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Background'da data yuklash (non-blocking)
     (async () => {
         try {
+            console.log('User data yuklanmoqda...');
             const userLoaded = await loadUserData();
+            console.log('User data yuklandi:', userLoaded);
+            
             if (!userLoaded) {
+                console.log('User yuklanmadi, to\'xtatilmoqda');
                 return;
             }
             
             // Load home page data
             if (currentUser && currentUser.currency_balances) {
+                console.log('Currency balances render qilinmoqda...');
                 renderCurrencies(currentUser.currency_balances);
             }
             
-            // Barcha ma'lumotlarni parallel yuklash
+            // Barcha ma'lumotlarni parallel yuklash (faqat kerakli ma'lumotlar)
+            console.log('Transactions va Statistics yuklanmoqda...');
             await Promise.all([
                 loadTransactions(),
-                loadStatistics(),
-                loadAllTransactions('all', '', false) // Tranzaksiyalar sahifasi uchun
+                loadStatistics()
             ]);
+            console.log('Barcha ma\'lumotlar yuklandi');
+            // loadAllTransactions faqat transactions sahifasiga o'tganda yuklanadi
         } catch (error) {
             console.error('Initialization error:', error);
+            console.error('Error details:', error.message, error.stack);
         }
     })();
     

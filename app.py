@@ -9,7 +9,8 @@ from database import (
     get_subscription_payments,
     get_contacts, get_contact_by_id, add_contact, update_contact, delete_contact,
     get_debt_by_id, update_debt, delete_debt,
-    get_debt_reminders, add_debt_reminder, delete_debt_reminder
+    get_debt_reminders, add_debt_reminder, delete_debt_reminder,
+    get_currency_rate
 )
 import os
 import hmac
@@ -842,6 +843,20 @@ def api_get_payments_history():
         print(f"❌ API: Tarif to'lovlarini olishda xatolik: {e}")
         import traceback
         traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/currency-rates', methods=['GET'])
+def api_get_currency_rates():
+    """Valyuta kurslarini olish"""
+    try:
+        rates = {
+            'USD': get_currency_rate('USD'),
+            'EUR': get_currency_rate('EUR'),
+            'RUB': get_currency_rate('RUB'),
+            'TRY': get_currency_rate('TRY')
+        }
+        return jsonify(rates)
+    except Exception as e:
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':
