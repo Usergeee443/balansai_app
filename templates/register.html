@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Ro'yxatdan o'tish - Balans AI</title>
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="/static/css/register.css">
+    
+    <!-- Scripts -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <div class="register-app">
+        <!-- Already Registered Screen -->
+        <div id="alreadyRegistered" class="already-registered-screen" style="display: none;">
+            <div class="already-registered-content">
+                <div class="check-icon-wrapper">
+                    <div class="check-icon">✓</div>
+                </div>
+                <h2 class="already-registered-title">Siz allaqachon ro'yxatdan o'tgansiz! ✅</h2>
+                <p class="already-registered-message">Ma'lumotlaringiz saqlangan. Botdan foydalanishni boshlashingiz mumkin.</p>
+                <button type="button" class="btn-primary" onclick="closeApp()">
+                    Yopish
+                </button>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-content">
+                <div class="progress-dots">
+                    <div class="dot active" data-step="1"></div>
+                    <div class="dot" data-step="2"></div>
+                    <div class="dot" data-step="3"></div>
+                    <div class="dot" data-step="4"></div>
+                    <div class="dot" data-step="5"></div>
+                    <div class="dot" data-step="6"></div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Form Container -->
+        <div class="form-container">
+            <!-- Step 1: Ism -->
+            <div class="form-step active" id="step1">
+                <div class="step-header">
+                    <h1 class="step-title">Salom! 👋</h1>
+                    <p class="step-subtitle">Ismingizni kiriting</p>
+                </div>
+
+                <div class="form-content">
+                    <div class="input-group">
+                        <input 
+                            type="text" 
+                            id="name" 
+                            class="input-field large-input"
+                            placeholder="Ismingiz"
+                            autocomplete="name"
+                            required
+                            autofocus
+                        >
+                        <span class="error-message" id="nameError"></span>
+                    </div>
+                </div>
+
+                <div class="step-footer fixed-footer">
+                    <button type="button" class="btn-primary" onclick="nextStep(2)">
+                        Davom etish
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 2: Manba -->
+            <div class="form-step" id="step2">
+                <div class="step-header">
+                    <button class="back-button" onclick="prevStep(1)">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <h1 class="step-title">Bizni qayerdan eshitdingiz?</h1>
+                    <p class="step-subtitle">Birini tanlang</p>
+                </div>
+
+                <div class="form-content">
+                    <div class="select-options">
+                        <label class="select-option">
+                            <input type="radio" name="source" value="telegram" required>
+                            <div class="select-option-content">
+                                <div class="select-option-icon">📱</div>
+                                <div class="select-option-text">Telegram</div>
+                            </div>
+                        </label>
+                        <label class="select-option">
+                            <input type="radio" name="source" value="instagram" required>
+                            <div class="select-option-content">
+                                <div class="select-option-icon">📷</div>
+                                <div class="select-option-text">Instagram</div>
+                            </div>
+                        </label>
+                        <label class="select-option">
+                            <input type="radio" name="source" value="youtube" required>
+                            <div class="select-option-content">
+                                <div class="select-option-icon">📺</div>
+                                <div class="select-option-text">YouTube</div>
+                            </div>
+                        </label>
+                        <label class="select-option">
+                            <input type="radio" name="source" value="tanish" required>
+                            <div class="select-option-content">
+                                <div class="select-option-icon">👥</div>
+                                <div class="select-option-text">Tanish orqali</div>
+                            </div>
+                        </label>
+                        <label class="select-option">
+                            <input type="radio" name="source" value="boshqa" required>
+                            <div class="select-option-content">
+                                <div class="select-option-icon">🔗</div>
+                                <div class="select-option-text">Boshqa</div>
+                            </div>
+                        </label>
+                    </div>
+                    <span class="error-message" id="sourceError"></span>
+                </div>
+
+                <div class="step-footer fixed-footer">
+                    <button type="button" class="btn-primary" onclick="nextStep(3)">
+                        Davom etish
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 3: Hisob turi -->
+            <div class="form-step" id="step3">
+                <div class="step-header">
+                    <button class="back-button" onclick="prevStep(2)">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <h1 class="step-title">Hisob turi</h1>
+                    <p class="step-subtitle">Birini tanlang</p>
+                </div>
+
+                <div class="form-content">
+                    <div class="radio-group">
+                        <label class="radio-option">
+                            <input type="radio" name="account_type" value="SHI" required>
+                            <div class="radio-content">
+                                <div class="radio-icon">👤</div>
+                                <div class="radio-text">
+                                    <div class="radio-title">Shaxsiy</div>
+                                    <div class="radio-subtitle">Shaxsiy moliyaviy boshqaruv</div>
+                                </div>
+                            </div>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="account_type" value="BIZNES" required>
+                            <div class="radio-content">
+                                <div class="radio-icon">💼</div>
+                                <div class="radio-text">
+                                    <div class="radio-title">Biznes</div>
+                                    <div class="radio-subtitle">Biznes moliyaviy boshqaruv</div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    <span class="error-message" id="accountTypeError"></span>
+                </div>
+
+                <div class="step-footer fixed-footer">
+                    <button type="button" class="btn-primary" onclick="nextStep(4)">
+                        Davom etish
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 4: Boshlang'ich balans -->
+            <div class="form-step" id="step4">
+                <div class="step-header">
+                    <button class="back-button" onclick="prevStep(1)">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <h1 class="step-title">Boshlang'ich balans</h1>
+                    <p class="step-subtitle">Mavjud mablag'laringizni kiriting</p>
+                </div>
+
+                <div class="form-content">
+                    <div class="balance-card">
+                        <div class="balance-icon">💵</div>
+                        <div class="balance-info">
+                            <label class="balance-label">Naqd pul</label>
+                            <input 
+                                type="number" 
+                                id="cash_balance" 
+                                class="balance-input"
+                                placeholder="0"
+                                min="0"
+                                step="1000"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="balance-card">
+                        <div class="balance-icon">💳</div>
+                        <div class="balance-info">
+                            <label class="balance-label">Karta balansi</label>
+                            <input 
+                                type="number" 
+                                id="card_balance" 
+                                class="balance-input"
+                                placeholder="0"
+                                min="0"
+                                step="1000"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="info-box">
+                        <svg class="info-icon" viewBox="0 0 24 24" fill="none">
+                            <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2"/>
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        <p>Agar mablag'ingiz bo'lmasa, 0 qoldirishingiz mumkin</p>
+                    </div>
+                </div>
+
+                <div class="step-footer fixed-footer">
+                    <button type="button" class="btn-primary" onclick="nextStep(5)">
+                        Davom etish
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 5: Qarzlar -->
+            <div class="form-step" id="step5">
+                <div class="step-header">
+                    <button class="back-button" onclick="prevStep(2)">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <h1 class="step-title">Qarzlar</h1>
+                    <p class="step-subtitle">Agar qarzingiz bo'lsa, qo'shing (ixtiyoriy)</p>
+                </div>
+
+                <div class="form-content">
+                    <div id="debtsContainer" class="debts-container">
+                        <!-- Qarzlar JavaScript orqali qo'shiladi -->
+                    </div>
+
+                    <button type="button" class="btn-add" onclick="addDebtField()">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                        Qarz qo'shish
+                    </button>
+                </div>
+
+                <div class="step-footer fixed-footer">
+                    <button type="button" class="btn-secondary" onclick="prevStep(4)">Orqaga</button>
+                    <button type="button" class="btn-primary" onclick="nextStep(6)">
+                        Davom etish
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 6: Tasdiqlash -->
+            <div class="form-step" id="step6">
+                <div class="step-header">
+                    <button class="back-button" onclick="prevStep(3)">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <h1 class="step-title">Tasdiqlash</h1>
+                    <p class="step-subtitle">Ma'lumotlaringizni tekshiring</p>
+                </div>
+
+                <div class="form-content">
+                    <div class="review-card">
+                        <div class="review-item">
+                            <span class="review-label">Ism</span>
+                            <span class="review-value" id="reviewName">-</span>
+                        </div>
+                        <div class="review-item">
+                            <span class="review-label">Manba</span>
+                            <span class="review-value" id="reviewSource">-</span>
+                        </div>
+                        <div class="review-item">
+                            <span class="review-label">Hisob turi</span>
+                            <span class="review-value" id="reviewAccountType">-</span>
+                        </div>
+                        <div class="review-item">
+                            <span class="review-label">Naqd pul</span>
+                            <span class="review-value" id="reviewCash">-</span>
+                        </div>
+                        <div class="review-item">
+                            <span class="review-label">Karta balansi</span>
+                            <span class="review-value" id="reviewCard">-</span>
+                        </div>
+                        <div class="review-item" id="reviewDebts" style="display: none;">
+                            <span class="review-label">Qarzlar</span>
+                            <span class="review-value" id="reviewDebtsValue">-</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="step-footer fixed-footer">
+                    <button type="button" class="btn-secondary" onclick="prevStep(5)">Orqaga</button>
+                    <button type="submit" class="btn-primary" id="submitBtn" form="registrationForm">
+                        <span id="submitText">Saqlash</span>
+                        <span id="submitLoader" class="loader" style="display: none;"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Success Screen -->
+        <div id="successScreen" class="success-screen" style="display: none;">
+            <div class="success-content">
+                <div class="success-icon-wrapper">
+                    <div class="success-icon">✓</div>
+                </div>
+                <h2 class="success-title">Muvaffaqiyatli! 🎉</h2>
+                <p class="success-message">Ma'lumotlaringiz saqlandi. Botdan foydalanishni boshlashingiz mumkin.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden Form for Submission -->
+    <form id="registrationForm" style="display: none;"></form>
+
+    <!-- Main JavaScript -->
+    <script src="/static/js/register.js"></script>
+</body>
+</html>

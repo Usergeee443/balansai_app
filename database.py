@@ -78,6 +78,166 @@ def get_user(user_id):
     finally:
         connection.close()
 
+def update_user(user_id, name=None, source=None, account_type=None):
+    """Foydalanuvchi ma'lumotlarini yangilash"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            updates = []
+            params = []
+            
+            if name is not None:
+                updates.append("name = %s")
+                params.append(name)
+            if source is not None:
+                updates.append("source = %s")
+                params.append(source)
+            if account_type is not None:
+                updates.append("account_type = %s")
+                params.append(account_type)
+            
+            if not updates:
+                return True
+            
+            updates.append("updated_at = NOW()")
+            params.append(user_id)
+            
+            query = f"UPDATE users SET {', '.join(updates)} WHERE user_id = %s"
+            cursor.execute(query, params)
+            connection.commit()
+            return True
+    except Exception as e:
+        print(f"❌ Foydalanuvchi ma'lumotlarini yangilashda xatolik: {e}")
+        connection.rollback()
+        return False
+    finally:
+        connection.close()
+
+def save_initial_balance(user_id, cash_balance=0, card_balance=0):
+    """Boshlang'ich balansni saqlash"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Naqd pul
+            if cash_balance > 0:
+                cursor.execute("""
+                    INSERT INTO transactions (user_id, transaction_type, amount, category, currency, description)
+                    VALUES (%s, 'income', %s, 'boshlang_ich_naqd', 'UZS', 'Boshlang''ich naqd pul')
+                """, (user_id, cash_balance))
+            
+            # Karta balansi
+            if card_balance > 0:
+                cursor.execute("""
+                    INSERT INTO transactions (user_id, transaction_type, amount, category, currency, description)
+                    VALUES (%s, 'income', %s, 'boshlang_ich_karta', 'UZS', 'Boshlang''ich karta balansi')
+                """, (user_id, card_balance))
+            
+            # Umumiy boshlang'ich balans
+            total_balance = cash_balance + card_balance
+            if total_balance > 0:
+                cursor.execute("""
+                    INSERT INTO transactions (user_id, transaction_type, amount, category, currency, description)
+                    VALUES (%s, 'income', %s, 'boshlang_ich_balans', 'UZS', 'Boshlang''ich balans')
+                """, (user_id, total_balance))
+            
+            connection.commit()
+            return True
+    except Exception as e:
+        print(f"❌ Boshlang'ich balansni saqlashda xatolik: {e}")
+        connection.rollback()
+        return False
+    finally:
+        connection.close()
+
+def save_debt(user_id, person_name, amount, direction, due_date=None):
+    """Qarzni saqlash"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Avval contact yaratish yoki olish
+            cursor.execute("SELECT id FROM contacts WHERE user_id = %s AND name = %s", (user_id, person_name))
+            contact = cursor.fetchone()
+            
+            if not contact:
+                cursor.execute("""
+                    INSERT INTO contacts (user_id, name, created_at)
+                    VALUES (%s, %s, NOW())
+                """, (user_id, person_name))
+                contact_id = cursor.lastrowid
+            else:
+                contact_id = contact['id']
+            
+            # Qarzni saqlash
+            cursor.execute("""
+                INSERT INTO transactions (user_id, transaction_type, amount, category, currency, description, due_date, debt_direction)
+                VALUES (%s, 'debt', %s, %s, 'UZS', %s, %s, %s)
+            """, (user_id, amount, f'qarz_{direction}', f'Qarz: {person_name}', due_date, direction))
+            
+            connection.commit()
+            return True
+    except Exception as e:
+        print(f"❌ Qarzni saqlashda xatolik: {e}")
+        connection.rollback()
+        return False
+    finally:
+        connection.close()
+
+def check_registration_complete(user_id):
+    """Foydalanuvchi ro'yxatdan to'liq o'tganligini tekshirish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # User ma'lumotlarini olish
+            cursor.execute("SELECT name, source, account_type, phone FROM users WHERE user_id = %s", (user_id,))
+            user = cursor.fetchone()
+            
+            if not user:
+                print(f"[DEBUG] User {user_id} topilmadi")
+                return False
+            
+            # Asosiy maydonlar to'ldirilganligini tekshirish
+            has_name = user.get('name') and user.get('name') != 'Xojayin' and user.get('name') != ''
+            has_source = user.get('source') and user.get('source') != ''
+            has_account_type = user.get('account_type') and user.get('account_type') != ''
+            has_phone = user.get('phone') and user.get('phone') != ''
+            
+            print(f"[DEBUG] Registration check for user {user_id}:")
+            print(f"  - name: {has_name} ({user.get('name')})")
+            print(f"  - source: {has_source} ({user.get('source')})")
+            print(f"  - account_type: {has_account_type} ({user.get('account_type')})")
+            print(f"  - phone: {has_phone} ({user.get('phone')})")
+            
+            # Agar asosiy maydonlar to'ldirilmagan bo'lsa
+            if not (has_name and has_source and has_account_type):
+                print(f"[DEBUG] Asosiy maydonlar to'liq emas")
+                return False
+            
+            # Onboarding yakunlanganligini tekshirish (boshlang'ich balans mavjudligi)
+            # Lekin agar phone bo'lsa va asosiy maydonlar to'liq bo'lsa, registration complete deb hisoblaymiz
+            # (chunki eski userlar uchun boshlang'ich balans bo'lmasligi mumkin)
+            if has_phone and has_name and has_source and has_account_type:
+                print(f"[DEBUG] User {user_id} ro'yxatdan to'liq o'tgan (phone + asosiy maydonlar)")
+                return True
+            
+            # Agar phone yo'q bo'lsa, boshlang'ich balansni tekshirish
+            cursor.execute("""
+                SELECT COUNT(*) as count FROM transactions 
+                WHERE user_id = %s AND category IN ('boshlang_ich_balans', 'boshlang_ich_naqd', 'boshlang_ich_karta')
+            """, (user_id,))
+            result = cursor.fetchone()
+            has_initial_balance = result.get('count', 0) > 0 if result else False
+            
+            print(f"[DEBUG] Has initial balance: {has_initial_balance}")
+            
+            return has_initial_balance
+    except Exception as e:
+        print(f"❌ Registration complete tekshirishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+    finally:
+        connection.close()
+
 # Valyuta kurslari cache (5 daqiqa)
 _currency_cache = {}
 _currency_cache_time = {}

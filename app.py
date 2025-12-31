@@ -1,5 +1,5 @@
 # Flask backend server
-from flask import Flask, render_template, request, jsonify, session
+from flask import Flask, render_template, request, jsonify, session, redirect
 from config import Config
 from database import (
     get_user, get_transactions, add_transaction, get_balance,
@@ -10,7 +10,8 @@ from database import (
     get_contacts, get_contact_by_id, add_contact, update_contact, delete_contact,
     get_debt_by_id, update_debt, delete_debt,
     get_debt_reminders, add_debt_reminder, delete_debt_reminder,
-    get_currency_rate
+    get_currency_rate,
+    update_user, save_initial_balance, save_debt
 )
 import os
 import hmac
@@ -144,6 +145,27 @@ def validate_telegram_webapp(init_data):
 def index():
     """Asosiy sahifa (SPA)"""
     return render_template('index.html')
+
+@app.route('/register')
+def register():
+    """Ro'yxatdan o'tish sahifasi"""
+    # Agar user allaqachon ro'yxatdan o'tgan bo'lsa, asosiy sahifaga yuborish
+    try:
+        user_id = get_user_id_from_request()
+        if user_id:
+            user = get_user(user_id)
+            if user:
+                # Registration complete tekshiruvi
+                from database import check_registration_complete
+                is_complete = check_registration_complete(user_id)
+                if is_complete:
+                    # Asosiy sahifaga redirect
+                    return redirect('/')
+    except Exception as e:
+        print(f"[DEBUG] Register route'da tekshirish xatosi: {e}")
+        # Xatolik bo'lsa ham registration sahifasini ko'rsatish
+    
+    return render_template('register.html')
 
 @app.route('/api/config', methods=['GET'])
 def get_config():
@@ -856,6 +878,132 @@ def api_get_currency_rates():
             'TRY': get_currency_rate('TRY')
         }
         return jsonify(rates)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Registration API endpoints
+@app.route('/api/user/<int:user_id>', methods=['GET'])
+def get_user_by_id(user_id):
+    """Foydalanuvchi ma'lumotlarini ID bo'yicha olish (registration uchun)"""
+    try:
+        user = get_user(user_id)
+        if not user:
+            return jsonify({
+                'error': 'User not found',
+                'code': 'USER_NOT_FOUND'
+            }), 404
+        
+        # Check if registration is complete
+        from database import check_registration_complete
+        is_complete = check_registration_complete(user_id)
+        
+        return jsonify({
+            'user_id': user['user_id'],
+            'username': user.get('username'),
+            'first_name': user.get('first_name'),
+            'last_name': user.get('last_name'),
+            'phone': user.get('phone'),
+            'name': user.get('name', 'Xojayin'),
+            'source': user.get('source'),
+            'account_type': user.get('account_type'),
+            'tariff': user.get('tariff', 'NONE'),
+            'registration_complete': is_complete
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/user/<int:user_id>/update', methods=['POST'])
+def update_user_info(user_id):
+    """Foydalanuvchi ma'lumotlarini yangilash"""
+    try:
+        data = request.get_json()
+        
+        # Validatsiya
+        if not data:
+            return jsonify({'error': 'Ma\'lumotlar topilmadi'}), 400
+        
+        # Update user
+        success = update_user(
+            user_id=user_id,
+            name=data.get('name'),
+            source=data.get('source'),
+            account_type=data.get('account_type')
+        )
+        
+        if not success:
+            return jsonify({'error': 'Ma\'lumotlar yangilanmadi'}), 500
+        
+        return jsonify({
+            'success': True,
+            'message': 'Ma\'lumotlar yangilandi'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/user/<int:user_id>/onboarding', methods=['POST'])
+def save_onboarding(user_id):
+    """Onboarding ma'lumotlarini saqlash"""
+    try:
+        data = request.get_json()
+        
+        if not data:
+            return jsonify({'error': 'Ma\'lumotlar topilmadi'}), 400
+        
+        # Boshlang'ich balansni saqlash
+        cash_balance = float(data.get('cash_balance', 0))
+        card_balance = float(data.get('card_balance', 0))
+        
+        if cash_balance > 0 or card_balance > 0:
+            success = save_initial_balance(user_id, cash_balance, card_balance)
+            if not success:
+                return jsonify({'error': 'Balans saqlanmadi'}), 500
+        
+        # Qarzlarini saqlash
+        debts = data.get('debts', [])
+        for debt in debts:
+            if debt.get('person_name') and debt.get('amount'):
+                save_debt(
+                    user_id=user_id,
+                    person_name=debt['person_name'],
+                    amount=float(debt['amount']),
+                    direction=debt.get('direction', 'lent'),
+                    due_date=debt.get('due_date')
+                )
+        
+        return jsonify({
+            'success': True,
+            'message': 'Onboarding ma\'lumotlari saqlandi'
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/user/<int:user_id>/tariff', methods=['POST'])
+def set_tariff(user_id):
+    """Tarif tanlash"""
+    try:
+        data = request.get_json()
+        
+        if not data or 'tariff' not in data:
+            return jsonify({'error': 'Tarif topilmadi'}), 400
+        
+        tariff = data['tariff']
+        connection = get_db_connection()
+        try:
+            with connection.cursor() as cursor:
+                cursor.execute(
+                    "UPDATE users SET tariff = %s, updated_at = NOW() WHERE user_id = %s",
+                    (tariff, user_id)
+                )
+                connection.commit()
+                return jsonify({
+                    'success': True,
+                    'message': 'Tarif yangilandi'
+                })
+        except Exception as e:
+            connection.rollback()
+            return jsonify({'error': str(e)}), 500
+        finally:
+            connection.close()
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
