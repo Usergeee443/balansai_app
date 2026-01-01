@@ -182,6 +182,99 @@ def save_debt(user_id, person_name, amount, direction, due_date=None):
     finally:
         connection.close()
 
+def get_category_transactions(user_id, category_name, limit=50, offset=0):
+    """Kategoriya bo'yicha tranzaksiyalarni olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Avval category_contact_id ni topish
+            cursor.execute("""
+                SELECT id FROM contacts 
+                WHERE user_id = %s AND contact_type = 'category' AND category_name = %s
+                LIMIT 1
+            """, (user_id, category_name))
+            category_contact = cursor.fetchone()
+            
+            if category_contact:
+                category_contact_id = category_contact['id']
+                # category_contact_id bo'yicha tranzaksiyalar
+                cursor.execute("""
+                    SELECT * FROM transactions 
+                    WHERE user_id = %s AND category_contact_id = %s
+                    ORDER BY created_at DESC 
+                    LIMIT %s OFFSET %s
+                """, (user_id, category_contact_id, limit, offset))
+            else:
+                # category nomi bo'yicha tranzaksiyalar (eski usul)
+                cursor.execute("""
+                    SELECT * FROM transactions 
+                    WHERE user_id = %s AND category = %s
+                    ORDER BY created_at DESC 
+                    LIMIT %s OFFSET %s
+                """, (user_id, category_name, limit, offset))
+            
+            return cursor.fetchall()
+    except Exception as e:
+        print(f"❌ Kategoriya tranzaksiyalarini olishda xatolik: {e}")
+        return []
+    finally:
+        connection.close()
+
+def get_category_details(user_id, category_name):
+    """Kategoriya tafsilotlari (jami summa, statistika)"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Avval category_contact_id ni topish
+            cursor.execute("""
+                SELECT id FROM contacts 
+                WHERE user_id = %s AND contact_type = 'category' AND category_name = %s
+                LIMIT 1
+            """, (user_id, category_name))
+            category_contact = cursor.fetchone()
+            
+            if category_contact:
+                category_contact_id = category_contact['id']
+                # category_contact_id bo'yicha statistika
+                cursor.execute("""
+                    SELECT 
+                        COUNT(*) as transaction_count,
+                        SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END) as total_income,
+                        SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END) as total_expense,
+                        SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE -amount END) as net_amount
+                    FROM transactions 
+                    WHERE user_id = %s AND category_contact_id = %s
+                """, (user_id, category_contact_id))
+            else:
+                # category nomi bo'yicha statistika (eski usul)
+                cursor.execute("""
+                    SELECT 
+                        COUNT(*) as transaction_count,
+                        SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE 0 END) as total_income,
+                        SUM(CASE WHEN transaction_type = 'expense' THEN amount ELSE 0 END) as total_expense,
+                        SUM(CASE WHEN transaction_type = 'income' THEN amount ELSE -amount END) as net_amount
+                    FROM transactions 
+                    WHERE user_id = %s AND category = %s
+                """, (user_id, category_name))
+            
+            result = cursor.fetchone()
+            return result if result else {
+                'transaction_count': 0,
+                'total_income': 0,
+                'total_expense': 0,
+                'net_amount': 0
+            }
+    except Exception as e:
+        print(f"❌ Kategoriya tafsilotlarini olishda xatolik: {e}")
+        return {
+            'transaction_count': 0,
+            'total_income': 0,
+            'total_expense': 0,
+            'net_amount': 0
+        }
+    finally:
+        connection.close()
+
 def check_registration_complete(user_id):
     """Foydalanuvchi ro'yxatdan to'liq o'tganligini tekshirish"""
     connection = get_db_connection()
@@ -581,20 +674,33 @@ def get_contact_by_id(user_id, contact_id):
     finally:
         connection.close()
 
-def add_contact(user_id, name, phone=None, notes=None):
-    """Yangi kontakt qo'shish"""
+def add_contact(user_id, name, phone=None, notes=None, contact_type='person', category_name=None, transaction_type='both'):
+    """Yangi kontakt qo'shish (person yoki category)"""
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
             # Avval contacts jadvalini tekshiramiz
             try:
-                query = """INSERT INTO contacts (user_id, name, phone, notes, created_at)
-                           VALUES (%s, %s, %s, %s, %s)"""
-                cursor.execute(query, (user_id, name, phone, notes, datetime.now()))
+                # Jadval strukturasini tekshirish
+                cursor.execute("SHOW COLUMNS FROM contacts LIKE 'contact_type'")
+                has_contact_type = cursor.fetchone() is not None
+                
+                if has_contact_type:
+                    # Yangi struktura bilan (contact_type, category_name, transaction_type)
+                    query = """INSERT INTO contacts (user_id, name, phone, notes, contact_type, category_name, transaction_type, created_at)
+                               VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"""
+                    cursor.execute(query, (user_id, name, phone, notes, contact_type, category_name, transaction_type, datetime.now()))
+                else:
+                    # Eski struktura bilan
+                    query = """INSERT INTO contacts (user_id, name, phone, notes, created_at)
+                               VALUES (%s, %s, %s, %s, %s)"""
+                    cursor.execute(query, (user_id, name, phone, notes, datetime.now()))
+                
                 connection.commit()
                 return cursor.lastrowid
-            except:
-                # Agar contacts jadvali yo'q bo'lsa, faqat ID qaytaramiz
+            except Exception as e:
+                # Agar contacts jadvali yo'q bo'lsa yoki xatolik bo'lsa
+                print(f"[DEBUG] Contacts jadvali topilmadi yoki xatolik: {e}")
                 return None
     except Exception as e:
         print(f"❌ Kontakt qo'shishda xatolik: {e}")

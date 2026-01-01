@@ -39,6 +39,7 @@
                     <div class="dot" data-step="4"></div>
                     <div class="dot" data-step="5"></div>
                     <div class="dot" data-step="6"></div>
+                    <div class="dot" data-step="7"></div>
                 </div>
             </div>
         </header>
@@ -286,10 +287,91 @@
                 </div>
             </div>
 
-            <!-- Step 6: Tasdiqlash -->
+            <!-- Step 6: Tarif tanlash -->
             <div class="form-step" id="step6">
                 <div class="step-header">
-                    <button class="back-button" onclick="prevStep(3)">
+                    <button class="back-button" onclick="prevStep(5)">
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                    <h1 class="step-title">Tarif tanlang</h1>
+                    <p class="step-subtitle">7 kunlik sinov muddati bilan</p>
+                </div>
+
+                <div class="form-content">
+                    <div class="tariff-options">
+                        <label class="tariff-option">
+                            <input type="radio" name="tariff" value="FREE" required>
+                            <div class="tariff-content">
+                                <div class="tariff-header">
+                                    <div class="tariff-icon">🆓</div>
+                                    <div class="tariff-info">
+                                        <div class="tariff-name">Bepul</div>
+                                        <div class="tariff-price">0 so'm</div>
+                                    </div>
+                                </div>
+                                <div class="tariff-features">
+                                    <div class="tariff-feature">✓ 7 kunlik sinov</div>
+                                    <div class="tariff-feature">✓ Asosiy funksiyalar</div>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label class="tariff-option">
+                            <input type="radio" name="tariff" value="PRO" required>
+                            <div class="tariff-content">
+                                <div class="tariff-header">
+                                    <div class="tariff-icon">⭐</div>
+                                    <div class="tariff-info">
+                                        <div class="tariff-name">Pro</div>
+                                        <div class="tariff-price">Premium</div>
+                                    </div>
+                                </div>
+                                <div class="tariff-features">
+                                    <div class="tariff-feature">✓ 7 kunlik sinov</div>
+                                    <div class="tariff-feature">✓ Barcha funksiyalar</div>
+                                    <div class="tariff-feature">✓ Premium qo'llab-quvvatlash</div>
+                                </div>
+                            </div>
+                        </label>
+
+                        <label class="tariff-option">
+                            <input type="radio" name="tariff" value="BUSINESS" required>
+                            <div class="tariff-content">
+                                <div class="tariff-header">
+                                    <div class="tariff-icon">💼</div>
+                                    <div class="tariff-info">
+                                        <div class="tariff-name">Biznes</div>
+                                        <div class="tariff-price">Professional</div>
+                                    </div>
+                                </div>
+                                <div class="tariff-features">
+                                    <div class="tariff-feature">✓ 7 kunlik sinov</div>
+                                    <div class="tariff-feature">✓ Biznes funksiyalari</div>
+                                    <div class="tariff-feature">✓ Ko'p foydalanuvchi</div>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                    <span class="error-message" id="tariffError"></span>
+                </div>
+
+                <div class="step-footer fixed-footer">
+                    <button type="button" class="btn-secondary" onclick="prevStep(5)">Orqaga</button>
+                    <button type="button" class="btn-primary" onclick="nextStep(7)">
+                        Davom etish
+                        <svg viewBox="0 0 24 24" fill="none">
+                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Step 7: Tasdiqlash -->
+            <div class="form-step" id="step7">
+                <div class="step-header">
+                    <button class="back-button" onclick="prevStep(6)">
                         <svg viewBox="0 0 24 24" fill="none">
                             <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
                         </svg>
@@ -313,6 +395,10 @@
                             <span class="review-value" id="reviewAccountType">-</span>
                         </div>
                         <div class="review-item">
+                            <span class="review-label">Tarif</span>
+                            <span class="review-value" id="reviewTariff">-</span>
+                        </div>
+                        <div class="review-item">
                             <span class="review-label">Naqd pul</span>
                             <span class="review-value" id="reviewCash">-</span>
                         </div>
@@ -328,7 +414,7 @@
                 </div>
 
                 <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-secondary" onclick="prevStep(5)">Orqaga</button>
+                    <button type="button" class="btn-secondary" onclick="prevStep(6)">Orqaga</button>
                     <button type="submit" class="btn-primary" id="submitBtn" form="registrationForm">
                         <span id="submitText">Saqlash</span>
                         <span id="submitLoader" class="loader" style="display: none;"></span>

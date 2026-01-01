@@ -15,6 +15,23 @@ body {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
+    overscroll-behavior: none;
+    touch-action: pan-y pinch-zoom;
+    position: relative;
+    width: 100%;
+}
+
+html {
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: none;
+    overscroll-behavior: none;
+    touch-action: pan-y pinch-zoom;
+    height: 100%;
 }
 
 .register-app {
@@ -22,6 +39,7 @@ body {
     display: flex;
     flex-direction: column;
     background: linear-gradient(180deg, #1a1a1a 0%, #000000 100%);
+    position: relative;
 }
 
 /* Header */
@@ -757,6 +775,90 @@ body {
     margin-bottom: 32px;
 }
 
+/* Tariff Options */
+.tariff-options {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.tariff-option {
+    display: block;
+    cursor: pointer;
+}
+
+.tariff-option input {
+    display: none;
+}
+
+.tariff-content {
+    background: rgba(255, 255, 255, 0.08);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 24px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.tariff-option input:checked + .tariff-content {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.4);
+    box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
+    transform: scale(1.02);
+}
+
+.tariff-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.tariff-icon {
+    font-size: 48px;
+    width: 72px;
+    height: 72px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 18px;
+    flex-shrink: 0;
+}
+
+.tariff-info {
+    flex: 1;
+}
+
+.tariff-name {
+    font-size: 24px;
+    font-weight: 700;
+    color: #ffffff;
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+}
+
+.tariff-price {
+    font-size: 17px;
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 500;
+}
+
+.tariff-features {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tariff-feature {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 /* Responsive */
 @media (max-width: 480px) {
     .step-title {
@@ -782,5 +884,15 @@ body {
     .large-input {
         font-size: 28px;
         padding: 20px;
+    }
+    
+    .tariff-icon {
+        width: 64px;
+        height: 64px;
+        font-size: 40px;
+    }
+    
+    .tariff-name {
+        font-size: 22px;
     }
 }

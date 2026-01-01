@@ -4,11 +4,12 @@
 
 const tg = window.Telegram?.WebApp || null;
 let currentStep = 1;
-const totalSteps = 6;
+const totalSteps = 7;
 let formData = {
     name: '',
     source: '',
     account_type: '',
+    tariff: '',
     cash_balance: 0,
     card_balance: 0,
     debts: []
@@ -17,9 +18,126 @@ let formData = {
 // Telegram Web App initialization
 if (tg) {
     tg.ready();
-    tg.expand();
+    
+    // To'liq ekran qilish
+    function ensureFullscreen() {
+        if (!tg.isExpanded) {
+            tg.expand();
+        }
+    }
+    
+    // Dastlabki fullscreen
+    ensureFullscreen();
+    
+    // Viewport balandligini sozlash
+    if (tg.viewportStableHeight !== undefined) {
+        tg.viewportStableHeight = window.innerHeight;
+    }
+    
+    // Pull-to-close'ni bloklash (scroll'ni bloklamasdan)
+    if (tg.disableVerticalSwipes) {
+        tg.disableVerticalSwipes();
+    }
+    
+    // BackButton'ni yashirish
+    if (tg.BackButton) {
+        tg.BackButton.hide();
+    }
+    
+    // Chiqishni tasdiqlash
+    tg.enableClosingConfirmation();
+    
+    // Scroll'ni yoqish va pull-to-close'ni to'liq bloklash
+    // CSS orqali overscroll-behavior: none qo'shilgan
+    // JavaScript orqali ham qo'shimcha himoya
+    document.body.style.overscrollBehavior = 'none';
+    document.body.style.overscrollBehaviorY = 'none';
+    document.documentElement.style.overscrollBehavior = 'none';
+    document.documentElement.style.overscrollBehaviorY = 'none';
+    
+    // Touch event'larni boshqarish (pull-to-close'ni oldini olish, lekin scroll'ni bloklamasdan)
+    let touchStartY = 0;
+    let touchStartTime = 0;
+    let lastTouchY = 0;
+    
+    document.addEventListener('touchstart', (e) => {
+        touchStartY = e.touches[0].clientY;
+        lastTouchY = touchStartY;
+        touchStartTime = Date.now();
+    }, { passive: true });
+    
+    document.addEventListener('touchmove', (e) => {
+        const touchY = e.touches[0].clientY;
+        const deltaY = touchY - touchStartY;
+        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
+        const scrollHeight = document.documentElement.scrollHeight;
+        const clientHeight = document.documentElement.clientHeight;
+        const isAtTop = scrollTop <= 5; // Kichik margin
+        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 5; // Kichik margin
+        
+        // Agar yuqoriga harakat qilmoqchi bo'lsa (pastga scroll) va sahifa tepada bo'lsa
+        if (deltaY > 0 && isAtTop) {
+            // Pull-to-close'ni bloklash
+            e.preventDefault();
+            return;
+        }
+        
+        // Agar pastga harakat qilmoqchi bo'lsa (yuqoriga scroll) va sahifa pastda bo'lsa
+        if (deltaY < 0 && isAtBottom) {
+            // Pull-to-close'ni bloklash
+            e.preventDefault();
+            return;
+        }
+        
+        lastTouchY = touchY;
+    }, { passive: false });
+    
+    document.addEventListener('touchend', () => {
+        // Touch tugaganda hech narsa qilmaymiz
+    }, { passive: true });
+    
+    // Header va background ranglari
     tg.setHeaderColor('#000000');
     tg.setBackgroundColor('#000000');
+    
+    // Viewport o'zgarganda fullscreen'ni saqlash
+    window.addEventListener('resize', () => {
+        ensureFullscreen();
+    });
+    
+    // Scroll event'ida ham tekshirish
+    let scrollCheckTimeout;
+    window.addEventListener('scroll', () => {
+        clearTimeout(scrollCheckTimeout);
+        scrollCheckTimeout = setTimeout(() => {
+            ensureFullscreen();
+        }, 100);
+    });
+    
+    // Ilova ochilganda fullscreen'ni ta'minlash
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            ensureFullscreen();
+        }, 100);
+    });
+    
+    // DOMContentLoaded'da ham tekshirish
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                ensureFullscreen();
+            }, 50);
+        });
+    } else {
+        setTimeout(() => {
+            ensureFullscreen();
+        }, 50);
+    }
+    
+    // Periodic check
+    setInterval(() => {
+        ensureFullscreen();
+    }, 500);
 }
 
 // Initialize
@@ -46,33 +164,43 @@ document.addEventListener('DOMContentLoaded', () => {
 async function checkRegistrationStatus() {
     try {
         const userId = getUserId();
+        console.log('[REGISTER] Checking registration status for user:', userId);
+        
         if (!userId) {
-            console.error('User ID topilmadi');
+            console.error('[REGISTER] User ID topilmadi');
             return;
         }
         
         const response = await fetch(`/api/user/${userId}`);
+        console.log('[REGISTER] API response status:', response.status);
+        
         if (response.ok) {
             const user = await response.json();
+            console.log('[REGISTER] User data received:', user);
             
             // Check if user exists and registration is complete
             const isComplete = checkRegistrationComplete(user);
+            console.log('[REGISTER] Registration complete:', isComplete);
             
             if (isComplete) {
                 // User allaqachon ro'yxatdan o'tgan - asosiy sahifaga yuborish
-                console.log('User allaqachon ro\'yxatdan o\'tgan, asosiy sahifaga yuborilmoqda...');
+                console.log('[REGISTER] User allaqachon ro\'yxatdan o\'tgan, asosiy sahifaga yuborilmoqda...');
                 
-                // Telegram Web App orqali yuborish
-                if (tg && tg.openLink) {
-                    tg.openLink('/');
-                } else {
-                    // Fallback: window.location
-                    window.location.href = '/';
-                }
+                // Kichik kechikish (UI ko'rinishi uchun)
+                await new Promise(resolve => setTimeout(resolve, 300));
+                
+                // Asosiy sahifaga yuborish
+                // Telegram Web App'da window.location ishlatish yaxshiroq
+                const baseUrl = window.location.origin;
+                console.log('[REGISTER] Redirecting to:', baseUrl + '/');
+                
+                // window.location.href ishlatish (Telegram Web App'da ishlaydi)
+                window.location.href = baseUrl + '/';
                 return;
             }
             
             // Fill form with existing data if partially filled
+            console.log('[REGISTER] Registration not complete, filling form with existing data');
             if (user.name && user.name !== 'Xojayin') {
                 document.getElementById('name').value = user.name;
                 formData.name = user.name;
@@ -108,10 +236,12 @@ async function checkRegistrationStatus() {
             updateProgress();
         } else if (response.status === 404) {
             // User topilmadi - yangi user, registration davom etadi
-            console.log('Yangi user, registration davom etadi');
+            console.log('[REGISTER] Yangi user, registration davom etadi');
+        } else {
+            console.error('[REGISTER] API error:', response.status, response.statusText);
         }
     } catch (error) {
-        console.error('Error checking registration status:', error);
+        console.error('[REGISTER] Error checking registration status:', error);
     }
 }
 
@@ -231,6 +361,19 @@ function setupFormValidation() {
             }
         });
     });
+    
+    // Tariff radios
+    const tariffRadios = document.querySelectorAll('input[name="tariff"]');
+    tariffRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            const tariffError = document.getElementById('tariffError');
+            if (radio.checked) {
+                tariffError.textContent = '';
+                // Auto proceed after selection
+                setTimeout(() => nextStep(7), 300);
+            }
+        });
+    });
 }
 
 // Validate field
@@ -284,6 +427,12 @@ function nextStep(step) {
     } else if (currentStep === 5) {
         // Collect debts
         formData.debts = collectDebts();
+    } else if (currentStep === 6) {
+        const tariff = document.querySelector('input[name="tariff"]:checked')?.value;
+        if (!validateField('tariff', tariff)) {
+            return;
+        }
+        formData.tariff = tariff;
     }
     
     // Show next step
@@ -438,6 +587,13 @@ function updateReview() {
     };
     document.getElementById('reviewAccountType').textContent = accountTypeMap[formData.account_type] || '-';
     
+    const tariffMap = {
+        'FREE': 'Bepul',
+        'PRO': 'Pro',
+        'BUSINESS': 'Biznes'
+    };
+    document.getElementById('reviewTariff').textContent = tariffMap[formData.tariff] || '-';
+    
     document.getElementById('reviewCash').textContent = formatCurrency(formData.cash_balance);
     document.getElementById('reviewCard').textContent = formatCurrency(formData.card_balance);
     
@@ -513,7 +669,8 @@ async function handleSubmit(e) {
 
 // Update user data
 async function updateUserData(userId) {
-    const response = await fetch(`/api/user/${userId}/update`, {
+    // Avval asosiy ma'lumotlarni yangilash
+    const updateResponse = await fetch(`/api/user/${userId}/update`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -526,12 +683,31 @@ async function updateUserData(userId) {
         })
     });
     
-    if (!response.ok) {
-        const error = await response.json();
+    if (!updateResponse.ok) {
+        const error = await updateResponse.json();
         throw new Error(error.error || 'Ma\'lumotlar saqlanmadi');
     }
     
-    return await response.json();
+    // Keyin tarifni tanlash
+    if (formData.tariff) {
+        const tariffResponse = await fetch(`/api/user/${userId}/tariff`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Telegram-Init-Data': getInitData()
+            },
+            body: JSON.stringify({
+                tariff: formData.tariff
+            })
+        });
+        
+        if (!tariffResponse.ok) {
+            const error = await tariffResponse.json();
+            throw new Error(error.error || 'Tarif saqlanmadi');
+        }
+    }
+    
+    return await updateResponse.json();
 }
 
 // Save onboarding data

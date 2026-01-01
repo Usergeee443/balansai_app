@@ -38,6 +38,50 @@
             <!-- JavaScript orqali yuklanadi -->
         </div>
 
+        <!-- Interactive Cards -->
+        <div class="home-cards-scroll">
+            <div class="home-card" onclick="navigateTo('topExpenses')">
+                <div class="home-card-content">
+                    <span class="home-card-title">Top xarajatlar</span>
+                    <div class="home-card-image">
+                        <img src="/static/images/Pie Chart (1).png" alt="Top xarajatlar">
+                    </div>
+                </div>
+            </div>
+            <div class="home-card" onclick="navigateTo('goals')">
+                <div class="home-card-content">
+                    <span class="home-card-title">Maqsad o'rnatish</span>
+                    <div class="home-card-image">
+                        <img src="/static/images/Dart.png" alt="Maqsad">
+                    </div>
+                </div>
+            </div>
+            <div class="home-card" onclick="navigateTo('aiChat')">
+                <div class="home-card-content">
+                    <span class="home-card-title">AI chat</span>
+                    <div class="home-card-image">
+                        <img src="/static/images/Smartphone.png" alt="AI chat">
+                    </div>
+                </div>
+            </div>
+            <div class="home-card" onclick="navigateTo('reminders')">
+                <div class="home-card-content">
+                    <span class="home-card-title">Eslatmalar</span>
+                    <div class="home-card-image">
+                        <img src="/static/images/Calendar.png" alt="Eslatmalar">
+                    </div>
+                </div>
+            </div>
+            <div class="home-card" onclick="navigateTo('savings')">
+                <div class="home-card-content">
+                    <span class="home-card-title">Pul yig'ish</span>
+                    <div class="home-card-image">
+                        <img src="/static/images/Safebox.png" alt="Pul yig'ish">
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- So'nggi Tranzaksiyalar -->
         <section class="section">
             <div class="section-header">
@@ -48,19 +92,6 @@
             </div>
             <div class="transactions-scroll" id="transactionsList">
                 <!-- JavaScript orqali yuklanadi -->
-            </div>
-        </section>
-
-        <!-- Statistika -->
-        <section class="section">
-            <div class="section-header">
-                <h2 class="section-title">Statitikalar</h2>
-                <svg class="section-arrow" onclick="navigateTo('statistics')" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
-            </div>
-            <div class="stats-card">
-                <canvas id="statsChart" class="stats-canvas"></canvas>
             </div>
         </section>
     </div>
@@ -108,6 +139,52 @@
         </div>
     </div>
 
+    <!-- Top Xarajatlar Sahifasi -->
+    <div id="pageTopExpenses" class="page">
+        <div class="page-header">
+            <button class="page-back" onclick="navigateTo('home')">←</button>
+            <h2 class="page-title">Top xarajatlar</h2>
+        </div>
+        <div id="topExpensesContent" style="padding: 16px;">
+            <div style="text-align: center; padding: 40px 20px; color: #999;">
+                <p>Yuklanmoqda...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Maqsad Sahifasi -->
+    <div id="pageGoals" class="page">
+        <div class="page-header">
+            <button class="page-back" onclick="navigateTo('home')">←</button>
+            <h2 class="page-title">Maqsad o'rnatish</h2>
+        </div>
+        <div style="padding: 16px; text-align: center; color: #999;">
+            <p>Tez orada...</p>
+        </div>
+    </div>
+
+    <!-- AI Chat Sahifasi -->
+    <div id="pageAiChat" class="page">
+        <div class="page-header">
+            <button class="page-back" onclick="navigateTo('home')">←</button>
+            <h2 class="page-title">AI chat</h2>
+        </div>
+        <div style="padding: 16px; text-align: center; color: #999;">
+            <p>Tez orada...</p>
+        </div>
+    </div>
+
+    <!-- Pul Yig'ish Sahifasi -->
+    <div id="pageSavings" class="page">
+        <div class="page-header">
+            <button class="page-back" onclick="navigateTo('home')">←</button>
+            <h2 class="page-title">Pul yig'ish</h2>
+        </div>
+        <div style="padding: 16px; text-align: center; color: #999;">
+            <p>Tez orada...</p>
+        </div>
+    </div>
+
     <!-- Balans Tafsilotlari Sahifasi -->
     <div id="pageBalanceDetails" class="page">
         <div class="page-header">
@@ -128,6 +205,11 @@
     <div id="pageReminders" class="page">
         <div class="page-header">
             <h2 class="page-title">Eslatmalar</h2>
+            <button class="add-btn" onclick="showAddReminderModal()" title="Yangi eslatma">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+            </button>
         </div>
         
         <div id="remindersList" class="reminders-list">
@@ -139,6 +221,19 @@
     <div id="pageDebts" class="page">
         <div class="page-header">
             <h2 class="page-title">Qarzlar</h2>
+            <div style="display: flex; gap: 8px;">
+                <button class="add-btn" onclick="showAddContactModal()" title="Yangi kontakt">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                </button>
+                <button class="add-btn" onclick="showAddDebtModal()" title="Yangi qarz">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                </button>
+            </div>
         </div>
         
         <!-- Kontaktlar ro'yxati -->
@@ -229,6 +324,14 @@
             </svg>
         </div>
     </nav>
+
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen" style="display: none;">
+        <div class="loading-content">
+            <img src="/static/images/Hourglass (2).png" alt="Loading" class="loading-hourglass">
+            <p class="loading-text">Yuklanmoqda biroz kuting...</p>
+        </div>
+    </div>
 
     <!-- Main JavaScript -->
     <script src="/static/js/main.js"></script>

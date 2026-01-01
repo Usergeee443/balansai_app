@@ -11,7 +11,8 @@ from database import (
     get_debt_by_id, update_debt, delete_debt,
     get_debt_reminders, add_debt_reminder, delete_debt_reminder,
     get_currency_rate,
-    update_user, save_initial_balance, save_debt
+    update_user, save_initial_balance, save_debt,
+    get_category_transactions, get_category_details
 )
 import os
 import hmac
@@ -152,17 +153,32 @@ def register():
     # Agar user allaqachon ro'yxatdan o'tgan bo'lsa, asosiy sahifaga yuborish
     try:
         user_id = get_user_id_from_request()
+        print(f"[DEBUG] Register route: user_id = {user_id}")
+        
         if user_id:
             user = get_user(user_id)
+            print(f"[DEBUG] Register route: user found = {user is not None}")
+            
             if user:
                 # Registration complete tekshiruvi
                 from database import check_registration_complete
                 is_complete = check_registration_complete(user_id)
+                print(f"[DEBUG] Register route: registration_complete = {is_complete}")
+                
                 if is_complete:
                     # Asosiy sahifaga redirect
+                    print(f"[DEBUG] Register route: Redirecting to /")
                     return redirect('/')
+                else:
+                    print(f"[DEBUG] Register route: Registration not complete, showing registration form")
+            else:
+                print(f"[DEBUG] Register route: User not found in database, showing registration form")
+        else:
+            print(f"[DEBUG] Register route: No user_id found, showing registration form")
     except Exception as e:
         print(f"[DEBUG] Register route'da tekshirish xatosi: {e}")
+        import traceback
+        traceback.print_exc()
         # Xatolik bo'lsa ham registration sahifasini ko'rsatish
     
     return render_template('register.html')
@@ -447,7 +463,7 @@ def api_get_contacts():
 
 @app.route('/api/contacts', methods=['POST'])
 def api_add_contact():
-    """Yangi kontakt qo'shish"""
+    """Yangi kontakt qo'shish (person yoki category)"""
     try:
         user_id = get_user_id_from_request()
         if not user_id:
@@ -457,14 +473,25 @@ def api_add_contact():
         name = data.get('name')
         phone = data.get('phone')
         notes = data.get('notes')
+        contact_type = data.get('contact_type', 'person')
+        category_name = data.get('category_name')
+        transaction_type = data.get('transaction_type', 'both')
         
         if not name:
             return jsonify({'error': 'Name majburiy'}), 400
         
-        contact_id = add_contact(user_id, name, phone, notes)
+        # Agar category bo'lsa, category_name majburiy
+        if contact_type == 'category' and not category_name:
+            category_name = name  # category_name bo'lmasa, name'dan olinadi
+        
+        contact_id = add_contact(user_id, name, phone, notes, contact_type, category_name, transaction_type)
         
         if contact_id:
-            return jsonify({'success': True, 'id': contact_id}), 201
+            return jsonify({
+                'success': True,
+                'id': contact_id,
+                'message': 'Kontakt qo\'shildi'
+            }), 201
         else:
             return jsonify({'success': True, 'id': None, 'message': 'Kontakt qo\'shildi (faqat nom bilan)'}), 201
     except Exception as e:
@@ -979,7 +1006,7 @@ def save_onboarding(user_id):
 
 @app.route('/api/user/<int:user_id>/tariff', methods=['POST'])
 def set_tariff(user_id):
-    """Tarif tanlash"""
+    """Tarif tanlash (7 kunlik sinov bilan)"""
     try:
         data = request.get_json()
         
@@ -987,17 +1014,24 @@ def set_tariff(user_id):
             return jsonify({'error': 'Tarif topilmadi'}), 400
         
         tariff = data['tariff']
+        
+        # 7 kunlik sinov muddati
+        from datetime import datetime, timedelta
+        trial_expires_at = datetime.now() + timedelta(days=7)
+        
         connection = get_db_connection()
         try:
             with connection.cursor() as cursor:
                 cursor.execute(
-                    "UPDATE users SET tariff = %s, updated_at = NOW() WHERE user_id = %s",
-                    (tariff, user_id)
+                    "UPDATE users SET tariff = %s, tariff_expires_at = %s, updated_at = NOW() WHERE user_id = %s",
+                    (tariff, trial_expires_at, user_id)
                 )
                 connection.commit()
                 return jsonify({
                     'success': True,
-                    'message': 'Tarif yangilandi'
+                    'message': 'Tarif yangilandi',
+                    'tariff': tariff,
+                    'trial_expires_at': trial_expires_at.isoformat()
                 })
         except Exception as e:
             connection.rollback()
@@ -1005,6 +1039,70 @@ def set_tariff(user_id):
         finally:
             connection.close()
     except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# Kategoriya va Kontakt Integratsiyasi
+@app.route('/api/category/<category_name>/transactions', methods=['GET'])
+def api_get_category_transactions(category_name):
+    """Kategoriya bo'yicha tranzaksiyalarni olish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        limit = int(request.args.get('limit', 50))
+        offset = int(request.args.get('offset', 0))
+        
+        transactions = get_category_transactions(user_id, category_name, limit, offset)
+        
+        # Decimal va datetime ni JSON ga moslashtirish
+        for t in transactions:
+            for key, value in t.items():
+                if isinstance(value, Decimal):
+                    t[key] = float(value)
+                elif isinstance(value, datetime):
+                    t[key] = value.isoformat()
+                elif isinstance(value, (date, time)):
+                    t[key] = str(value)
+                elif value is None:
+                    t[key] = None
+        
+        # Jami summani hisoblash
+        details = get_category_details(user_id, category_name)
+        
+        return jsonify({
+            'transactions': transactions,
+            'total_amount': float(details.get('net_amount', 0)),
+            'total_income': float(details.get('total_income', 0)),
+            'total_expense': float(details.get('total_expense', 0)),
+            'transaction_count': details.get('transaction_count', 0)
+        })
+    except Exception as e:
+        print(f"❌ API: Kategoriya tranzaksiyalarini olishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/category/<category_name>/details', methods=['GET'])
+def api_get_category_details(category_name):
+    """Kategoriya tafsilotlari (jami summa, statistika)"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+        
+        details = get_category_details(user_id, category_name)
+        
+        # Decimal ni float ga konvertatsiya qilish
+        for key, value in details.items():
+            if isinstance(value, Decimal):
+                details[key] = float(value)
+        
+        return jsonify(details)
+    except Exception as e:
+        print(f"❌ API: Kategoriya tafsilotlarini olishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
 if __name__ == '__main__':

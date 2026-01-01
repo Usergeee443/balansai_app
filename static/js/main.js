@@ -259,23 +259,36 @@ async function apiRequest(endpoint, options = {}) {
         url += (url.includes('?') ? '&' : '?') + `test_user_id=${testUserId}`;
     }
     
-    console.log(`API Request: ${url}`, { initData: initData ? 'mavjud' : 'yo\'q', testUserId });
+    console.log(`[API] Request: ${url}`, { 
+        initData: initData ? 'mavjud' : 'yo\'q', 
+        testUserId,
+        method: options.method || 'GET'
+    });
     
     try {
         const response = await fetch(url, {
             ...options,
             headers: {
                 'Content-Type': 'application/json',
-                'X-Telegram-Init-Data': initData,
+                'X-Telegram-Init-Data': initData || '',
                 ...options.headers
             }
         });
         
-        console.log(`API Response status: ${response.status}`, response.statusText);
+        console.log(`[API] Response status: ${response.status}`, response.statusText);
         
         if (!response.ok) {
-            const error = await response.json().catch(() => ({ error: 'Xatolik yuz berdi' }));
-            console.error('API Error:', error, 'Status:', response.status);
+            const errorText = await response.text();
+            console.error('[API] Error response:', errorText);
+            
+            let error;
+            try {
+                error = JSON.parse(errorText);
+            } catch (e) {
+                error = { error: errorText || 'Xatolik yuz berdi' };
+            }
+            
+            console.error('[API] Error object:', error, 'Status:', response.status);
             
             // User not found xatoligini alohida handle qilish
             if (response.status === 404 && (error.error === 'User not found' || error.code === 'USER_NOT_FOUND')) {
@@ -289,14 +302,15 @@ async function apiRequest(endpoint, options = {}) {
         }
         
         const data = await response.json();
-        console.log(`API Success: ${url}`, data);
+        console.log(`[API] Success: ${url}`, data);
         return data;
     } catch (error) {
-        console.error('API xatosi:', error);
-        console.error('Error details:', {
+        console.error('[API] Exception:', error);
+        console.error('[API] Error details:', {
             message: error.message,
             stack: error.stack,
-            endpoint: url
+            endpoint: url,
+            name: error.name
         });
         throw error;
     }
@@ -313,12 +327,12 @@ async function loadUserData() {
         console.log('User data olindi:', user);
         currentUser = user;
         
-        // Tarif tekshiruvi
-        const allowed = ['PLUS', 'PRO', 'FAMILY', 'FAMILY_PLUS', 'FAMILY_PRO'];
+        // Tarif tekshiruvi (yumshoq - faqat ogohlantirish)
+        const allowed = ['PLUS', 'PRO', 'FAMILY', 'FAMILY_PLUS', 'FAMILY_PRO', 'FREE', 'BUSINESS', 'BUSINESS_PLUS', 'BUSINESS_PRO'];
         if (!allowed.includes(user.tariff)) {
             console.warn('Tarif mos emas:', user.tariff);
-            alert('Sizning tarifingiz bu ilova uchun mos emas');
-            return false;
+            // Faqat ogohlantirish, lekin ma'lumotlarni yuklash davom etadi
+            // alert('Sizning tarifingiz bu ilova uchun mos emas');
         }
         
         // Balansni ko'rsatish
@@ -444,6 +458,21 @@ function renderCurrencies(balances) {
         { code: 'UZS', icon: null, class: null }
     ];
     
+    // Faqat 0 dan katta balanslarni sanash
+    const activeCurrencies = currencies.filter(curr => {
+        const balance = balances[curr.code] || 0;
+        return balance > 0 || curr.code === 'UZS';
+    });
+    
+    // Agar faqat 1 ta valyuta bo'lsa, ko'rsatmaslik
+    if (activeCurrencies.length <= 1) {
+        container.innerHTML = '';
+        container.style.display = 'none';
+        return;
+    }
+    
+    // Ko'rsatish
+    container.style.display = 'block';
     let html = '';
     
     currencies.forEach(curr => {
@@ -469,6 +498,105 @@ function renderCurrencies(balances) {
 // TRANSACTIONS
 // ============================================
 
+// Lazy loading uchun o'zgaruvchilar
+let transactionsPage = 0;
+let transactionsLoading = false;
+let transactionsHasMore = true;
+let todayTransactions = [];
+let yesterdayTransactions = [];
+let otherTransactions = [];
+let loadedOtherTransactions = false;
+
+async function loadMoreTransactions() {
+    if (transactionsLoading || loadedOtherTransactions) return;
+    
+    transactionsLoading = true;
+    const container = document.getElementById('transactionsList');
+    const loadMoreBtn = document.getElementById('loadMoreTransactions');
+    
+    if (loadMoreBtn) {
+        loadMoreBtn.innerHTML = '<div style="padding: 8px;">Yuklanmoqda...</div>';
+    }
+    
+    try {
+        // Qolgan tranzaksiyalarni API dan olish (offset bilan)
+        const offset = todayTransactions.length + yesterdayTransactions.length;
+        const moreTransactions = await apiRequest(`/api/transactions?limit=50&offset=${offset}`);
+        
+        if (moreTransactions && moreTransactions.length > 0) {
+            // Bugun va kecha bo'lmagan tranzaksiyalarni ajratish
+            const todayDate = new Date();
+            todayDate.setHours(0, 0, 0, 0);
+            const yesterdayDate = new Date(todayDate);
+            yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+            
+            const filtered = moreTransactions.filter(t => {
+                const tDate = new Date(t.created_at);
+                tDate.setHours(0, 0, 0, 0);
+                return tDate.getTime() !== todayDate.getTime() && tDate.getTime() !== yesterdayDate.getTime();
+            });
+            
+            if (filtered.length > 0) {
+                const grouped = groupTransactionsByDate(filtered);
+                let html = '';
+                
+                Object.keys(grouped).forEach(dateKey => {
+                    html += `<div class="transaction-group-title" style="padding: 12px 16px; font-weight: 600; color: #333; background: #f5f5f5; margin: 16px -16px 8px -16px;">${dateKey}</div>`;
+                    html += grouped[dateKey].map(t => renderHomeTransaction(t)).join('');
+                });
+                
+                if (loadMoreBtn) {
+                    loadMoreBtn.outerHTML = html;
+                } else {
+                    container.innerHTML += html;
+                }
+            } else {
+                if (loadMoreBtn) {
+                    loadMoreBtn.innerHTML = '<div style="padding: 8px; color: #999;">Boshqa tranzaksiyalar yo\'q</div>';
+                }
+            }
+            
+            loadedOtherTransactions = true;
+        } else {
+            if (loadMoreBtn) {
+                loadMoreBtn.innerHTML = '<div style="padding: 8px; color: #999;">Boshqa tranzaksiyalar yo\'q</div>';
+            }
+            loadedOtherTransactions = true;
+        }
+    } catch (error) {
+        console.error('Qolgan tranzaksiyalar yuklanmadi:', error);
+        if (loadMoreBtn) {
+            loadMoreBtn.innerHTML = '<div style="padding: 8px; color: #ef4444;">Xatolik yuz berdi</div>';
+        }
+    } finally {
+        transactionsLoading = false;
+    }
+}
+
+// Global scope'da bo'lishi kerak
+window.loadMoreTransactions = loadMoreTransactions;
+
+function setupTransactionsScroll() {
+    // Scroll listener qo'shish (lazy loading)
+    const container = document.getElementById('transactionsList');
+    if (!container) return;
+    
+    let scrollTimeout;
+    container.addEventListener('scroll', () => {
+        clearTimeout(scrollTimeout);
+        scrollTimeout = setTimeout(() => {
+            const loadMoreBtn = document.getElementById('loadMoreTransactions');
+            if (loadMoreBtn && !loadedOtherTransactions) {
+                const rect = loadMoreBtn.getBoundingClientRect();
+                // Agar button ko'rinadigan bo'lsa, avtomatik yuklash
+                if (rect.top < window.innerHeight + 200) {
+                    loadMoreTransactions();
+                }
+            }
+        }, 100);
+    });
+}
+
 async function loadTransactions() {
     const container = document.getElementById('transactionsList');
     if (!container) {
@@ -484,10 +612,19 @@ async function loadTransactions() {
     
     try {
         console.log('Transactions API ga so\'rov yuborilmoqda...');
-        const transactions = await apiRequest('/api/transactions?limit=20');
-        console.log('Transactions olindi:', transactions?.length || 0);
         
-        if (!transactions || transactions.length === 0) {
+        // Avval bugun va kecha tranzaksiyalarini yuklash
+        const todayDate = new Date();
+        todayDate.setHours(0, 0, 0, 0);
+        const yesterdayDate = new Date(todayDate);
+        yesterdayDate.setDate(yesterdayDate.getDate() - 1);
+        
+        // Faqat bugun va kecha tranzaksiyalarini olish (optimallashtirilgan)
+        // Faqat oxirgi 2 kun uchun (bugun va kecha) - tezroq yuklash
+        // Limit 50 - tezroq yuklash
+        const allRecent = await apiRequest('/api/transactions?limit=50&days=2');
+        
+        if (!allRecent || allRecent.length === 0) {
             container.innerHTML = `
                 <div class="transaction-card">
                     <div class="empty-state">Tranzaksiyalar mavjud emas</div>
@@ -495,31 +632,66 @@ async function loadTransactions() {
             return;
         }
         
-        container.innerHTML = transactions.map(t => {
-            const isIncome = t.transaction_type === 'income';
-            const amountClass = isIncome ? 'income' : 'expense';
-            const sign = isIncome ? '+' : '-';
+        // Bugun va kecha tranzaksiyalarini ajratish
+        todayTransactions = [];
+        yesterdayTransactions = [];
+        otherTransactions = [];
+        
+        allRecent.forEach(t => {
+            const tDate = new Date(t.created_at);
+            tDate.setHours(0, 0, 0, 0);
             
-            const date = new Date(t.created_at);
-            const today = new Date();
-            const isToday = date.toDateString() === today.toDateString();
-            const time = date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
-            const dateStr = isToday ? `Bugun ${time} da` : formatDate(t.created_at);
-            
-            return `
+            if (tDate.getTime() === todayDate.getTime()) {
+                todayTransactions.push(t);
+            } else if (tDate.getTime() === yesterdayDate.getTime()) {
+                yesterdayTransactions.push(t);
+            } else {
+                otherTransactions.push(t);
+            }
+        });
+        
+        // Faqat bugun va kecha tranzaksiyalarini ko'rsatish
+        if (todayTransactions.length === 0 && yesterdayTransactions.length === 0) {
+            container.innerHTML = `
                 <div class="transaction-card">
-                    <div class="transaction-amount ${amountClass}">
-                        ${sign} ${formatCurrency(t.amount, t.currency)}
-                    </div>
-                    <div class="transaction-title">${t.description || 'Tranzaksiya'}</div>
-                    <div class="transaction-meta">${t.category || ''}${t.category ? ' • ' : ''}${dateStr}</div>
+                    <div class="empty-state">Tranzaksiyalar mavjud emas</div>
+                </div>`;
+            return;
+        }
+        
+        // Bugun va kecha guruhlarini ko'rsatish
+        let html = '';
+        
+        if (todayTransactions.length > 0) {
+            html += '<div class="transaction-group-title" style="padding: 12px 16px; font-weight: 600; color: #333; background: #f5f5f5; margin: 0 -16px 8px -16px;">Bugun</div>';
+            html += todayTransactions.map(t => renderHomeTransaction(t)).join('');
+        }
+        
+        if (yesterdayTransactions.length > 0) {
+            html += '<div class="transaction-group-title" style="padding: 12px 16px; font-weight: 600; color: #333; background: #f5f5f5; margin: 16px -16px 8px -16px;">Kecha</div>';
+            html += yesterdayTransactions.map(t => renderHomeTransaction(t)).join('');
+        }
+        
+        // Scroll qilganda qolgan tranzaksiyalarni yuklash uchun trigger
+        if (otherTransactions.length > 0) {
+            html += `
+                <div id="loadMoreTransactions" style="padding: 16px; text-align: center; color: #5A8EF4; cursor: pointer;" onclick="loadMoreTransactions()">
+                    Qolgan ${otherTransactions.length} ta tranzaksiyani ko'rsatish
                 </div>
             `;
-        }).join('');
+        }
+        
+        container.innerHTML = html;
+        
+        // Scroll listener qo'shish
+        setupTransactionsScroll();
         console.log('Transactions render qilindi');
     } catch (error) {
         console.error('Tranzaksiyalar yuklanmadi:', error);
         console.error('Error details:', error.message);
+        if (container) {
+            container.innerHTML = '<div class="empty-state">Xatolik yuz berdi</div>';
+        }
     }
 }
 
@@ -528,12 +700,16 @@ async function loadTransactions() {
 // ============================================
 
 async function loadStatistics() {
+    // Loading screen'ni ko'rsatish
+    showLoading(true);
+    
     // Canvas elementini topish (skeleton ichida yashiringan bo'lishi mumkin)
     let ctx = document.getElementById('statsChart');
     const canvasContainer = ctx?.parentElement;
     
     if (!ctx || !canvasContainer) {
         console.warn('Stats chart element topilmadi');
+        showLoading(false);
         return;
     }
     
@@ -624,9 +800,14 @@ async function loadStatistics() {
             }
         });
         console.log('Chart yaratildi');
+        
+        // Loading screen'ni yopish
+        showLoading(false);
     } catch (error) {
         console.error('Statistika yuklanmadi:', error);
         console.error('Error details:', error.message, error.stack);
+        // Xatolik bo'lsa ham loading screen'ni yopish
+        showLoading(false);
     }
 }
 
@@ -688,6 +869,14 @@ async function loadPageData(pageName) {
                 break;
             case 'balanceDetails':
                 await loadBalanceDetails();
+                break;
+            case 'topExpenses':
+                await loadTopExpenses();
+                break;
+            case 'goals':
+            case 'aiChat':
+            case 'savings':
+                // Tez orada...
                 break;
         }
     } catch (error) {
@@ -943,6 +1132,28 @@ function groupTransactionsByDate(transactions) {
     return groups;
 }
 
+function renderHomeTransaction(t) {
+    const isIncome = t.transaction_type === 'income';
+    const amountClass = isIncome ? 'income' : 'expense';
+    const sign = isIncome ? '+' : '-';
+    
+    const date = new Date(t.created_at);
+    const today = new Date();
+    const isToday = date.toDateString() === today.toDateString();
+    const time = date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+    const dateStr = isToday ? `Bugun ${time} da` : formatDate(t.created_at);
+    
+    return `
+        <div class="transaction-card">
+            <div class="transaction-amount ${amountClass}">
+                ${sign} ${formatCurrency(t.amount, t.currency)}
+            </div>
+            <div class="transaction-title">${t.description || 'Tranzaksiya'}</div>
+            <div class="transaction-meta">${t.category || ''}${t.category ? ' • ' : ''}${dateStr}</div>
+        </div>
+    `;
+}
+
 function renderTransactionItem(t) {
     const isIncome = t.transaction_type === 'income';
     const typeClass = isIncome ? 'income' : 'expense';
@@ -1006,6 +1217,9 @@ async function loadAllStatistics() {
     const container = document.getElementById('statisticsContent');
     if (!container) return;
     
+    // Loading screen'ni ko'rsatish
+    showLoading(true);
+    
     try {
         // Loading ko'rsatish
         showPageLoading('statisticsContent', 'statistics');
@@ -1031,9 +1245,14 @@ async function loadAllStatistics() {
             loadTopCategories(),
             loadExpensePieChart()
         ]);
+        
+        // Loading screen'ni yopish
+        showLoading(false);
     } catch (error) {
         console.error('Statistika yuklanmadi:', error);
         container.innerHTML = '<div class="empty-state">Xatolik yuz berdi</div>';
+        // Xatolik bo'lsa ham loading screen'ni yopish
+        showLoading(false);
     }
 }
 
@@ -1138,6 +1357,47 @@ async function loadTopCategories() {
         `).join('');
     } catch (error) {
         console.error('Top categories yuklanmadi:', error);
+    }
+}
+
+async function loadTopExpenses() {
+    const container = document.getElementById('topExpensesContent');
+    if (!container) return;
+    
+    try {
+        container.innerHTML = '<div style="text-align: center; padding: 40px 20px; color: #999;"><p>Yuklanmoqda...</p></div>';
+        
+        const categories = await apiRequest('/api/statistics/top-categories?limit=10&days=30');
+        
+        if (!categories || categories.length === 0) {
+            container.innerHTML = '<div class="empty-state">Top xarajatlar mavjud emas</div>';
+            return;
+        }
+        
+        let html = '<div style="padding: 16px;">';
+        html += '<h3 style="font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #1a1a1a;">Eng ko\'p xarajat qilingan kategoriyalar</h3>';
+        
+        categories.forEach((cat, index) => {
+            html += `
+                <div class="category-item" style="display: flex; justify-content: space-between; align-items: center; padding: 16px; background: white; border-radius: 12px; margin-bottom: 12px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+                    <div style="display: flex; align-items: center; gap: 12px;">
+                        <div style="width: 40px; height: 40px; background: linear-gradient(135deg, #5A8EF4 0%, #7BA5F7 100%); border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-weight: 700; font-size: 16px;">
+                            ${index + 1}
+                        </div>
+                        <span style="font-size: 16px; font-weight: 600; color: #1a1a1a;">${cat.category || 'Noma\'lum'}</span>
+                    </div>
+                    <span style="font-size: 16px; font-weight: 600; color: #ef4444;">${formatCurrency(cat.amount, 'UZS')}</span>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        container.innerHTML = html;
+    } catch (error) {
+        console.error('Top xarajatlar yuklanmadi:', error);
+        if (container) {
+            container.innerHTML = '<div class="empty-state">Xatolik yuz berdi</div>';
+        }
     }
 }
 
@@ -1262,12 +1522,22 @@ function renderReminders() {
     }).join('');
 }
 
-function showAddReminderModal() {
-    // Funksiya o'chirilgan - faqat ko'rish uchun
-    return;
+// Eslatma modal funksiyalari (global scope'da bo'lishi kerak)
+window.showAddReminderModal = function() {
+    hapticFeedback('light');
+    const modal = document.getElementById('addReminderModal');
+    if (modal) {
+        modal.classList.add('active');
+        // Bugungi sanani default qilish
+            const today = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('reminderDate');
+        if (dateInput) dateInput.value = today;
+    } else {
+        console.error('addReminderModal topilmadi');
+    }
 }
 
-function closeAddReminderModal() {
+window.closeAddReminderModal = function() {
     hapticFeedback('light');
     const modal = document.getElementById('addReminderModal');
     if (modal) {
@@ -1516,38 +1786,88 @@ function backToContacts() {
     if (debtsList) debtsList.style.display = 'none';
 }
 
-// Modal funksiyalari
-function showAddContactModal() {
-    // Funksiya o'chirilgan - faqat ko'rish uchun
-    return;
+// Modal funksiyalari (global scope'da bo'lishi kerak)
+window.showAddContactModal = function() {
+    hapticFeedback('light');
+    const modal = document.getElementById('addContactModal');
+    if (modal) {
+        modal.classList.add('active');
+    } else {
+        console.error('addContactModal topilmadi');
+    }
 }
 
-function closeAddContactModal() {
+window.closeAddContactModal = function() {
     hapticFeedback('light');
     const modal = document.getElementById('addContactModal');
     if (modal) {
         modal.classList.remove('active');
-        document.getElementById('addContactForm').reset();
+        document.getElementById('addContactForm')?.reset();
     }
 }
 
-async function handleAddContact(event) {
-    // Funksiya o'chirilgan - faqat ko'rish uchun
+window.handleAddContact = async function(event) {
     event.preventDefault();
-    return;
+    hapticFeedback('medium');
+    
+    try {
+        const name = document.getElementById('contactName').value;
+        const phone = document.getElementById('contactPhone').value || null;
+        const notes = document.getElementById('contactNotes').value || null;
+        
+        const response = await apiRequest('/api/contacts', {
+            method: 'POST',
+            body: JSON.stringify({ name, phone, notes })
+        });
+        
+        if (response.success || response.id) {
+            hapticFeedback('success');
+            closeAddContactModal();
+            await loadContacts();
+        } else {
+            throw new Error('Kontakt qo\'shilmadi');
+        }
+    } catch (error) {
+        console.error('Kontakt qo\'shishda xatolik:', error);
+        hapticFeedback('error');
+        alert('Xatolik: ' + error.message);
+    }
 }
 
-function showAddDebtModal() {
-    // Funksiya o'chirilgan - faqat ko'rish uchun
-    return;
+window.showAddDebtModal = async function() {
+    hapticFeedback('light');
+    const modal = document.getElementById('addDebtModal');
+    if (modal) {
+        // Kontaktlar ro'yxatini yuklash
+        const contactSelect = document.getElementById('debtContact');
+        if (contactSelect) {
+            try {
+                const contacts = await apiRequest('/api/contacts');
+                contactSelect.innerHTML = '<option value="">Tanlang...</option>';
+                if (contacts && contacts.length > 0) {
+                    contacts.forEach(contact => {
+                        const option = document.createElement('option');
+                        option.value = contact.id || contact.name;
+                        option.textContent = contact.name;
+                        contactSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Kontaktlar yuklanmadi:', error);
+            }
+        }
+        modal.classList.add('active');
+    } else {
+        console.error('addDebtModal topilmadi');
+    }
 }
 
-function closeAddDebtModal() {
+window.closeAddDebtModal = function() {
     hapticFeedback('light');
     const modal = document.getElementById('addDebtModal');
     if (modal) {
         modal.classList.remove('active');
-        document.getElementById('addDebtForm').reset();
+        document.getElementById('addDebtForm')?.reset();
     }
 }
 
@@ -1992,6 +2312,211 @@ function setupFilters() {
             loadDebts(filter);
         });
     });
+}
+
+// ============================================
+// ADD REMINDER
+// ============================================
+
+function showAddReminderModal() {
+    hapticFeedback('light');
+    const modal = document.getElementById('addReminderModal');
+    if (modal) {
+        modal.classList.add('active');
+        // Bugungi sanani default qilish
+        const today = new Date().toISOString().split('T')[0];
+        const dateInput = document.getElementById('reminderDate');
+        if (dateInput) dateInput.value = today;
+    }
+}
+
+function closeAddReminderModal() {
+    const modal = document.getElementById('addReminderModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.getElementById('addReminderForm')?.reset();
+    }
+}
+
+window.handleAddReminder = async function(event) {
+    event.preventDefault();
+    hapticFeedback('medium');
+    
+    try {
+        const title = document.getElementById('reminderTitle').value;
+        const amount = parseFloat(document.getElementById('reminderAmount').value);
+        const currency = document.getElementById('reminderCurrency').value;
+        const reminderDate = document.getElementById('reminderDate').value;
+        const reminderTime = document.getElementById('reminderTime').value;
+        const repeatInterval = document.getElementById('reminderRepeat').value;
+        
+        const response = await apiRequest('/api/reminders', {
+            method: 'POST',
+            body: JSON.stringify({
+                title,
+                amount,
+                currency,
+                reminder_date: reminderDate,
+                reminder_time: reminderTime || null,
+                repeat_interval: repeatInterval
+            })
+        });
+        
+        if (response.success) {
+            hapticFeedback('success');
+            closeAddReminderModal();
+            await loadReminders();
+        } else {
+            throw new Error('Eslatma qo\'shilmadi');
+        }
+    } catch (error) {
+        console.error('Eslatma qo\'shishda xatolik:', error);
+        hapticFeedback('error');
+        alert('Xatolik: ' + error.message);
+    }
+}
+
+// ============================================
+// ADD DEBT
+// ============================================
+
+window.showAddDebtModal = async function() {
+    hapticFeedback('light');
+    const modal = document.getElementById('addDebtModal');
+    if (modal) {
+        // Kontaktlar ro'yxatini yuklash
+        const contactSelect = document.getElementById('debtContact');
+        if (contactSelect) {
+            try {
+                const contacts = await apiRequest('/api/contacts');
+                contactSelect.innerHTML = '<option value="">Tanlang...</option>';
+                if (contacts && contacts.length > 0) {
+                    contacts.forEach(contact => {
+                        const option = document.createElement('option');
+                        option.value = contact.id || contact.name;
+                        option.textContent = contact.name;
+                        contactSelect.appendChild(option);
+                    });
+                }
+            } catch (error) {
+                console.error('Kontaktlar yuklanmadi:', error);
+            }
+        }
+        modal.classList.add('active');
+    }
+}
+
+window.closeAddDebtModal = function() {
+    const modal = document.getElementById('addDebtModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.getElementById('addDebtForm')?.reset();
+    }
+}
+
+window.handleAddDebt = async function(event) {
+    event.preventDefault();
+    hapticFeedback('medium');
+    
+    try {
+        const contactId = document.getElementById('debtContact').value;
+        const personName = document.getElementById('debtPersonName').value;
+        const amount = parseFloat(document.getElementById('debtAmount').value);
+        const direction = document.getElementById('debtDirection').value;
+        const dueDate = document.getElementById('debtDueDate').value || null;
+        const description = document.getElementById('debtDescription').value || null;
+        
+        if (!contactId && !personName) {
+            alert('Iltimos, kontakt tanlang yoki yangi kontakt nomini kiriting');
+            return;
+        }
+        
+        // Avval kontakt yaratish (agar yangi bo'lsa)
+        let finalContactId = contactId;
+        if (!contactId && personName) {
+            const contactResponse = await apiRequest('/api/contacts', {
+                method: 'POST',
+                body: JSON.stringify({ name: personName })
+            });
+            if (contactResponse.id) {
+                finalContactId = contactResponse.id;
+            }
+        }
+        
+        // Qarzni saqlash
+        const response = await apiRequest('/api/debts', {
+            method: 'POST',
+            body: JSON.stringify({
+                person_name: personName || null,
+                contact_id: finalContactId || null,
+                amount,
+                direction,
+                due_date: dueDate,
+                description
+            })
+        });
+        
+        if (response.success) {
+            hapticFeedback('success');
+            closeAddDebtModal();
+            await loadDebts();
+            await loadContacts();
+        } else {
+            throw new Error('Qarz qo\'shilmadi');
+        }
+    } catch (error) {
+        console.error('Qarz qo\'shishda xatolik:', error);
+        hapticFeedback('error');
+        alert('Xatolik: ' + error.message);
+    }
+}
+
+// ============================================
+// ADD CONTACT
+// ============================================
+
+function showAddContactModal() {
+    hapticFeedback('light');
+    const modal = document.getElementById('addContactModal');
+    if (modal) {
+        modal.classList.add('active');
+    }
+}
+
+function closeAddContactModal() {
+    const modal = document.getElementById('addContactModal');
+    if (modal) {
+        modal.classList.remove('active');
+        document.getElementById('addContactForm')?.reset();
+    }
+}
+
+async function handleAddContact(event) {
+    event.preventDefault();
+    hapticFeedback('medium');
+    
+    try {
+        const name = document.getElementById('contactName').value;
+        const phone = document.getElementById('contactPhone').value || null;
+        const notes = document.getElementById('contactNotes').value || null;
+        
+        const response = await apiRequest('/api/contacts', {
+            method: 'POST',
+            body: JSON.stringify({ name, phone, notes })
+        });
+        
+        if (response.success || response.id) {
+            hapticFeedback('success');
+            closeAddContactModal();
+            await loadContacts();
+        } else {
+            throw new Error('Kontakt qo\'shilmadi');
+        }
+    } catch (error) {
+        console.error('Kontakt qo\'shishda xatolik:', error);
+        hapticFeedback('error');
+        alert('Xatolik: ' + error.message);
+    }
 }
 
 // ============================================
