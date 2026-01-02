@@ -17,81 +17,100 @@
 <body>
     <!-- Asosiy Sahifa -->
     <div id="pageHome" class="page active">
-        <!-- Header -->
-        <header class="app-header">
-            <img src="/static/logo.png" alt="Balans AI" class="app-logo" id="headerLogo">
+        <!-- Simple Header with Dark Mode Toggle -->
+        <header class="home-header">
+            <div class="home-header-content">
+                <h1 class="home-logo">Balans AI</h1>
+                <button class="theme-toggle" onclick="window.themeManager?.toggle()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path stroke-width="2" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                    </svg>
+                </button>
+            </div>
         </header>
 
-        <!-- Umumiy Balans -->
-        <div class="balance-card" onclick="showBalanceDetails()">
-            <div class="balance-icon">
-                <img src="/static/js/moneys.svg" alt="Money" class="balance-icon-img">
-            </div>
-            <div class="balance-amount" id="totalBalance">0 so'm</div>
-            <svg class="arrow-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-            </svg>
-        </div>
-
-        <!-- Valyutalar -->
-        <div class="currency-list" id="currencyList">
-            <!-- JavaScript orqali yuklanadi -->
-        </div>
-
-        <!-- Interactive Cards -->
-        <div class="home-cards-scroll">
-            <div class="home-card" onclick="navigateTo('topExpenses')">
-                <div class="home-card-content">
-                    <span class="home-card-title">Top xarajatlar</span>
-                    <div class="home-card-image">
-                        <img src="/static/images/Pie Chart (1).png" alt="Top xarajatlar">
-                    </div>
-                </div>
-            </div>
-            <div class="home-card" onclick="navigateTo('goals')">
-                <div class="home-card-content">
-                    <span class="home-card-title">Maqsad o'rnatish</span>
-                    <div class="home-card-image">
-                        <img src="/static/images/Dart.png" alt="Maqsad">
-                    </div>
-                </div>
-            </div>
-            <div class="home-card" onclick="navigateTo('aiChat')">
-                <div class="home-card-content">
-                    <span class="home-card-title">AI chat</span>
-                    <div class="home-card-image">
-                        <img src="/static/images/Smartphone.png" alt="AI chat">
-                    </div>
-                </div>
-            </div>
-            <div class="home-card" onclick="navigateTo('reminders')">
-                <div class="home-card-content">
-                    <span class="home-card-title">Eslatmalar</span>
-                    <div class="home-card-image">
-                        <img src="/static/images/Calendar.png" alt="Eslatmalar">
-                    </div>
-                </div>
-            </div>
-            <div class="home-card" onclick="navigateTo('savings')">
-                <div class="home-card-content">
-                    <span class="home-card-title">Pul yig'ish</span>
-                    <div class="home-card-image">
-                        <img src="/static/images/Safebox.png" alt="Pul yig'ish">
-                    </div>
-                </div>
+        <!-- Hero Balance Card (Larger, Prominent) -->
+        <div class="hero-balance-card" onclick="showBalanceDetails()">
+            <div class="hero-balance-label">Umumiy balans</div>
+            <div class="hero-balance-amount" id="heroTotalBalance">0 so'm</div>
+            <div class="hero-balance-footer">
+                <span class="hero-balance-details-link">Tafsilotlar →</span>
             </div>
         </div>
 
-        <!-- So'nggi Tranzaksiyalar -->
-        <section class="section">
+        <!-- Quick Stats Swiper -->
+        <div class="quick-stats-swiper">
+            <div class="quick-stat-card quick-stat-income">
+                <div class="quick-stat-icon">↑</div>
+                <div class="quick-stat-value" id="quickIncome">0</div>
+                <div class="quick-stat-label">Kirim</div>
+            </div>
+            <div class="quick-stat-card quick-stat-expense">
+                <div class="quick-stat-icon">↓</div>
+                <div class="quick-stat-value" id="quickExpense">0</div>
+                <div class="quick-stat-label">Chiqim</div>
+            </div>
+            <div class="quick-stat-card quick-stat-balance">
+                <div class="quick-stat-icon">⚖</div>
+                <div class="quick-stat-value" id="quickBalance">0</div>
+                <div class="quick-stat-label">Balans</div>
+            </div>
+            <div class="quick-stat-card quick-stat-savings">
+                <div class="quick-stat-icon">📊</div>
+                <div class="quick-stat-value" id="quickSavings">0%</div>
+                <div class="quick-stat-label">Tejash</div>
+            </div>
+        </div>
+
+        <!-- Services Quick Access Grid -->
+        <div class="home-services-section">
+            <h3 class="home-section-title">Tez kirish</h3>
+            <div class="home-services-grid">
+                <div class="home-service-card" onclick="navigateTo('reminders')">
+                    <div class="home-service-icon">🔔</div>
+                    <div class="home-service-title">Eslatmalar</div>
+                </div>
+                <div class="home-service-card" onclick="navigateTo('debts')">
+                    <div class="home-service-icon">💳</div>
+                    <div class="home-service-title">Qarzlar</div>
+                </div>
+                <div class="home-service-card" onclick="navigateTo('goals')">
+                    <div class="home-service-icon">🎯</div>
+                    <div class="home-service-title">Maqsadlar</div>
+                </div>
+                <div class="home-service-card" onclick="navigateTo('aiChat')">
+                    <div class="home-service-icon">🤖</div>
+                    <div class="home-service-title">AI Chat</div>
+                </div>
+                <div class="home-service-card" onclick="navigateTo('budgets')">
+                    <div class="home-service-icon">💰</div>
+                    <div class="home-service-title">Byudjet</div>
+                </div>
+                <div class="home-service-card" onclick="navigateTo('statistics')">
+                    <div class="home-service-icon">📊</div>
+                    <div class="home-service-title">Statistika</div>
+                </div>
+                <div class="home-service-card" onclick="window.reportsManager?.showReportModal()">
+                    <div class="home-service-icon">📄</div>
+                    <div class="home-service-title">Hisobotlar</div>
+                </div>
+                <div class="home-service-card" onclick="navigateTo('services')">
+                    <div class="home-service-icon">➕</div>
+                    <div class="home-service-title">Ko'proq</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- So'nggi Tranzaksiyalar (Limited to 5) -->
+        <section class="home-transactions-section">
             <div class="section-header">
-                <h2 class="section-title">So'nggi tranzaksiyalar</h2>
-                <svg class="section-arrow" onclick="navigateTo('transactions')" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                </svg>
+                <h3 class="home-section-title">So'nggi tranzaksiyalar</h3>
+                <button class="view-all-btn" onclick="navigateTo('transactions')">
+                    Ko'proq →
+                </button>
             </div>
-            <div class="transactions-scroll" id="transactionsList">
-                <!-- JavaScript orqali yuklanadi -->
+            <div class="home-transactions-list" id="homeTransactionsList">
+                <!-- JavaScript orqali yuklanadi (5 ta) -->
             </div>
         </section>
     </div>
@@ -287,42 +306,329 @@
         </div>
     </div>
 
-    <!-- Bottom Navigation -->
-    <nav class="bottom-nav">
-        <div class="nav-item active" data-page="home">
-            <svg viewBox="0 0 24 24" fill="none">
-                <path d="M12 18V15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M10.07 2.82L3.14 8.37C2.36 8.99 1.86 10.3 2.03 11.28L3.36 19.24C3.6 20.66 4.96 21.81 6.4 21.81H17.6C19.03 21.81 20.4 20.65 20.64 19.24L21.97 11.28C22.13 10.3 21.63 8.99 20.86 8.37L13.93 2.83C12.86 1.97 11.13 1.97 10.07 2.82Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
+    <!-- Services Hub Page -->
+    <div id="pageServices" class="page">
+        <div class="page-header">
+            <h2 class="page-title">Xizmatlar</h2>
         </div>
-        <div class="nav-item" data-page="transactions">
-            <svg viewBox="0 0 24 24" fill="none">
-                <path d="M12 22H17C20 22 22 20 22 17V12C22 9.3 20.3 7.3 17.8 7C17.6 7 17.3 7 17 7H7C6.7 7 6.5 7 6.2 7.1C3.6 7.4 2 9.3 2 12V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M22 12.5H19C17.9 12.5 17 13.4 17 14.5C17 15.6 17.9 16.5 19 16.5H22" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
+
+        <div class="services-container">
+            <!-- Moliyaviy boshqaruv -->
+            <div class="service-category">
+                <h3 class="service-category-title">Moliyaviy boshqaruv</h3>
+                <div class="service-grid">
+                    <div class="service-card" onclick="navigateTo('reminders')">
+                        <div class="service-icon">🔔</div>
+                        <div class="service-title">Eslatmalar</div>
+                        <div class="service-badge" id="remindersBadge" style="display: none;">0</div>
+                    </div>
+                    <div class="service-card" onclick="navigateTo('debts')">
+                        <div class="service-icon">💳</div>
+                        <div class="service-title">Qarzlar</div>
+                        <div class="service-badge" id="debtsBadge" style="display: none;">0</div>
+                    </div>
+                    <div class="service-card" onclick="navigateTo('goals')">
+                        <div class="service-icon">🎯</div>
+                        <div class="service-title">Maqsadlar</div>
+                    </div>
+                    <div class="service-card" onclick="navigateTo('budgets')">
+                        <div class="service-icon">💰</div>
+                        <div class="service-title">Byudjet</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sun'iy intellekt -->
+            <div class="service-category">
+                <h3 class="service-category-title">Sun'iy intellekt</h3>
+                <div class="service-grid">
+                    <div class="service-card" onclick="navigateTo('aiChat')">
+                        <div class="service-icon">🤖</div>
+                        <div class="service-title">AI Maslahatchi</div>
+                    </div>
+                    <div class="service-card" onclick="showAIInsights()">
+                        <div class="service-icon">💡</div>
+                        <div class="service-title">Smart Tahlil</div>
+                    </div>
+                    <div class="service-card" onclick="showAIForecast()">
+                        <div class="service-icon">🔮</div>
+                        <div class="service-title">Prognoz</div>
+                    </div>
+                    <div class="service-card" onclick="showAIRecommendations()">
+                        <div class="service-icon">✨</div>
+                        <div class="service-title">Tavsiyalar</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Hisobotlar -->
+            <div class="service-category">
+                <h3 class="service-category-title">Hisobotlar va tahlil</h3>
+                <div class="service-grid">
+                    <div class="service-card" onclick="window.reportsManager.showReportModal()">
+                        <div class="service-icon">📊</div>
+                        <div class="service-title">Eksport</div>
+                    </div>
+                    <div class="service-card" onclick="navigateTo('topExpenses')">
+                        <div class="service-icon">📈</div>
+                        <div class="service-title">Top xarajatlar</div>
+                    </div>
+                    <div class="service-card" onclick="navigateTo('savings')">
+                        <div class="service-icon">💵</div>
+                        <div class="service-title">Pul yig'ish</div>
+                    </div>
+                    <div class="service-card" onclick="showCurrencyConverter()">
+                        <div class="service-icon">💱</div>
+                        <div class="service-title">Konvertor</div>
+                    </div>
+                </div>
+            </div>
         </div>
-        <div class="nav-item" data-page="statistics">
-            <svg viewBox="0 0 24 24" fill="none">
-                <path d="M9 22H15C20 22 22 20 22 15V9C22 4 20 2 15 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M10.11 11.15H7.46C6.83 11.15 6.32 11.66 6.32 12.29V17.41H10.11V11.15Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M12.76 6.6H11.24C10.61 6.6 10.1 7.11 10.1 7.74V17.4H13.89V7.74C13.89 7.11 13.39 6.6 12.76 6.6Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M16.55 12.85H13.9V17.4H17.69V13.99C17.68 13.36 17.17 12.85 16.55 12.85Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
+    </div>
+
+    <!-- Profile Page -->
+    <div id="pageProfile" class="page">
+        <div class="page-header">
+            <h2 class="page-title">Profil</h2>
         </div>
-        <div class="nav-item" data-page="reminders">
-            <svg viewBox="0 0 24 24" fill="none">
-                <path d="M20.75 13.25C20.75 18.08 16.83 22 12 22C7.17 22 3.25 18.08 3.25 13.25C3.25 8.42 7.17 4.5 12 4.5C16.83 4.5 20.75 8.42 20.75 13.25Z" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M12 8V13" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M9 2H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-            </svg>
+
+        <div class="profile-container">
+            <!-- User Header -->
+            <div class="profile-header-card">
+                <div class="profile-avatar">
+                    <div class="profile-avatar-circle" id="profileAvatar">
+                        <span id="profileInitials">U</span>
+                    </div>
+                </div>
+                <div class="profile-info">
+                    <h3 class="profile-name" id="profileName">Foydalanuvchi</h3>
+                    <p class="profile-username" id="profileUsername">@username</p>
+                    <div class="profile-badge">Plus tarif</div>
+                </div>
+            </div>
+
+            <!-- Quick Stats -->
+            <div class="profile-stats-grid">
+                <div class="profile-stat-card">
+                    <div class="profile-stat-icon">💰</div>
+                    <div class="profile-stat-value" id="profileBalance">0</div>
+                    <div class="profile-stat-label">Balans</div>
+                </div>
+                <div class="profile-stat-card">
+                    <div class="profile-stat-icon">📊</div>
+                    <div class="profile-stat-value" id="profileTransactions">0</div>
+                    <div class="profile-stat-label">Tranzaksiyalar</div>
+                </div>
+                <div class="profile-stat-card">
+                    <div class="profile-stat-icon">📅</div>
+                    <div class="profile-stat-value" id="profileDays">0</div>
+                    <div class="profile-stat-label">Kunlar</div>
+                </div>
+            </div>
+
+            <!-- Settings Groups -->
+            <div class="settings-groups">
+                <!-- Appearance -->
+                <div class="settings-group">
+                    <h4 class="settings-group-title">Ko'rinish</h4>
+                    <div class="settings-list">
+                        <div class="settings-item">
+                            <div class="settings-item-content">
+                                <div class="settings-item-icon">🌓</div>
+                                <span class="settings-item-label">Dark Mode</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="darkModeToggle" onchange="window.themeManager.toggle()">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="settings-item" onclick="showLanguageSettings()">
+                            <div class="settings-item-content">
+                                <div class="settings-item-icon">🌐</div>
+                                <span class="settings-item-label">Til</span>
+                            </div>
+                            <div class="settings-item-value">
+                                <span>O'zbek</span>
+                                <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="settings-item" onclick="showCurrencySettings()">
+                            <div class="settings-item-content">
+                                <div class="settings-item-icon">💵</div>
+                                <span class="settings-item-label">Valyuta</span>
+                            </div>
+                            <div class="settings-item-value">
+                                <span>UZS</span>
+                                <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Notifications -->
+                <div class="settings-group">
+                    <h4 class="settings-group-title">Bildirishnomalar</h4>
+                    <div class="settings-list">
+                        <div class="settings-item">
+                            <div class="settings-item-content">
+                                <div class="settings-item-icon">🔔</div>
+                                <span class="settings-item-label">Push xabarlar</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="pushNotifications" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-item-content">
+                                <div class="settings-item-icon">⏰</div>
+                                <span class="settings-item-label">Eslatmalar</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="reminderNotifications" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-item-content">
+                                <div class="settings-item-icon">💳</div>
+                                <span class="settings-item-label">Qarz eslatma</span>
+                            </div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="debtNotifications" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Account -->
+                <div class="settings-group">
+                    <h4 class="settings-group-title">Hisob</h4>
+                    <div class="settings-list">
+                        <div class="settings-item" onclick="showTariffSettings()">
+                            <div class="settings-item-content">
+                                <div class="settings-item-icon">⭐</div>
+                                <span class="settings-item-label">Tarif</span>
+                            </div>
+                            <div class="settings-item-value">
+                                <span>Plus</span>
+                                <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </div>
+                        </div>
+                        <div class="settings-item" onclick="showPaymentHistory()">
+                            <div class="settings-item-content">
+                                <div class="settings-item-icon">💰</div>
+                                <span class="settings-item-label">To'lov tarixi</span>
+                            </div>
+                            <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                        <div class="settings-item" onclick="showDataExport()">
+                            <div class="settings-item-content">
+                                <div class="settings-item-icon">📥</div>
+                                <span class="settings-item-label">Ma'lumotlarni eksport</span>
+                            </div>
+                            <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Help -->
+                <div class="settings-group">
+                    <h4 class="settings-group-title">Yordam</h4>
+                    <div class="settings-list">
+                        <div class="settings-item" onclick="showFAQ()">
+                            <div class="settings-item-content">
+                                <div class="settings-item-icon">❓</div>
+                                <span class="settings-item-label">FAQ</span>
+                            </div>
+                            <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                        <div class="settings-item" onclick="showSupport()">
+                            <div class="settings-item-content">
+                                <div class="settings-item-icon">💬</div>
+                                <span class="settings-item-label">Qo'llab-quvvatlash</span>
+                            </div>
+                            <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                        <div class="settings-item" onclick="showAbout()">
+                            <div class="settings-item-content">
+                                <div class="settings-item-icon">ℹ️</div>
+                                <span class="settings-item-label">Ilova haqida</span>
+                            </div>
+                            <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Logout Button -->
+            <button class="logout-btn" onclick="handleLogout()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                </svg>
+                Chiqish
+            </button>
         </div>
-        <div class="nav-item" data-page="debts">
-            <svg viewBox="0 0 24 24" fill="none">
-                <path d="M20.5 11.3V7.04C20.5 3.01 19.56 2 15.78 2H8.22C4.44 2 3.5 3.01 3.5 7.04V18.3C3.5 20.96 4.96 21.59 6.73 19.69L6.74 19.68C7.56 18.81 8.81 18.88 9.52 19.83L10.53 21.18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M8 7H16" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-                <path d="M9 11H15" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+    </div>
+
+    <!-- Bottom Navigation (5 tabs) -->
+    <nav class="bottom-nav-bar">
+        <button class="nav-tab active" data-page="home" onclick="navigateTo('home')">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" stroke-linecap="round" d="M12 18V15"/>
+                <path stroke-width="2" stroke-linecap="round" d="M10.07 2.82L3.14 8.37C2.36 8.99 1.86 10.3 2.03 11.28L3.36 19.24C3.6 20.66 4.96 21.81 6.4 21.81H17.6C19.03 21.81 20.4 20.65 20.64 19.24L21.97 11.28C22.13 10.3 21.63 8.99 20.86 8.37L13.93 2.83C12.86 1.97 11.13 1.97 10.07 2.82Z"/>
             </svg>
-        </div>
+            <span class="nav-label">Asosiy</span>
+        </button>
+        <button class="nav-tab" data-page="transactions" onclick="navigateTo('transactions')">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" stroke-linecap="round" d="M12 22H17C20 22 22 20 22 17V12C22 9.3 20.3 7.3 17.8 7C17.6 7 17.3 7 17 7H7C6.7 7 6.5 7 6.2 7.1C3.6 7.4 2 9.3 2 12V13"/>
+                <path stroke-width="2" stroke-linecap="round" d="M22 12.5H19C17.9 12.5 17 13.4 17 14.5C17 15.6 17.9 16.5 19 16.5H22"/>
+            </svg>
+            <span class="nav-label">Tranzaksiyalar</span>
+        </button>
+        <button class="nav-tab" data-page="statistics" onclick="navigateTo('statistics')">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" stroke-linecap="round" d="M9 22H15C20 22 22 20 22 15V9C22 4 20 2 15 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22Z"/>
+                <path stroke-width="2" stroke-linecap="round" d="M10.11 11.15H7.46C6.83 11.15 6.32 11.66 6.32 12.29V17.41H10.11V11.15Z"/>
+                <path stroke-width="2" stroke-linecap="round" d="M12.76 6.6H11.24C10.61 6.6 10.1 7.11 10.1 7.74V17.4H13.89V7.74C13.89 7.11 13.39 6.6 12.76 6.6Z"/>
+                <path stroke-width="2" stroke-linecap="round" d="M16.55 12.85H13.9V17.4H17.69V13.99C17.68 13.36 17.17 12.85 16.55 12.85Z"/>
+            </svg>
+            <span class="nav-label">Statistika</span>
+        </button>
+        <button class="nav-tab" data-page="services" onclick="navigateTo('services')">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" stroke-linecap="round" d="M3 7C3 4.79 4.79 3 7 3H10C12.21 3 14 4.79 14 7V10C14 12.21 12.21 14 10 14H7C4.79 14 3 12.21 3 10V7Z"/>
+                <path stroke-width="2" stroke-linecap="round" d="M14 7C14 4.79 15.79 3 18 3H18C20.21 3 22 4.79 22 7V10C22 12.21 20.21 14 18 14H18C15.79 14 14 12.21 14 10V7Z"/>
+                <path stroke-width="2" stroke-linecap="round" d="M3 17C3 14.79 4.79 13 7 13H10C12.21 13 14 14.79 14 17V17C14 19.21 12.21 21 10 21H7C4.79 21 3 19.21 3 17V17Z"/>
+                <path stroke-width="2" stroke-linecap="round" d="M14 17C14 14.79 15.79 13 18 13H18C20.21 13 22 14.79 22 17V17C22 19.21 20.21 21 18 21H18C15.79 21 14 19.21 14 17V17Z"/>
+            </svg>
+            <span class="nav-label">Xizmatlar</span>
+        </button>
+        <button class="nav-tab" data-page="profile" onclick="navigateTo('profile')">
+            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                <path stroke-width="2" stroke-linecap="round" d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z"/>
+                <path stroke-width="2" stroke-linecap="round" d="M20.59 22C20.59 18.13 16.74 15 12 15C7.26 15 3.41 18.13 3.41 22"/>
+            </svg>
+            <span class="nav-label">Profil</span>
+        </button>
     </nav>
 
     <!-- Loading Screen -->
@@ -333,7 +639,15 @@
         </div>
     </div>
 
+    <!-- External Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
     <!-- Main JavaScript -->
     <script src="/static/js/main.js"></script>
+    <script src="/static/js/enhanced.js"></script>
+    <script src="/static/js/reports.js"></script>
+    <script src="/static/js/ai-chat.js"></script>
 </body>
 </html>

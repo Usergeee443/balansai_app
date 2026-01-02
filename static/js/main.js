@@ -335,15 +335,25 @@ async function loadUserData() {
             // alert('Sizning tarifingiz bu ilova uchun mos emas');
         }
         
-        // Balansni ko'rsatish
+        // Balansni ko'rsatish (eski va yangi UI ham)
         const balanceEl = document.getElementById('totalBalance');
         if (balanceEl) {
             balanceEl.textContent = formatCurrency(user.balance || 0);
             console.log('Balance ko\'rsatildi:', user.balance);
-        } else {
-            console.warn('Balance element topilmadi');
         }
-        
+
+        // Hero balance (yangi dizayn)
+        const heroBalanceEl = document.getElementById('heroTotalBalance');
+        if (heroBalanceEl) {
+            heroBalanceEl.textContent = formatCurrency(user.balance || 0);
+        }
+
+        // Load quick stats for home page
+        await loadQuickStats();
+
+        // Load recent transactions for home page (5 items)
+        await loadHomeTransactions();
+
         return true;
     } catch (error) {
         console.error('User yuklanmadi:', error);
@@ -817,13 +827,13 @@ async function loadStatistics() {
 
 function navigateTo(pageName) {
     hapticFeedback('light');
-    
+
     if (currentPage === pageName) return;
-    
+
     // Hide current page
     const oldPage = document.getElementById(`page${currentPage.charAt(0).toUpperCase() + currentPage.slice(1)}`);
     if (oldPage) oldPage.classList.remove('active');
-    
+
     // Show new page
     const pageId = `page${pageName.charAt(0).toUpperCase() + pageName.slice(1)}`;
     const newPage = document.getElementById(pageId);
@@ -832,17 +842,17 @@ function navigateTo(pageName) {
     } else {
         console.error(`Page not found: ${pageId}`);
     }
-    
-    // Update nav
-    document.querySelectorAll('.nav-item').forEach(item => {
+
+    // Update both old nav-item and new nav-tab classes for backward compatibility
+    document.querySelectorAll('.nav-item, .nav-tab').forEach(item => {
         item.classList.remove('active');
         if (item.getAttribute('data-page') === pageName) {
             item.classList.add('active');
         }
     });
-    
+
     currentPage = pageName;
-    
+
     // Load page data if needed
     if (!loadedPages.has(pageName)) {
         loadedPages.add(pageName);
@@ -872,6 +882,12 @@ async function loadPageData(pageName) {
                 break;
             case 'topExpenses':
                 await loadTopExpenses();
+                break;
+            case 'services':
+                await loadServicesPage();
+                break;
+            case 'profile':
+                await loadProfilePage();
                 break;
             case 'goals':
             case 'aiChat':
@@ -2215,6 +2231,299 @@ async function deleteDebtReminder(reminderId, debtId) {
 // Eski funksiya (backward compatibility)
 async function loadDebts(filter = 'all') {
     await loadContacts();
+}
+
+// ============================================
+// HOME PAGE FUNCTIONS
+// ============================================
+
+async function loadQuickStats() {
+    try {
+        // Get balance and transactions data
+        const balance = await apiRequest('/api/balance');
+        const transactions = await apiRequest('/api/transactions');
+
+        // Calculate income, expense
+        let totalIncome = 0;
+        let totalExpense = 0;
+
+        transactions.transactions?.forEach(t => {
+            if (t.transaction_type === 'income') {
+                totalIncome += parseFloat(t.amount || 0);
+            } else if (t.transaction_type === 'expense') {
+                totalExpense += parseFloat(t.amount || 0);
+            }
+        });
+
+        // Update quick stats
+        const quickIncome = document.getElementById('quickIncome');
+        const quickExpense = document.getElementById('quickExpense');
+        const quickBalance = document.getElementById('quickBalance');
+        const quickSavings = document.getElementById('quickSavings');
+
+        if (quickIncome) {
+            quickIncome.textContent = formatCurrencyShort(totalIncome);
+        }
+
+        if (quickExpense) {
+            quickExpense.textContent = formatCurrencyShort(totalExpense);
+        }
+
+        if (quickBalance) {
+            quickBalance.textContent = formatCurrencyShort(balance.total || 0);
+        }
+
+        if (quickSavings) {
+            const savingsRate = totalIncome > 0 ? ((totalIncome - totalExpense) / totalIncome * 100) : 0;
+            quickSavings.textContent = Math.round(savingsRate) + '%';
+        }
+    } catch (error) {
+        console.error('Quick stats loading error:', error);
+    }
+}
+
+async function loadHomeTransactions() {
+    try {
+        const transactions = await apiRequest('/api/transactions');
+        const homeList = document.getElementById('homeTransactionsList');
+
+        if (!homeList) return;
+
+        if (!transactions.transactions || transactions.transactions.length === 0) {
+            homeList.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">Tranzaksiyalar yo\'q</div>';
+            return;
+        }
+
+        // Take only first 5 transactions
+        const recentTransactions = transactions.transactions.slice(0, 5);
+
+        let html = '';
+        recentTransactions.forEach((transaction, index) => {
+            const isLast = index === recentTransactions.length - 1;
+            const borderStyle = isLast ? '' : 'border-bottom: 0.5px solid rgba(0, 0, 0, 0.1);';
+
+            html += `
+                <div style="display: flex; align-items: center; padding: 12px 16px; ${borderStyle}" onclick="showTransactionDetail(${transaction.id})">
+                    <div style="flex: 1;">
+                        <div style="font-size: 15px; font-weight: 600; color: #1a1a1a; margin-bottom: 2px;">
+                            ${transaction.description || 'Tranzaksiya'}
+                        </div>
+                        <div style="font-size: 13px; color: #8E8E93;">
+                            ${formatDate(transaction.created_at)}
+                        </div>
+                    </div>
+                    <div style="font-size: 16px; font-weight: 700; color: ${transaction.transaction_type === 'income' ? '#34C759' : '#FF3B30'};">
+                        ${transaction.transaction_type === 'income' ? '+' : '-'}${formatCurrency(transaction.amount)}
+                    </div>
+                </div>
+            `;
+        });
+
+        homeList.innerHTML = html;
+    } catch (error) {
+        console.error('Home transactions loading error:', error);
+    }
+}
+
+// Helper function for shorter currency format
+function formatCurrencyShort(amount) {
+    const num = parseFloat(amount);
+    if (num >= 1000000) {
+        return (num / 1000000).toFixed(1) + 'M';
+    } else if (num >= 1000) {
+        return (num / 1000).toFixed(0) + 'K';
+    }
+    return num.toFixed(0);
+}
+
+// ============================================
+// SERVICES PAGE
+// ============================================
+
+async function loadServicesPage() {
+    try {
+        // Update service badges with counts
+        const remindersCount = await getActiveRemindersCount();
+        const debtsCount = await getUnpaidDebtsCount();
+
+        const remindersBadge = document.getElementById('remindersBadge');
+        const debtsBadge = document.getElementById('debtsBadge');
+
+        if (remindersBadge && remindersCount > 0) {
+            remindersBadge.textContent = remindersCount;
+            remindersBadge.style.display = 'flex';
+        }
+
+        if (debtsBadge && debtsCount > 0) {
+            debtsBadge.textContent = debtsCount;
+            debtsBadge.style.display = 'flex';
+        }
+    } catch (error) {
+        console.error('Services page loading error:', error);
+    }
+}
+
+async function getActiveRemindersCount() {
+    try {
+        const response = await apiRequest('/api/reminders');
+        return response.reminders?.filter(r => r.status === 'active').length || 0;
+    } catch {
+        return 0;
+    }
+}
+
+async function getUnpaidDebtsCount() {
+    try {
+        const response = await apiRequest('/api/debts');
+        return response.debts?.filter(d => d.status === 'active').length || 0;
+    } catch {
+        return 0;
+    }
+}
+
+// ============================================
+// PROFILE PAGE
+// ============================================
+
+async function loadProfilePage() {
+    try {
+        // Load user data
+        const userData = await apiRequest('/api/user');
+
+        // Update profile header
+        const profileName = document.getElementById('profileName');
+        const profileUsername = document.getElementById('profileUsername');
+        const profileInitials = document.getElementById('profileInitials');
+
+        if (profileName && userData.name) {
+            profileName.textContent = userData.name;
+        }
+
+        if (profileUsername && userData.username) {
+            profileUsername.textContent = `@${userData.username}`;
+        }
+
+        if (profileInitials && userData.name) {
+            profileInitials.textContent = userData.name.charAt(0).toUpperCase();
+        }
+
+        // Load stats
+        const balance = await apiRequest('/api/balance');
+        const transactions = await apiRequest('/api/transactions');
+
+        const profileBalance = document.getElementById('profileBalance');
+        const profileTransactions = document.getElementById('profileTransactions');
+        const profileDays = document.getElementById('profileDays');
+
+        if (profileBalance) {
+            profileBalance.textContent = formatCurrency(balance.total || 0);
+        }
+
+        if (profileTransactions) {
+            profileTransactions.textContent = transactions.transactions?.length || 0;
+        }
+
+        if (profileDays && transactions.transactions?.length > 0) {
+            const firstDate = new Date(transactions.transactions[0].created_at);
+            const daysSinceStart = Math.floor((Date.now() - firstDate) / (1000 * 60 * 60 * 24));
+            profileDays.textContent = daysSinceStart;
+        }
+
+        // Sync dark mode toggle with current theme
+        const darkModeToggle = document.getElementById('darkModeToggle');
+        if (darkModeToggle && window.themeManager) {
+            darkModeToggle.checked = window.themeManager.theme === 'dark';
+        }
+    } catch (error) {
+        console.error('Profile page loading error:', error);
+    }
+}
+
+// ============================================
+// PROFILE SETTINGS HANDLERS
+// ============================================
+
+function showLanguageSettings() {
+    hapticFeedback('light');
+    alert('Til sozlamalari tez orada qo\'shiladi!');
+}
+
+function showCurrencySettings() {
+    hapticFeedback('light');
+    alert('Valyuta sozlamalari tez orada qo\'shiladi!');
+}
+
+function showTariffSettings() {
+    hapticFeedback('light');
+    alert('Tarif sozlamalari tez orada qo\'shiladi!');
+}
+
+function showPaymentHistory() {
+    hapticFeedback('light');
+    alert('To\'lov tarixi tez orada qo\'shiladi!');
+}
+
+function showDataExport() {
+    hapticFeedback('light');
+    // Use existing reports manager
+    if (window.reportsManager) {
+        window.reportsManager.showReportModal();
+    } else {
+        alert('Eksport funksiyasi yuklanmoqda...');
+    }
+}
+
+function showFAQ() {
+    hapticFeedback('light');
+    alert('FAQ bo\'limi tez orada qo\'shiladi!');
+}
+
+function showSupport() {
+    hapticFeedback('light');
+    alert('Qo\'llab-quvvatlash tez orada qo\'shiladi!');
+}
+
+function showAbout() {
+    hapticFeedback('light');
+    alert('Balans AI v1.0\nMoliyaviy boshqaruv tizimi\n\n© 2024');
+}
+
+function handleLogout() {
+    hapticFeedback('light');
+    if (confirm('Ilovadan chiqishni tasdiqlaysizmi?')) {
+        // Clear local storage
+        localStorage.clear();
+        // Close Telegram WebApp
+        if (tg) {
+            tg.close();
+        } else {
+            window.location.reload();
+        }
+    }
+}
+
+// ============================================
+// AI FEATURES PLACEHOLDERS
+// ============================================
+
+function showAIInsights() {
+    hapticFeedback('light');
+    alert('Smart Tahlil funksiyasi tez orada qo\'shiladi!\n\nBu yerda:\n• Xarajat tendensiyalari\n• Tejash imkoniyatlari\n• Noodatiy tranzaksiyalar\nva boshqa tahlillar ko\'rsatiladi.');
+}
+
+function showAIForecast() {
+    hapticFeedback('light');
+    alert('Prognoz funksiyasi tez orada qo\'shiladi!\n\nBu yerda:\n• Keyingi oy xarajatlari\n• Kutilayotgan balans\n• Tavsiyalar\nko\'rsatiladi.');
+}
+
+function showAIRecommendations() {
+    hapticFeedback('light');
+    alert('Tavsiyalar funksiyasi tez orada qo\'shiladi!\n\nBu yerda:\n• Shaxsiylashtirilgan maslahatlar\n• Byudjet optimizatsiyasi\n• Tejash yo\'llari\nko\'rsatiladi.');
+}
+
+function showCurrencyConverter() {
+    hapticFeedback('light');
+    alert('Valyuta konvertor funksiyasi tez orada qo\'shiladi!\n\nBu yerda real-time valyuta kurslari bilan konvertatsiya qilish mumkin bo\'ladi.');
 }
 
 // ============================================
