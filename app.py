@@ -345,11 +345,47 @@ def api_get_transactions():
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-# POST endpoint'lar olib tashlandi - faqat ko'rsatish rejimi
-# @app.route('/api/transactions', methods=['POST'])
-# def api_add_transaction():
-#     """Yangi tranzaksiya qo'shish - O'CHIRILGAN (faqat ko'rsatish rejimi)"""
-#     return jsonify({'error': 'Qo\'shish funksiyasi o\'chirilgan'}), 403
+@app.route('/api/transactions', methods=['POST'])
+def api_add_transaction():
+    """Yangi tranzaksiya qo'shish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Ma\'lumot yuborilmadi'}), 400
+
+        # Required fields
+        amount = data.get('amount')
+        transaction_type = data.get('transaction_type')
+
+        if not amount or not transaction_type:
+            return jsonify({'error': 'amount va transaction_type majburiy'}), 400
+
+        # Optional fields
+        category = data.get('category', 'Boshqa')
+        description = data.get('description', '')
+        currency = data.get('currency', 'UZS')
+
+        result = add_transaction(
+            user_id=user_id,
+            amount=float(amount),
+            transaction_type=transaction_type,
+            category=category,
+            description=description,
+            currency=currency
+        )
+
+        if result:
+            return jsonify({'success': True, 'message': 'Tranzaksiya qo\'shildi'})
+        else:
+            return jsonify({'error': 'Tranzaksiya qo\'shishda xatolik'}), 500
+
+    except Exception as e:
+        print(f"❌ API: Tranzaksiya qo'shishda xatolik: {e}")
+        return jsonify({'error': str(e)}), 500
 
 @app.route('/api/balance', methods=['GET'])
 def api_get_balance():
@@ -1142,18 +1178,79 @@ def api_get_category_details(category_name):
             return jsonify({'error': 'Unauthorized'}), 401
         
         details = get_category_details(user_id, category_name)
-        
+
         # Decimal ni float ga konvertatsiya qilish
         for key, value in details.items():
             if isinstance(value, Decimal):
                 details[key] = float(value)
-        
+
         return jsonify(details)
     except Exception as e:
         print(f"❌ API: Kategoriya tafsilotlarini olishda xatolik: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# TELEGRAM EXPORT ENDPOINT
+# ============================================
+
+@app.route('/api/export/telegram', methods=['POST'])
+def api_export_to_telegram():
+    """Eksport faylini Telegram botga yuborish"""
+    import requests
+
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        # Faylni olish
+        if 'file' not in request.files:
+            return jsonify({'error': 'Fayl topilmadi'}), 400
+
+        file = request.files['file']
+        caption = request.form.get('caption', 'Balans AI Eksport')
+
+        # Telegram Bot Token
+        bot_token = Config.TELEGRAM_BOT_TOKEN
+        if not bot_token:
+            return jsonify({'error': 'Bot token mavjud emas'}), 500
+
+        # Telegram API ga fayl yuborish
+        telegram_url = f"https://api.telegram.org/bot{bot_token}/sendDocument"
+
+        # Faylni yuborish
+        files = {
+            'document': (file.filename, file.stream, file.content_type or 'application/octet-stream')
+        }
+        data = {
+            'chat_id': user_id,
+            'caption': caption,
+            'parse_mode': 'HTML'
+        }
+
+        response = requests.post(telegram_url, files=files, data=data, timeout=30)
+
+        if response.status_code == 200:
+            result = response.json()
+            if result.get('ok'):
+                print(f"✅ Eksport yuborildi: user_id={user_id}, file={file.filename}")
+                return jsonify({'success': True, 'message': 'Fayl Telegram ga yuborildi'})
+            else:
+                print(f"❌ Telegram API xatosi: {result}")
+                return jsonify({'error': 'Telegram API xatosi'}), 500
+        else:
+            print(f"❌ Telegram request xatosi: {response.status_code} - {response.text}")
+            return jsonify({'error': 'Telegram ga yuborishda xatolik'}), 500
+
+    except Exception as e:
+        print(f"❌ Export to Telegram xatosi: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
 
 if __name__ == '__main__':
     port = int(os.getenv('PORT', 5003))

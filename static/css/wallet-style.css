@@ -80,7 +80,7 @@ body {
 .page {
     display: none;
     min-height: 100vh;
-    padding-bottom: 100px;
+    padding-bottom: 120px;
     background: var(--wallet-bg-primary);
 }
 
@@ -534,37 +534,64 @@ body {
 }
 
 /* ========================================
-   BOTTOM NAVIGATION - WALLET STYLE
+   BOTTOM NAVIGATION - TELEGRAM WALLET STYLE
    ======================================== */
 
-.wallet-bottom-nav {
+/* New Telegram Wallet style navbar - Glass Effect Floating */
+.tg-wallet-nav {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: var(--wallet-bg-secondary);
-    border-top: 0.5px solid var(--wallet-bg-tertiary);
+    bottom: 16px;
+    left: 16px;
+    right: 16px;
+    background: rgba(44, 44, 46, 0.75);
+    backdrop-filter: blur(40px) saturate(180%);
+    -webkit-backdrop-filter: blur(40px) saturate(180%);
     display: flex;
     justify-content: space-around;
-    padding: 8px 0;
+    align-items: center;
+    padding: 8px 4px;
     padding-bottom: calc(8px + env(safe-area-inset-bottom, 0px));
     z-index: 1000;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 24px;
+    box-shadow:
+        0 8px 32px rgba(0, 0, 0, 0.35),
+        0 2px 8px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
-.wallet-nav-item {
+.tg-wallet-nav-item {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 4px;
-    padding: 6px 12px;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 6px;
     background: none;
     border: none;
+    border-radius: 16px;
     cursor: pointer;
-    transition: all 0.15s ease;
-    min-width: 64px;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    flex: 1;
+    min-width: 56px;
+    max-width: 68px;
+    position: relative;
 }
 
-.wallet-nav-icon {
+.tg-wallet-nav-item::before {
+    display: none;
+}
+
+.tg-wallet-nav-item.active {
+    background: rgba(10, 132, 255, 0.2);
+}
+
+.tg-wallet-nav-item:active {
+    transform: scale(0.92);
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.tg-wallet-nav-icon {
     width: 28px;
     height: 28px;
     display: flex;
@@ -572,28 +599,36 @@ body {
     justify-content: center;
 }
 
-.wallet-nav-icon svg {
+.tg-wallet-nav-icon svg {
     width: 24px;
     height: 24px;
-    stroke: var(--wallet-text-tertiary);
+    stroke: rgba(255, 255, 255, 0.5);
     fill: none;
-    stroke-width: 1.5;
-    transition: all 0.15s ease;
+    transition: all 0.25s ease;
 }
 
-.wallet-nav-label {
+.tg-wallet-nav-label {
     font-size: 10px;
     font-weight: 500;
-    color: var(--wallet-text-tertiary);
-    transition: color 0.15s ease;
+    color: rgba(255, 255, 255, 0.5);
+    transition: all 0.25s ease;
+    white-space: nowrap;
+    text-align: center;
 }
 
-.wallet-nav-item.active .wallet-nav-icon svg {
-    stroke: var(--wallet-accent-blue);
+.tg-wallet-nav-item.active .tg-wallet-nav-icon svg {
+    stroke: #0A84FF;
+    filter: drop-shadow(0 0 4px rgba(10, 132, 255, 0.4));
 }
 
-.wallet-nav-item.active .wallet-nav-label {
-    color: var(--wallet-accent-blue);
+.tg-wallet-nav-item.active .tg-wallet-nav-label {
+    color: #0A84FF;
+    font-weight: 600;
+}
+
+/* Old navbar (kept for compatibility) */
+.wallet-bottom-nav {
+    display: none;
 }
 
 /* ========================================
@@ -1343,7 +1378,9 @@ body {
 }
 
 /* Skeleton Loading */
-.wallet-skeleton {
+.wallet-skeleton,
+.skeleton-text,
+.skeleton-icon {
     background: linear-gradient(
         90deg,
         var(--wallet-bg-secondary) 0%,
@@ -1353,6 +1390,42 @@ body {
     background-size: 200% 100%;
     animation: skeleton-loading 1.5s ease-in-out infinite;
     border-radius: var(--wallet-radius-sm);
+}
+
+.skeleton-text {
+    display: inline-block;
+    height: 16px;
+    min-width: 60px;
+    border-radius: 4px;
+}
+
+.skeleton-text.short {
+    width: 40%;
+    height: 12px;
+    margin-top: 4px;
+}
+
+.skeleton-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    flex-shrink: 0;
+}
+
+.skeleton-transaction {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--wallet-bg-secondary);
+    border-radius: 12px;
+    margin-bottom: 8px;
+}
+
+.skeleton-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
 }
 
 @keyframes skeleton-loading {
