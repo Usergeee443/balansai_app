@@ -1576,6 +1576,34 @@ function showExportModal() {
 function closeExportModal() {
     const modal = document.getElementById('exportModal');
     if (modal) modal.classList.remove('active');
+    // Hide loading if modal is closed
+    hideExportLoading();
+}
+
+function showExportLoading() {
+    // Create or get loading overlay
+    let loadingOverlay = document.getElementById('exportLoadingOverlay');
+    if (!loadingOverlay) {
+        loadingOverlay = document.createElement('div');
+        loadingOverlay.id = 'exportLoadingOverlay';
+        loadingOverlay.className = 'export-loading-overlay';
+        loadingOverlay.innerHTML = `
+            <div class="export-loading-content">
+                <div class="export-loading-spinner"></div>
+                <div class="export-loading-text">Fayl yuborilmoqda...</div>
+                <div class="export-loading-subtext">Iltimos, kuting</div>
+            </div>
+        `;
+        document.body.appendChild(loadingOverlay);
+    }
+    loadingOverlay.classList.add('active');
+}
+
+function hideExportLoading() {
+    const loadingOverlay = document.getElementById('exportLoadingOverlay');
+    if (loadingOverlay) {
+        loadingOverlay.classList.remove('active');
+    }
 }
 
 async function exportData(format) {
@@ -1623,6 +1651,9 @@ async function exportData(format) {
 }
 
 async function sendFileToTelegram(content, filename, mimeType, count) {
+    // Show loading animation
+    showExportLoading();
+    
     try {
         // Create blob and FormData
         const blob = new Blob([content], { type: mimeType });
@@ -1648,6 +1679,9 @@ async function sendFileToTelegram(content, filename, mimeType, count) {
             body: formData
         });
 
+        // Hide loading animation
+        hideExportLoading();
+
         if (response.ok) {
             hapticFeedback('success');
             closeExportModal();
@@ -1667,6 +1701,8 @@ async function sendFileToTelegram(content, filename, mimeType, count) {
         }
 
     } catch (error) {
+        // Hide loading animation on error
+        hideExportLoading();
         console.error('Telegram export error:', error);
 
         // Fallback: download locally
@@ -1764,6 +1800,8 @@ window.showNotifications = showNotifications;
 window.showExportModal = showExportModal;
 window.closeExportModal = closeExportModal;
 window.exportData = exportData;
+window.showExportLoading = showExportLoading;
+window.hideExportLoading = hideExportLoading;
 window.showAddGoalModal = showAddGoalModal;
 window.showTransactionDetail = showTransactionDetail;
 window.showDebtDetail = showDebtDetail;

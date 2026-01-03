@@ -6,10 +6,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Balans AI</title>
-
+    
     <!-- Wallet Style CSS -->
     <link rel="stylesheet" href="/static/css/wallet-style.css">
-
+    
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <!-- Chart.js -->
@@ -37,7 +37,7 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="3"/>
                         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                    </svg>
+            </svg>
                 </div>
             </div>
         </div>
@@ -62,7 +62,7 @@
                     <div class="wallet-balance-label">Umumiy balans</div>
                     <div class="wallet-balance-amount" id="totalBalance">0 so'm</div>
                 </div>
-            </div>
+        </div>
 
             <button class="wallet-cta-btn" onclick="showAddTransactionModal()">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -156,23 +156,23 @@
                 </button>
             </div>
         </div>
-
+        
         <!-- Search -->
         <div class="wallet-search">
             <svg class="wallet-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <circle cx="11" cy="11" r="8"/>
                 <path d="M21 21l-4.35-4.35"/>
-            </svg>
+                </svg>
             <input type="text" class="wallet-search-input" id="transactionSearch" placeholder="Qidirish..." oninput="filterTransactions()">
         </div>
-
+        
         <!-- Filter Pills -->
         <div class="wallet-filters">
             <button class="wallet-filter-btn active" data-filter="all" onclick="setTransactionFilter('all', this)">Barchasi</button>
             <button class="wallet-filter-btn" data-filter="income" onclick="setTransactionFilter('income', this)">Kirim</button>
             <button class="wallet-filter-btn" data-filter="expense" onclick="setTransactionFilter('expense', this)">Chiqim</button>
         </div>
-
+        
         <!-- Transactions List -->
         <div id="transactionsContainer">
             <!-- Loaded via JavaScript -->
@@ -477,7 +477,7 @@
                 </div>
             </div>
         </div>
-
+        
         <div style="padding: 0 16px 32px;">
             <button class="wallet-form-btn danger" onclick="handleLogout()">
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
@@ -578,7 +578,7 @@
             </button>
             <h1 class="wallet-page-title">Top xarajatlar</h1>
         </div>
-
+        
         <div id="topExpensesContent" style="padding: 0 16px;">
             <!-- Loaded via JavaScript -->
         </div>
@@ -624,15 +624,6 @@
                 </svg>
             </div>
             <span class="tg-wallet-nav-label">Xizmatlar</span>
-        </button>
-        <button class="tg-wallet-nav-item" data-page="profile" onclick="navigateTo('profile')">
-            <div class="tg-wallet-nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                </svg>
-            </div>
-            <span class="tg-wallet-nav-label">Profil</span>
         </button>
     </nav>
 
@@ -698,7 +689,7 @@
             </form>
         </div>
     </div>
-
+    
     <!-- Add Reminder Modal -->
     <div id="addReminderModal" class="wallet-modal">
         <div class="wallet-modal-content">
@@ -769,11 +760,11 @@
                 <div class="wallet-form-group">
                     <label class="wallet-form-label">Muddat (ixtiyoriy)</label>
                     <input type="date" class="wallet-form-input" id="debtDueDate">
-                </div>
+        </div>
                 <div class="wallet-form-group">
                     <label class="wallet-form-label">Izoh (ixtiyoriy)</label>
                     <input type="text" class="wallet-form-input" id="debtDescription" placeholder="Qarz haqida">
-                </div>
+        </div>
                 <button type="submit" class="wallet-form-btn">Qo'shish</button>
             </form>
         </div>
@@ -786,18 +777,18 @@
                 <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--wallet-accent-blue)" stroke-width="2">
                     <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
                     <circle cx="12" cy="7" r="4"/>
-                </svg>
-            </div>
+            </svg>
+        </div>
             <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 12px;">Ro'yxatdan o'tmagansiz</h2>
             <p style="color: var(--wallet-text-secondary); margin-bottom: 24px;">Ilovadan foydalanish uchun Telegram bot orqali ro'yxatdan o'ting</p>
             <button class="wallet-form-btn" onclick="openTelegramBot()">Botga o'tish</button>
         </div>
-    </div>
+        </div>
 
     <!-- Loading Screen -->
     <div id="loadingScreen" class="wallet-loading" style="display: none;">
         <div class="wallet-spinner"></div>
-    </div>
+        </div>
 
     <!-- Scripts -->
     <script src="/static/js/wallet-app.js"></script>
