@@ -6,648 +6,800 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Balans AI</title>
-    
-    <!-- Styles -->
-    <link rel="stylesheet" href="/static/css/style.css">
-    
-    <!-- Scripts -->
+
+    <!-- Wallet Style CSS -->
+    <link rel="stylesheet" href="/static/css/wallet-style.css">
+
+    <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
-    <!-- Asosiy Sahifa -->
+    <!-- ============================================
+         HOME PAGE - WALLET STYLE
+         ============================================ -->
     <div id="pageHome" class="page active">
-        <!-- Simple Header with Dark Mode Toggle -->
-        <header class="home-header">
-            <div class="home-header-content">
-                <h1 class="home-logo">Balans AI</h1>
-                <button class="theme-toggle" onclick="window.themeManager?.toggle()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                        <path stroke-width="2" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        <!-- Header -->
+        <div class="wallet-header">
+            <div class="wallet-header-left">
+                <div class="wallet-avatar" id="userAvatar">B</div>
+                <span class="wallet-title">Balans AI</span>
+            </div>
+            <div class="wallet-header-right">
+                <div class="wallet-header-icon" onclick="showNotifications()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                     </svg>
-                </button>
-            </div>
-        </header>
-
-        <!-- Hero Balance Card (Larger, Prominent) -->
-        <div class="hero-balance-card" onclick="showBalanceDetails()">
-            <div class="hero-balance-label">Umumiy balans</div>
-            <div class="hero-balance-amount" id="heroTotalBalance">0 so'm</div>
-            <div class="hero-balance-footer">
-                <span class="hero-balance-details-link">Tafsilotlar →</span>
-            </div>
-        </div>
-
-        <!-- Quick Stats Swiper -->
-        <div class="quick-stats-swiper">
-            <div class="quick-stat-card quick-stat-income">
-                <div class="quick-stat-icon">↑</div>
-                <div class="quick-stat-value" id="quickIncome">0</div>
-                <div class="quick-stat-label">Kirim</div>
-            </div>
-            <div class="quick-stat-card quick-stat-expense">
-                <div class="quick-stat-icon">↓</div>
-                <div class="quick-stat-value" id="quickExpense">0</div>
-                <div class="quick-stat-label">Chiqim</div>
-            </div>
-            <div class="quick-stat-card quick-stat-balance">
-                <div class="quick-stat-icon">⚖</div>
-                <div class="quick-stat-value" id="quickBalance">0</div>
-                <div class="quick-stat-label">Balans</div>
-            </div>
-            <div class="quick-stat-card quick-stat-savings">
-                <div class="quick-stat-icon">📊</div>
-                <div class="quick-stat-value" id="quickSavings">0%</div>
-                <div class="quick-stat-label">Tejash</div>
-            </div>
-        </div>
-
-        <!-- Services Quick Access Grid -->
-        <div class="home-services-section">
-            <h3 class="home-section-title">Tez kirish</h3>
-            <div class="home-services-grid">
-                <div class="home-service-card" onclick="navigateTo('reminders')">
-                    <div class="home-service-icon">🔔</div>
-                    <div class="home-service-title">Eslatmalar</div>
                 </div>
-                <div class="home-service-card" onclick="navigateTo('debts')">
-                    <div class="home-service-icon">💳</div>
-                    <div class="home-service-title">Qarzlar</div>
-                </div>
-                <div class="home-service-card" onclick="navigateTo('goals')">
-                    <div class="home-service-icon">🎯</div>
-                    <div class="home-service-title">Maqsadlar</div>
-                </div>
-                <div class="home-service-card" onclick="navigateTo('aiChat')">
-                    <div class="home-service-icon">🤖</div>
-                    <div class="home-service-title">AI Chat</div>
-                </div>
-                <div class="home-service-card" onclick="navigateTo('budgets')">
-                    <div class="home-service-icon">💰</div>
-                    <div class="home-service-title">Byudjet</div>
-                </div>
-                <div class="home-service-card" onclick="navigateTo('statistics')">
-                    <div class="home-service-icon">📊</div>
-                    <div class="home-service-title">Statistika</div>
-                </div>
-                <div class="home-service-card" onclick="window.reportsManager?.showReportModal()">
-                    <div class="home-service-icon">📄</div>
-                    <div class="home-service-title">Hisobotlar</div>
-                </div>
-                <div class="home-service-card" onclick="navigateTo('services')">
-                    <div class="home-service-icon">➕</div>
-                    <div class="home-service-title">Ko'proq</div>
+                <div class="wallet-header-icon" onclick="navigateTo('profile')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
                 </div>
             </div>
         </div>
 
-        <!-- So'nggi Tranzaksiyalar (Limited to 5) -->
-        <section class="home-transactions-section">
-            <div class="section-header">
-                <h3 class="home-section-title">So'nggi tranzaksiyalar</h3>
-                <button class="view-all-btn" onclick="navigateTo('transactions')">
-                    Ko'proq →
-                </button>
-            </div>
-            <div class="home-transactions-list" id="homeTransactionsList">
-                <!-- JavaScript orqali yuklanadi (5 ta) -->
-            </div>
-        </section>
-    </div>
-
-    <!-- Tranzaksiyalar Sahifasi -->
-    <div id="pageTransactions" class="page">
-        <div class="page-header">
-            <h2 class="page-title">Tranzaksiyalar</h2>
-        </div>
-        
-        <!-- Search -->
-        <div class="search-section">
-            <div class="search-box">
-                <svg class="search-icon" viewBox="0 0 24 24" fill="none">
-                    <path d="M11 19C15.4183 19 19 15.4183 19 11C19 6.58172 15.4183 3 11 3C6.58172 3 3 6.58172 3 11C3 15.4183 6.58172 19 11 19Z" stroke="currentColor" stroke-width="2"/>
-                    <path d="M21 21L16.65 16.65" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        <!-- Balance Section with Gauge -->
+        <div class="wallet-balance-section">
+            <div class="wallet-gauge-container">
+                <svg class="wallet-gauge-svg" viewBox="0 0 200 120">
+                    <defs>
+                        <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#0A84FF"/>
+                            <stop offset="50%" style="stop-color:#5E5CE6"/>
+                            <stop offset="100%" style="stop-color:#BF5AF2"/>
+                        </linearGradient>
+                    </defs>
+                    <!-- Background arc -->
+                    <path class="wallet-gauge-bg" d="M 20 100 A 80 80 0 0 1 180 100"/>
+                    <!-- Fill arc -->
+                    <path class="wallet-gauge-fill" id="gaugeFill" d="M 20 100 A 80 80 0 0 1 180 100" stroke-dasharray="251" stroke-dashoffset="125"/>
                 </svg>
-                <input type="text" id="transactionSearch" placeholder="Qidiring..." class="search-input">
+                <div class="wallet-gauge-text">
+                    <div class="wallet-balance-label">Umumiy balans</div>
+                    <div class="wallet-balance-amount" id="totalBalance">0 so'm</div>
+                </div>
             </div>
-        </div>
-        
-        <!-- Filter -->
-        <div class="filter-section">
-            <button class="filter-btn active" data-filter="all">Barchasi</button>
-            <button class="filter-btn" data-filter="income">Kirim</button>
-            <button class="filter-btn" data-filter="expense">Chiqim</button>
-            <button class="filter-btn" data-filter="debt_given">Qarz berish</button>
-            <button class="filter-btn" data-filter="debt_taken">Qarz olish</button>
-        </div>
-        
-        <!-- Transactions List -->
-        <div id="allTransactionsList" class="transactions-list-grouped">
-            <!-- JavaScript orqali yuklanadi -->
-        </div>
-    </div>
 
-    <!-- Statistika Sahifasi -->
-    <div id="pageStatistics" class="page">
-        <div class="page-header">
-            <h2 class="page-title">Statistika</h2>
-        </div>
-        
-        <div id="statisticsContent" style="padding: 16px; min-height: 400px;">
-            <!-- JavaScript orqali yuklanadi -->
-        </div>
-    </div>
-
-    <!-- Top Xarajatlar Sahifasi -->
-    <div id="pageTopExpenses" class="page">
-        <div class="page-header">
-            <button class="page-back" onclick="navigateTo('home')">←</button>
-            <h2 class="page-title">Top xarajatlar</h2>
-        </div>
-        <div id="topExpensesContent" style="padding: 16px;">
-            <div style="text-align: center; padding: 40px 20px; color: #999;">
-                <p>Yuklanmoqda...</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Maqsad Sahifasi -->
-    <div id="pageGoals" class="page">
-        <div class="page-header">
-            <button class="page-back" onclick="navigateTo('home')">←</button>
-            <h2 class="page-title">Maqsad o'rnatish</h2>
-        </div>
-        <div style="padding: 16px; text-align: center; color: #999;">
-            <p>Tez orada...</p>
-        </div>
-    </div>
-
-    <!-- AI Chat Sahifasi -->
-    <div id="pageAiChat" class="page">
-        <div class="page-header">
-            <button class="page-back" onclick="navigateTo('home')">←</button>
-            <h2 class="page-title">AI chat</h2>
-        </div>
-        <div style="padding: 16px; text-align: center; color: #999;">
-            <p>Tez orada...</p>
-        </div>
-    </div>
-
-    <!-- Pul Yig'ish Sahifasi -->
-    <div id="pageSavings" class="page">
-        <div class="page-header">
-            <button class="page-back" onclick="navigateTo('home')">←</button>
-            <h2 class="page-title">Pul yig'ish</h2>
-        </div>
-        <div style="padding: 16px; text-align: center; color: #999;">
-            <p>Tez orada...</p>
-        </div>
-    </div>
-
-    <!-- Balans Tafsilotlari Sahifasi -->
-    <div id="pageBalanceDetails" class="page">
-        <div class="page-header">
-            <button class="back-btn" onclick="navigateTo('home')">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M19 12H5M12 19l-7-7 7-7"/>
-                </svg>
-            </button>
-            <h2 class="page-title">Balans tafsilotlari</h2>
-        </div>
-        
-        <div id="balanceDetailsContent" style="padding: 16px;">
-            <!-- JavaScript orqali yuklanadi -->
-        </div>
-    </div>
-
-    <!-- Eslatmalar Sahifasi -->
-    <div id="pageReminders" class="page">
-        <div class="page-header">
-            <h2 class="page-title">Eslatmalar</h2>
-            <button class="add-btn" onclick="showAddReminderModal()" title="Yangi eslatma">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <button class="wallet-cta-btn" onclick="showAddTransactionModal()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <path d="M12 5v14M5 12h14"/>
                 </svg>
+                Tranzaksiya qo'shish
             </button>
         </div>
-        
-        <div id="remindersList" class="reminders-list">
-            <!-- JavaScript orqali yuklanadi -->
+
+        <!-- Action Buttons -->
+        <div class="wallet-actions">
+            <div class="wallet-action-item" onclick="showAddTransactionModal('income')">
+                <div class="wallet-action-icon green">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 19V5M5 12l7-7 7 7"/>
+                    </svg>
+                </div>
+                <span class="wallet-action-label">Kirim</span>
+            </div>
+            <div class="wallet-action-item" onclick="showAddTransactionModal('expense')">
+                <div class="wallet-action-icon" style="background: rgba(255, 69, 58, 0.15);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="stroke: #FF453A;">
+                        <path d="M12 5v14M5 12l7 7 7-7"/>
+                    </svg>
+                </div>
+                <span class="wallet-action-label">Chiqim</span>
+            </div>
+            <div class="wallet-action-item" onclick="navigateTo('debts')">
+                <div class="wallet-action-icon orange">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 11h4a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h4"/>
+                        <rect x="8" y="5" width="8" height="12" rx="1"/>
+                    </svg>
+                </div>
+                <span class="wallet-action-label">Qarzlar</span>
+            </div>
+            <div class="wallet-action-item" onclick="navigateTo('statistics')">
+                <div class="wallet-action-icon purple">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 20V10M12 20V4M6 20v-6"/>
+                    </svg>
+                </div>
+                <span class="wallet-action-label">Statistika</span>
+            </div>
+        </div>
+
+        <!-- Info Card -->
+        <div class="wallet-info-card" onclick="navigateTo('services')">
+            <div class="wallet-info-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+            </div>
+            <div class="wallet-info-content">
+                <div class="wallet-info-title">Barcha xizmatlar</div>
+                <div class="wallet-info-subtitle">
+                    Eslatmalar, maqsadlar va boshqalar
+                    <svg class="wallet-info-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="wallet-section">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">So'nggi tranzaksiyalar</h2>
+                <button class="wallet-section-action" onclick="navigateTo('transactions')">Barchasi</button>
+            </div>
+            <div class="wallet-transactions-list" id="homeTransactionsList">
+                <!-- Loaded via JavaScript -->
+            </div>
         </div>
     </div>
-    
-    <!-- Qarzlar Sahifasi -->
-    <div id="pageDebts" class="page">
-        <div class="page-header">
-            <h2 class="page-title">Qarzlar</h2>
-            <div style="display: flex; gap: 8px;">
-                <button class="add-btn" onclick="showAddContactModal()" title="Yangi kontakt">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                        <circle cx="12" cy="7" r="4"/>
-                    </svg>
-                </button>
-                <button class="add-btn" onclick="showAddDebtModal()" title="Yangi qarz">
+
+    <!-- ============================================
+         TRANSACTIONS PAGE
+         ============================================ -->
+    <div id="pageTransactions" class="page">
+        <div class="wallet-page-header">
+            <h1 class="wallet-page-title">Tranzaksiyalar</h1>
+            <div class="wallet-page-actions">
+                <button class="wallet-icon-btn" onclick="showAddTransactionModal()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 5v14M5 12h14"/>
                     </svg>
                 </button>
             </div>
         </div>
-        
-        <!-- Kontaktlar ro'yxati -->
-        <div id="contactsList" class="contacts-list">
-            <!-- JavaScript orqali yuklanadi -->
+
+        <!-- Search -->
+        <div class="wallet-search">
+            <svg class="wallet-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="M21 21l-4.35-4.35"/>
+            </svg>
+            <input type="text" class="wallet-search-input" id="transactionSearch" placeholder="Qidirish..." oninput="filterTransactions()">
         </div>
-        
-        <!-- Qarzlar ro'yxati (kontakt tanlanganda) -->
-        <div id="debtsList" class="debts-list" style="display: none;">
-            <!-- JavaScript orqali yuklanadi -->
+
+        <!-- Filter Pills -->
+        <div class="wallet-filters">
+            <button class="wallet-filter-btn active" data-filter="all" onclick="setTransactionFilter('all', this)">Barchasi</button>
+            <button class="wallet-filter-btn" data-filter="income" onclick="setTransactionFilter('income', this)">Kirim</button>
+            <button class="wallet-filter-btn" data-filter="expense" onclick="setTransactionFilter('expense', this)">Chiqim</button>
         </div>
-    </div>
-    
-    <!-- Contact Detail Modal -->
-    <div id="contactDetailModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title" id="contactDetailName">Kontakt</h3>
-                <button class="modal-close" onclick="closeContactDetailModal()">✕</button>
-            </div>
-            <div class="modal-body">
-                <div id="contactDebtsList"></div>
-            </div>
+
+        <!-- Transactions List -->
+        <div id="transactionsContainer">
+            <!-- Loaded via JavaScript -->
         </div>
     </div>
-    
-    <!-- Debt Detail Modal -->
-    <div id="debtDetailModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3 class="modal-title">Qarz ma'lumotlari</h3>
-                <button class="modal-close" onclick="closeDebtDetailModal()">✕</button>
+
+    <!-- ============================================
+         STATISTICS PAGE
+         ============================================ -->
+    <div id="pageStatistics" class="page">
+        <div class="wallet-page-header">
+            <h1 class="wallet-page-title">Statistika</h1>
+        </div>
+
+        <!-- Period Selector -->
+        <div class="wallet-segment" style="margin: 0 16px 16px;">
+            <button class="wallet-segment-btn active" data-period="week" onclick="loadStatistics('week', this)">Hafta</button>
+            <button class="wallet-segment-btn" data-period="month" onclick="loadStatistics('month', this)">Oy</button>
+            <button class="wallet-segment-btn" data-period="year" onclick="loadStatistics('year', this)">Yil</button>
+            <button class="wallet-segment-btn" data-period="all" onclick="loadStatistics('all', this)">Hammasi</button>
+        </div>
+
+        <!-- Overview Stats -->
+        <div class="wallet-stats-overview">
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value positive" id="statIncome">0</div>
+                <div class="wallet-stat-label">Kirim</div>
             </div>
-            <div class="modal-body" id="debtDetailContent">
-                <!-- JavaScript orqali yuklanadi -->
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value negative" id="statExpense">0</div>
+                <div class="wallet-stat-label">Chiqim</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value" id="statNet">0</div>
+                <div class="wallet-stat-label">Sof foyda</div>
+            </div>
+        </div>
+
+        <!-- Balance Trend Chart -->
+        <div class="wallet-chart-card">
+            <div class="wallet-chart-header">
+                <span class="wallet-chart-title">Balans trendi</span>
+            </div>
+            <canvas id="balanceTrendChart" class="wallet-chart-canvas"></canvas>
+        </div>
+
+        <!-- Two Charts Row -->
+        <div class="wallet-charts-row">
+            <div class="wallet-chart-card wallet-chart-half">
+                <div class="wallet-chart-header">
+                    <span class="wallet-chart-title">Kirim/Chiqim</span>
+                </div>
+                <canvas id="incomeExpenseChart" class="wallet-chart-canvas-sm"></canvas>
+            </div>
+            <div class="wallet-chart-card wallet-chart-half">
+                <div class="wallet-chart-header">
+                    <span class="wallet-chart-title">Kategoriyalar</span>
+                </div>
+                <canvas id="categoryChart" class="wallet-chart-canvas-sm"></canvas>
+            </div>
+        </div>
+
+        <!-- Daily Spending Chart -->
+        <div class="wallet-chart-card">
+            <div class="wallet-chart-header">
+                <span class="wallet-chart-title">Kunlik xarajatlar</span>
+            </div>
+            <canvas id="dailySpendingChart" class="wallet-chart-canvas"></canvas>
+        </div>
+
+        <!-- Top Categories List -->
+        <div class="wallet-chart-card">
+            <div class="wallet-chart-header">
+                <span class="wallet-chart-title">Top kategoriyalar</span>
+            </div>
+            <div id="topCategoriesList"></div>
+        </div>
+
+        <!-- Stats Cards -->
+        <div class="wallet-stats-overview">
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value" id="statSavingsRate">0%</div>
+                <div class="wallet-stat-label">Tejash</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value" id="statTransactionCount">0</div>
+                <div class="wallet-stat-label">Tranzaksiyalar</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value" id="statAvgTransaction">0</div>
+                <div class="wallet-stat-label">O'rtacha</div>
             </div>
         </div>
     </div>
 
-    <!-- Not Registered Modal -->
-    <div id="notRegisteredModal" class="modal not-registered-modal">
-        <div class="modal-content not-registered-content">
-            <div class="not-registered-icon">👤</div>
-            <h2 class="not-registered-title">Ro'yxatdan o'tmagansiz</h2>
-            <p class="not-registered-message">
-                Ilovadan foydalanish uchun avval Telegram botimiz orqali ro'yxatdan o'tishingiz kerak.
-            </p>
-            <button class="btn-primary not-registered-btn" onclick="openTelegramBot()">
-                Botga o'tish
-            </button>
-        </div>
-    </div>
-
-    <!-- Services Hub Page -->
+    <!-- ============================================
+         SERVICES PAGE
+         ============================================ -->
     <div id="pageServices" class="page">
-        <div class="page-header">
-            <h2 class="page-title">Xizmatlar</h2>
+        <div class="wallet-page-header">
+            <h1 class="wallet-page-title">Xizmatlar</h1>
         </div>
 
-        <div class="services-container">
-            <!-- Moliyaviy boshqaruv -->
-            <div class="service-category">
-                <h3 class="service-category-title">Moliyaviy boshqaruv</h3>
-                <div class="service-grid">
-                    <div class="service-card" onclick="navigateTo('reminders')">
-                        <div class="service-icon">🔔</div>
-                        <div class="service-title">Eslatmalar</div>
-                        <div class="service-badge" id="remindersBadge" style="display: none;">0</div>
+        <!-- Services Grid -->
+        <div class="wallet-section">
+            <h3 style="font-size: 14px; color: var(--wallet-text-secondary); margin-bottom: 16px; padding: 0;">MOLIYAVIY BOSHQARUV</h3>
+            <div class="wallet-services-grid">
+                <div class="wallet-service-item" onclick="navigateTo('reminders')">
+                    <div class="wallet-service-icon orange">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
                     </div>
-                    <div class="service-card" onclick="navigateTo('debts')">
-                        <div class="service-icon">💳</div>
-                        <div class="service-title">Qarzlar</div>
-                        <div class="service-badge" id="debtsBadge" style="display: none;">0</div>
+                    <span class="wallet-service-label">Eslatmalar</span>
+                </div>
+                <div class="wallet-service-item" onclick="navigateTo('debts')">
+                    <div class="wallet-service-icon red">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                            <line x1="1" y1="10" x2="23" y2="10"/>
+                        </svg>
                     </div>
-                    <div class="service-card" onclick="navigateTo('goals')">
-                        <div class="service-icon">🎯</div>
-                        <div class="service-title">Maqsadlar</div>
+                    <span class="wallet-service-label">Qarzlar</span>
+                </div>
+                <div class="wallet-service-item" onclick="navigateTo('goals')">
+                    <div class="wallet-service-icon green">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <circle cx="12" cy="12" r="6"/>
+                            <circle cx="12" cy="12" r="2"/>
+                        </svg>
                     </div>
-                    <div class="service-card" onclick="navigateTo('budgets')">
-                        <div class="service-icon">💰</div>
-                        <div class="service-title">Byudjet</div>
+                    <span class="wallet-service-label">Maqsadlar</span>
+                </div>
+                <div class="wallet-service-item" onclick="navigateTo('budgets')">
+                    <div class="wallet-service-icon purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
+                            <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
+                            <path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z"/>
+                        </svg>
                     </div>
+                    <span class="wallet-service-label">Byudjet</span>
                 </div>
             </div>
+        </div>
 
-            <!-- Sun'iy intellekt -->
-            <div class="service-category">
-                <h3 class="service-category-title">Sun'iy intellekt</h3>
-                <div class="service-grid">
-                    <div class="service-card" onclick="navigateTo('aiChat')">
-                        <div class="service-icon">🤖</div>
-                        <div class="service-title">AI Maslahatchi</div>
+        <div class="wallet-section" style="margin-top: 24px;">
+            <h3 style="font-size: 14px; color: var(--wallet-text-secondary); margin-bottom: 16px; padding: 0;">HISOBOTLAR</h3>
+            <div class="wallet-services-grid">
+                <div class="wallet-service-item" onclick="navigateTo('statistics')">
+                    <div class="wallet-service-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 20V10M12 20V4M6 20v-6"/>
+                        </svg>
                     </div>
-                    <div class="service-card" onclick="showAIInsights()">
-                        <div class="service-icon">💡</div>
-                        <div class="service-title">Smart Tahlil</div>
-                    </div>
-                    <div class="service-card" onclick="showAIForecast()">
-                        <div class="service-icon">🔮</div>
-                        <div class="service-title">Prognoz</div>
-                    </div>
-                    <div class="service-card" onclick="showAIRecommendations()">
-                        <div class="service-icon">✨</div>
-                        <div class="service-title">Tavsiyalar</div>
-                    </div>
+                    <span class="wallet-service-label">Statistika</span>
                 </div>
-            </div>
-
-            <!-- Hisobotlar -->
-            <div class="service-category">
-                <h3 class="service-category-title">Hisobotlar va tahlil</h3>
-                <div class="service-grid">
-                    <div class="service-card" onclick="window.reportsManager.showReportModal()">
-                        <div class="service-icon">📊</div>
-                        <div class="service-title">Eksport</div>
+                <div class="wallet-service-item" onclick="showExportModal()">
+                    <div class="wallet-service-icon cyan">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="7 10 12 15 17 10"/>
+                            <line x1="12" y1="15" x2="12" y2="3"/>
+                        </svg>
                     </div>
-                    <div class="service-card" onclick="navigateTo('topExpenses')">
-                        <div class="service-icon">📈</div>
-                        <div class="service-title">Top xarajatlar</div>
+                    <span class="wallet-service-label">Eksport</span>
+                </div>
+                <div class="wallet-service-item" onclick="navigateTo('topExpenses')">
+                    <div class="wallet-service-icon orange">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
                     </div>
-                    <div class="service-card" onclick="navigateTo('savings')">
-                        <div class="service-icon">💵</div>
-                        <div class="service-title">Pul yig'ish</div>
-                    </div>
-                    <div class="service-card" onclick="showCurrencyConverter()">
-                        <div class="service-icon">💱</div>
-                        <div class="service-title">Konvertor</div>
-                    </div>
+                    <span class="wallet-service-label">Top xarajat</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Profile Page -->
+    <!-- ============================================
+         PROFILE PAGE
+         ============================================ -->
     <div id="pageProfile" class="page">
-        <div class="page-header">
-            <h2 class="page-title">Profil</h2>
+        <div class="wallet-profile-header">
+            <div class="wallet-profile-avatar" id="profileAvatar">U</div>
+            <div class="wallet-profile-name" id="profileName">Foydalanuvchi</div>
+            <div class="wallet-profile-username" id="profileUsername">@username</div>
         </div>
 
-        <div class="profile-container">
-            <!-- User Header -->
-            <div class="profile-header-card">
-                <div class="profile-avatar">
-                    <div class="profile-avatar-circle" id="profileAvatar">
-                        <span id="profileInitials">U</span>
+        <!-- Settings Groups -->
+        <div class="wallet-settings-group">
+            <div class="wallet-settings-title">Sozlamalar</div>
+            <div class="wallet-settings-list">
+                <div class="wallet-settings-item" onclick="showLanguageModal()">
+                    <div class="wallet-settings-icon blue">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="2" y1="12" x2="22" y2="12"/>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                    </div>
+                    <div class="wallet-settings-content">
+                        <div class="wallet-settings-label">Til</div>
+                    </div>
+                    <div class="wallet-settings-value">
+                        O'zbek
+                        <svg class="wallet-settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
                     </div>
                 </div>
-                <div class="profile-info">
-                    <h3 class="profile-name" id="profileName">Foydalanuvchi</h3>
-                    <p class="profile-username" id="profileUsername">@username</p>
-                    <div class="profile-badge">Plus tarif</div>
-                </div>
-            </div>
-
-            <!-- Quick Stats -->
-            <div class="profile-stats-grid">
-                <div class="profile-stat-card">
-                    <div class="profile-stat-icon">💰</div>
-                    <div class="profile-stat-value" id="profileBalance">0</div>
-                    <div class="profile-stat-label">Balans</div>
-                </div>
-                <div class="profile-stat-card">
-                    <div class="profile-stat-icon">📊</div>
-                    <div class="profile-stat-value" id="profileTransactions">0</div>
-                    <div class="profile-stat-label">Tranzaksiyalar</div>
-                </div>
-                <div class="profile-stat-card">
-                    <div class="profile-stat-icon">📅</div>
-                    <div class="profile-stat-value" id="profileDays">0</div>
-                    <div class="profile-stat-label">Kunlar</div>
-                </div>
-            </div>
-
-            <!-- Settings Groups -->
-            <div class="settings-groups">
-                <!-- Appearance -->
-                <div class="settings-group">
-                    <h4 class="settings-group-title">Ko'rinish</h4>
-                    <div class="settings-list">
-                        <div class="settings-item">
-                            <div class="settings-item-content">
-                                <div class="settings-item-icon">🌓</div>
-                                <span class="settings-item-label">Dark Mode</span>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="darkModeToggle" onchange="window.themeManager.toggle()">
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="settings-item" onclick="showLanguageSettings()">
-                            <div class="settings-item-content">
-                                <div class="settings-item-icon">🌐</div>
-                                <span class="settings-item-label">Til</span>
-                            </div>
-                            <div class="settings-item-value">
-                                <span>O'zbek</span>
-                                <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="settings-item" onclick="showCurrencySettings()">
-                            <div class="settings-item-content">
-                                <div class="settings-item-icon">💵</div>
-                                <span class="settings-item-label">Valyuta</span>
-                            </div>
-                            <div class="settings-item-value">
-                                <span>UZS</span>
-                                <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
-                            </div>
-                        </div>
+                <div class="wallet-settings-item" onclick="showCurrencyModal()">
+                    <div class="wallet-settings-icon green">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="1" x2="12" y2="23"/>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
                     </div>
-                </div>
-
-                <!-- Notifications -->
-                <div class="settings-group">
-                    <h4 class="settings-group-title">Bildirishnomalar</h4>
-                    <div class="settings-list">
-                        <div class="settings-item">
-                            <div class="settings-item-content">
-                                <div class="settings-item-icon">🔔</div>
-                                <span class="settings-item-label">Push xabarlar</span>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="pushNotifications" checked>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="settings-item">
-                            <div class="settings-item-content">
-                                <div class="settings-item-icon">⏰</div>
-                                <span class="settings-item-label">Eslatmalar</span>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="reminderNotifications" checked>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
-                        <div class="settings-item">
-                            <div class="settings-item-content">
-                                <div class="settings-item-icon">💳</div>
-                                <span class="settings-item-label">Qarz eslatma</span>
-                            </div>
-                            <label class="toggle-switch">
-                                <input type="checkbox" id="debtNotifications" checked>
-                                <span class="toggle-slider"></span>
-                            </label>
-                        </div>
+                    <div class="wallet-settings-content">
+                        <div class="wallet-settings-label">Valyuta</div>
                     </div>
-                </div>
-
-                <!-- Account -->
-                <div class="settings-group">
-                    <h4 class="settings-group-title">Hisob</h4>
-                    <div class="settings-list">
-                        <div class="settings-item" onclick="showTariffSettings()">
-                            <div class="settings-item-content">
-                                <div class="settings-item-icon">⭐</div>
-                                <span class="settings-item-label">Tarif</span>
-                            </div>
-                            <div class="settings-item-value">
-                                <span>Plus</span>
-                                <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="settings-item" onclick="showPaymentHistory()">
-                            <div class="settings-item-content">
-                                <div class="settings-item-icon">💰</div>
-                                <span class="settings-item-label">To'lov tarixi</span>
-                            </div>
-                            <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                            </svg>
-                        </div>
-                        <div class="settings-item" onclick="showDataExport()">
-                            <div class="settings-item-content">
-                                <div class="settings-item-icon">📥</div>
-                                <span class="settings-item-label">Ma'lumotlarni eksport</span>
-                            </div>
-                            <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                            </svg>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Help -->
-                <div class="settings-group">
-                    <h4 class="settings-group-title">Yordam</h4>
-                    <div class="settings-list">
-                        <div class="settings-item" onclick="showFAQ()">
-                            <div class="settings-item-content">
-                                <div class="settings-item-icon">❓</div>
-                                <span class="settings-item-label">FAQ</span>
-                            </div>
-                            <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                            </svg>
-                        </div>
-                        <div class="settings-item" onclick="showSupport()">
-                            <div class="settings-item-content">
-                                <div class="settings-item-icon">💬</div>
-                                <span class="settings-item-label">Qo'llab-quvvatlash</span>
-                            </div>
-                            <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                            </svg>
-                        </div>
-                        <div class="settings-item" onclick="showAbout()">
-                            <div class="settings-item-content">
-                                <div class="settings-item-icon">ℹ️</div>
-                                <span class="settings-item-label">Ilova haqida</span>
-                            </div>
-                            <svg class="settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                            </svg>
-                        </div>
+                    <div class="wallet-settings-value">
+                        UZS
+                        <svg class="wallet-settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- Logout Button -->
-            <button class="logout-btn" onclick="handleLogout()">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+        <div class="wallet-settings-group">
+            <div class="wallet-settings-title">Bildirishnomalar</div>
+            <div class="wallet-settings-list">
+                <div class="wallet-settings-item">
+                    <div class="wallet-settings-icon orange">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+                    </div>
+                    <div class="wallet-settings-content">
+                        <div class="wallet-settings-label">Push bildirishnomalar</div>
+                    </div>
+                    <label class="wallet-toggle">
+                        <input type="checkbox" id="pushNotifications" checked>
+                        <span class="wallet-toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="wallet-settings-item">
+                    <div class="wallet-settings-icon purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                    </div>
+                    <div class="wallet-settings-content">
+                        <div class="wallet-settings-label">Eslatmalar</div>
+                    </div>
+                    <label class="wallet-toggle">
+                        <input type="checkbox" id="reminderNotifications" checked>
+                        <span class="wallet-toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="wallet-settings-group">
+            <div class="wallet-settings-title">Yordam</div>
+            <div class="wallet-settings-list">
+                <div class="wallet-settings-item" onclick="showSupport()">
+                    <div class="wallet-settings-icon blue">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </div>
+                    <div class="wallet-settings-content">
+                        <div class="wallet-settings-label">Yordam markazi</div>
+                    </div>
+                    <svg class="wallet-settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </div>
+                <div class="wallet-settings-item" onclick="showAbout()">
+                    <div class="wallet-settings-icon green">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="16" x2="12" y2="12"/>
+                            <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                    </div>
+                    <div class="wallet-settings-content">
+                        <div class="wallet-settings-label">Ilova haqida</div>
+                    </div>
+                    <svg class="wallet-settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <div style="padding: 0 16px 32px;">
+            <button class="wallet-form-btn danger" onclick="handleLogout()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
                 </svg>
                 Chiqish
             </button>
         </div>
     </div>
 
-    <!-- Bottom Navigation (5 tabs) -->
-    <nav class="bottom-nav-bar">
-        <button class="nav-tab active" data-page="home" onclick="navigateTo('home')">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-width="2" stroke-linecap="round" d="M12 18V15"/>
-                <path stroke-width="2" stroke-linecap="round" d="M10.07 2.82L3.14 8.37C2.36 8.99 1.86 10.3 2.03 11.28L3.36 19.24C3.6 20.66 4.96 21.81 6.4 21.81H17.6C19.03 21.81 20.4 20.65 20.64 19.24L21.97 11.28C22.13 10.3 21.63 8.99 20.86 8.37L13.93 2.83C12.86 1.97 11.13 1.97 10.07 2.82Z"/>
-            </svg>
-            <span class="nav-label">Asosiy</span>
-        </button>
-        <button class="nav-tab" data-page="transactions" onclick="navigateTo('transactions')">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-width="2" stroke-linecap="round" d="M12 22H17C20 22 22 20 22 17V12C22 9.3 20.3 7.3 17.8 7C17.6 7 17.3 7 17 7H7C6.7 7 6.5 7 6.2 7.1C3.6 7.4 2 9.3 2 12V13"/>
-                <path stroke-width="2" stroke-linecap="round" d="M22 12.5H19C17.9 12.5 17 13.4 17 14.5C17 15.6 17.9 16.5 19 16.5H22"/>
-            </svg>
-            <span class="nav-label">Tranzaksiyalar</span>
-        </button>
-        <button class="nav-tab" data-page="statistics" onclick="navigateTo('statistics')">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-width="2" stroke-linecap="round" d="M9 22H15C20 22 22 20 22 15V9C22 4 20 2 15 2H9C4 2 2 4 2 9V15C2 20 4 22 9 22Z"/>
-                <path stroke-width="2" stroke-linecap="round" d="M10.11 11.15H7.46C6.83 11.15 6.32 11.66 6.32 12.29V17.41H10.11V11.15Z"/>
-                <path stroke-width="2" stroke-linecap="round" d="M12.76 6.6H11.24C10.61 6.6 10.1 7.11 10.1 7.74V17.4H13.89V7.74C13.89 7.11 13.39 6.6 12.76 6.6Z"/>
-                <path stroke-width="2" stroke-linecap="round" d="M16.55 12.85H13.9V17.4H17.69V13.99C17.68 13.36 17.17 12.85 16.55 12.85Z"/>
-            </svg>
-            <span class="nav-label">Statistika</span>
-        </button>
-        <button class="nav-tab" data-page="services" onclick="navigateTo('services')">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-width="2" stroke-linecap="round" d="M3 7C3 4.79 4.79 3 7 3H10C12.21 3 14 4.79 14 7V10C14 12.21 12.21 14 10 14H7C4.79 14 3 12.21 3 10V7Z"/>
-                <path stroke-width="2" stroke-linecap="round" d="M14 7C14 4.79 15.79 3 18 3H18C20.21 3 22 4.79 22 7V10C22 12.21 20.21 14 18 14H18C15.79 14 14 12.21 14 10V7Z"/>
-                <path stroke-width="2" stroke-linecap="round" d="M3 17C3 14.79 4.79 13 7 13H10C12.21 13 14 14.79 14 17V17C14 19.21 12.21 21 10 21H7C4.79 21 3 19.21 3 17V17Z"/>
-                <path stroke-width="2" stroke-linecap="round" d="M14 17C14 14.79 15.79 13 18 13H18C20.21 13 22 14.79 22 17V17C22 19.21 20.21 21 18 21H18C15.79 21 14 19.21 14 17V17Z"/>
-            </svg>
-            <span class="nav-label">Xizmatlar</span>
-        </button>
-        <button class="nav-tab" data-page="profile" onclick="navigateTo('profile')">
-            <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path stroke-width="2" stroke-linecap="round" d="M12 12C14.7614 12 17 9.76142 17 7C17 4.23858 14.7614 2 12 2C9.23858 2 7 4.23858 7 7C7 9.76142 9.23858 12 12 12Z"/>
-                <path stroke-width="2" stroke-linecap="round" d="M20.59 22C20.59 18.13 16.74 15 12 15C7.26 15 3.41 18.13 3.41 22"/>
-            </svg>
-            <span class="nav-label">Profil</span>
-        </button>
-    </nav>
+    <!-- ============================================
+         REMINDERS PAGE
+         ============================================ -->
+    <div id="pageReminders" class="page">
+        <div class="wallet-page-header">
+            <h1 class="wallet-page-title">Eslatmalar</h1>
+            <div class="wallet-page-actions">
+                <button class="wallet-icon-btn" onclick="showAddReminderModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
 
-    <!-- Loading Screen -->
-    <div id="loadingScreen" class="loading-screen" style="display: none;">
-        <div class="loading-content">
-            <img src="/static/images/Hourglass (2).png" alt="Loading" class="loading-hourglass">
-            <p class="loading-text">Yuklanmoqda biroz kuting...</p>
+        <div id="remindersList" style="padding: 0 16px;">
+            <!-- Loaded via JavaScript -->
         </div>
     </div>
 
-    <!-- External Libraries -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+    <!-- ============================================
+         DEBTS PAGE
+         ============================================ -->
+    <div id="pageDebts" class="page">
+        <div class="wallet-page-header">
+            <h1 class="wallet-page-title">Qarzlar</h1>
+            <div class="wallet-page-actions">
+                <button class="wallet-icon-btn" onclick="showAddDebtModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
 
-    <!-- Main JavaScript -->
-    <script src="/static/js/main.js"></script>
-    <script src="/static/js/enhanced.js"></script>
-    <script src="/static/js/reports.js"></script>
-    <script src="/static/js/ai-chat.js"></script>
+        <!-- Filter Pills -->
+        <div class="wallet-filters">
+            <button class="wallet-filter-btn active" data-filter="all" onclick="setDebtFilter('all', this)">Barchasi</button>
+            <button class="wallet-filter-btn" data-filter="given" onclick="setDebtFilter('given', this)">Berdim</button>
+            <button class="wallet-filter-btn" data-filter="taken" onclick="setDebtFilter('taken', this)">Oldim</button>
+        </div>
+
+        <div id="debtsList" style="padding: 0 16px;">
+            <!-- Loaded via JavaScript -->
+        </div>
+    </div>
+
+    <!-- ============================================
+         GOALS PAGE
+         ============================================ -->
+    <div id="pageGoals" class="page">
+        <div class="wallet-page-header">
+            <h1 class="wallet-page-title">Maqsadlar</h1>
+            <div class="wallet-page-actions">
+                <button class="wallet-icon-btn" onclick="showAddGoalModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <div class="wallet-empty">
+            <div class="wallet-empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="6"/>
+                    <circle cx="12" cy="12" r="2"/>
+                </svg>
+            </div>
+            <div class="wallet-empty-title">Maqsadlar yo'q</div>
+            <div class="wallet-empty-text">Pul yig'ish maqsadlarini qo'shing va ularni kuzating</div>
+            <button class="wallet-cta-btn" onclick="showAddGoalModal()">Maqsad qo'shish</button>
+        </div>
+    </div>
+
+    <!-- ============================================
+         TOP EXPENSES PAGE
+         ============================================ -->
+    <div id="pageTopExpenses" class="page">
+        <div class="wallet-page-header">
+            <button class="wallet-icon-btn" onclick="navigateTo('home')" style="margin-right: 12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h1 class="wallet-page-title">Top xarajatlar</h1>
+        </div>
+
+        <div id="topExpensesContent" style="padding: 0 16px;">
+            <!-- Loaded via JavaScript -->
+        </div>
+    </div>
+
+    <!-- ============================================
+         BOTTOM NAVIGATION
+         ============================================ -->
+    <nav class="wallet-bottom-nav">
+        <button class="wallet-nav-item active" data-page="home" onclick="navigateTo('home')">
+            <div class="wallet-nav-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+            </div>
+            <span class="wallet-nav-label">Asosiy</span>
+        </button>
+        <button class="wallet-nav-item" data-page="transactions" onclick="navigateTo('transactions')">
+            <div class="wallet-nav-icon">
+                <svg viewBox="0 0 24 24">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                    <line x1="1" y1="10" x2="23" y2="10"/>
+                </svg>
+            </div>
+            <span class="wallet-nav-label">Tranzaksiya</span>
+        </button>
+        <button class="wallet-nav-item" data-page="statistics" onclick="navigateTo('statistics')">
+            <div class="wallet-nav-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M18 20V10M12 20V4M6 20v-6"/>
+                </svg>
+            </div>
+            <span class="wallet-nav-label">Statistika</span>
+        </button>
+        <button class="wallet-nav-item" data-page="services" onclick="navigateTo('services')">
+            <div class="wallet-nav-icon">
+                <svg viewBox="0 0 24 24">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+            </div>
+            <span class="wallet-nav-label">Xizmatlar</span>
+        </button>
+        <button class="wallet-nav-item" data-page="profile" onclick="navigateTo('profile')">
+            <div class="wallet-nav-icon">
+                <svg viewBox="0 0 24 24">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+            </div>
+            <span class="wallet-nav-label">Profil</span>
+        </button>
+    </nav>
+
+    <!-- ============================================
+         MODALS
+         ============================================ -->
+
+    <!-- Add Transaction Modal -->
+    <div id="addTransactionModal" class="wallet-modal">
+        <div class="wallet-modal-content">
+            <div class="wallet-modal-handle"></div>
+            <div class="wallet-modal-header">
+                <span class="wallet-modal-title">Tranzaksiya qo'shish</span>
+                <button class="wallet-modal-close" onclick="closeAddTransactionModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="addTransactionForm" onsubmit="handleAddTransaction(event)">
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Turi</label>
+                    <select class="wallet-form-select" id="transactionType" required>
+                        <option value="expense">Chiqim</option>
+                        <option value="income">Kirim</option>
+                    </select>
+                </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Summa</label>
+                    <input type="number" class="wallet-form-input" id="transactionAmount" placeholder="0" required>
+                </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Valyuta</label>
+                    <select class="wallet-form-select" id="transactionCurrency">
+                        <option value="UZS">UZS - O'zbek so'mi</option>
+                        <option value="USD">USD - Dollar</option>
+                        <option value="EUR">EUR - Yevro</option>
+                        <option value="RUB">RUB - Rubl</option>
+                    </select>
+                </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Kategoriya</label>
+                    <select class="wallet-form-select" id="transactionCategory">
+                        <option value="Oziq-ovqat">Oziq-ovqat</option>
+                        <option value="Transport">Transport</option>
+                        <option value="Uy-joy">Uy-joy</option>
+                        <option value="Kommunal">Kommunal</option>
+                        <option value="Sog'liq">Sog'liq</option>
+                        <option value="Ta'lim">Ta'lim</option>
+                        <option value="Ko'ngilochar">Ko'ngilochar</option>
+                        <option value="Kiyim">Kiyim</option>
+                        <option value="Ish haqi">Ish haqi</option>
+                        <option value="Biznes">Biznes</option>
+                        <option value="Investitsiya">Investitsiya</option>
+                        <option value="Boshqa">Boshqa</option>
+                    </select>
+                </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Izoh (ixtiyoriy)</label>
+                    <input type="text" class="wallet-form-input" id="transactionDescription" placeholder="Tranzaksiya haqida">
+                </div>
+                <button type="submit" class="wallet-form-btn">Qo'shish</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Reminder Modal -->
+    <div id="addReminderModal" class="wallet-modal">
+        <div class="wallet-modal-content">
+            <div class="wallet-modal-handle"></div>
+            <div class="wallet-modal-header">
+                <span class="wallet-modal-title">Eslatma qo'shish</span>
+                <button class="wallet-modal-close" onclick="closeAddReminderModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="addReminderForm" onsubmit="handleAddReminder(event)">
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Sarlavha</label>
+                    <input type="text" class="wallet-form-input" id="reminderTitle" placeholder="Eslatma nomi" required>
+                </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Summa</label>
+                    <input type="number" class="wallet-form-input" id="reminderAmount" placeholder="0" required>
+                </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Sana</label>
+                    <input type="date" class="wallet-form-input" id="reminderDate" required>
+                </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Takrorlash</label>
+                    <select class="wallet-form-select" id="reminderRepeat">
+                        <option value="none">Takrorlanmaydi</option>
+                        <option value="daily">Har kuni</option>
+                        <option value="weekly">Har hafta</option>
+                        <option value="monthly">Har oy</option>
+                    </select>
+                </div>
+                <button type="submit" class="wallet-form-btn">Qo'shish</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Debt Modal -->
+    <div id="addDebtModal" class="wallet-modal">
+        <div class="wallet-modal-content">
+            <div class="wallet-modal-handle"></div>
+            <div class="wallet-modal-header">
+                <span class="wallet-modal-title">Qarz qo'shish</span>
+                <button class="wallet-modal-close" onclick="closeAddDebtModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="addDebtForm" onsubmit="handleAddDebt(event)">
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Qarz turi</label>
+                    <select class="wallet-form-select" id="debtType" required>
+                        <option value="given">Berdim (Menga qaytarishadi)</option>
+                        <option value="taken">Oldim (Men qaytaraman)</option>
+                    </select>
+                </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Kimga/Kimdan</label>
+                    <input type="text" class="wallet-form-input" id="debtPersonName" placeholder="Ism" required>
+                </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Summa</label>
+                    <input type="number" class="wallet-form-input" id="debtAmount" placeholder="0" required>
+                </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Muddat (ixtiyoriy)</label>
+                    <input type="date" class="wallet-form-input" id="debtDueDate">
+                </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Izoh (ixtiyoriy)</label>
+                    <input type="text" class="wallet-form-input" id="debtDescription" placeholder="Qarz haqida">
+                </div>
+                <button type="submit" class="wallet-form-btn">Qo'shish</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Not Registered Modal -->
+    <div id="notRegisteredModal" class="wallet-modal">
+        <div class="wallet-modal-content" style="text-align: center; padding: 40px 24px;">
+            <div style="width: 80px; height: 80px; margin: 0 auto 24px; background: var(--wallet-bg-tertiary); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--wallet-accent-blue)" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+                </svg>
+            </div>
+            <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 12px;">Ro'yxatdan o'tmagansiz</h2>
+            <p style="color: var(--wallet-text-secondary); margin-bottom: 24px;">Ilovadan foydalanish uchun Telegram bot orqali ro'yxatdan o'ting</p>
+            <button class="wallet-form-btn" onclick="openTelegramBot()">Botga o'tish</button>
+        </div>
+    </div>
+
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="wallet-loading" style="display: none;">
+        <div class="wallet-spinner"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/static/js/wallet-app.js"></script>
 </body>
 </html>

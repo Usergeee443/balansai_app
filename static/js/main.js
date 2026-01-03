@@ -864,12 +864,14 @@ async function loadPageData(pageName) {
     try {
         switch(pageName) {
             case 'transactions':
-                // Data allaqachon yuklangan, faqat render qilish
-                const searchQuery = document.getElementById('transactionSearch')?.value || '';
-                await loadAllTransactions(currentTransactionFilter, searchQuery, false);
+                // Transactions sahifasi uchun lazy loading
+                await loadTransactionsPage();
                 break;
             case 'statistics':
-                await loadAllStatistics();
+                // Statistics sahifasi uchun StatisticsManager ishlatish
+                if (window.StatisticsManager) {
+                    await window.StatisticsManager.loadStatistics('week');
+                }
                 break;
             case 'reminders':
                 await loadReminders();

@@ -12,7 +12,10 @@ from database import (
     get_debt_reminders, add_debt_reminder, delete_debt_reminder,
     get_currency_rate,
     update_user, save_initial_balance, save_debt,
-    get_category_transactions, get_category_details
+    get_category_transactions, get_category_details,
+    get_balance_trend, get_monthly_comparison, get_category_breakdown,
+    get_daily_spending, get_transaction_stats, get_currency_distribution,
+    get_weekly_comparison
 )
 import os
 import hmac
@@ -363,18 +366,65 @@ def api_get_balance():
 
 @app.route('/api/statistics', methods=['GET'])
 def api_get_statistics():
-    """Statistikani olish"""
+    """Statistikani olish (period parametri bilan)"""
     try:
         user_id = get_user_id_from_request()
         if not user_id:
             return jsonify({'error': 'Unauthorized'}), 401
         
-        days = int(request.args.get('days', 30))
-        stats = get_statistics(user_id, days)
+        period = request.args.get('period', 'week')  # week, month, year, all
+        days_map = {
+            'week': 7,
+            'month': 30,
+            'year': 365,
+            'all': 10000  # Barcha ma'lumotlar uchun katta son
+        }
+        days = days_map.get(period, 30)
         
-        return jsonify(stats)
+        # Asosiy statistika
+        stats = get_statistics(user_id, days)
+        total_income = stats.get('income', 0.0)
+        total_expense = stats.get('expense', 0.0)
+        
+        # Balance trend
+        balance_trend = get_balance_trend(user_id, days)
+        
+        # Monthly comparison
+        monthly_comparison = get_monthly_comparison(user_id, days)
+        
+        # Category breakdown
+        category_breakdown = get_category_breakdown(user_id, days)
+        
+        # Daily spending
+        daily_spending = get_daily_spending(user_id, days)
+        
+        # Transaction count va average
+        transaction_count, average_transaction = get_transaction_stats(user_id, days)
+        
+        # Currency distribution
+        currency_distribution = get_currency_distribution(user_id, days)
+        
+        # Weekly comparison
+        weekly_comparison = get_weekly_comparison(user_id, days)
+        
+        return jsonify({
+            'success': True,
+            'total_income': total_income,
+            'total_expense': total_expense,
+            'balance_trend': balance_trend,
+            'monthly_comparison': monthly_comparison,
+            'category_breakdown': category_breakdown,
+            'daily_spending': daily_spending,
+            'transaction_count': transaction_count,
+            'average_transaction': average_transaction,
+            'currency_distribution': currency_distribution,
+            'weekly_comparison': weekly_comparison
+        })
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"❌ API: Statistika olishda xatolik: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'error': str(e), 'success': False}), 500
 
 @app.route('/api/statistics/income-trend', methods=['GET'])
 def api_get_income_trend():

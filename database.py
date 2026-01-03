@@ -1276,3 +1276,306 @@ def get_subscription_payments(user_id, limit=50, offset=0):
         return []
     finally:
         connection.close()
+
+def get_balance_trend(user_id, days=30):
+    """Balans trendini olish (kunlik)"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            date_from = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days)
+            cursor.execute("""
+                SELECT 
+                    DATE(created_at) as date,
+                    transaction_type,
+                    currency,
+                    SUM(amount) as total
+                FROM transactions 
+                WHERE user_id = %s AND created_at >= %s
+                GROUP BY DATE(created_at), transaction_type, currency
+                ORDER BY date ASC
+            """, (user_id, date_from))
+            results = cursor.fetchall()
+            
+            # Balansni kunlik hisoblash
+            balance_by_date = {}
+            for row in results:
+                date_str = str(row['date'])
+                if date_str not in balance_by_date:
+                    balance_by_date[date_str] = 0.0
+                
+                amount_uzs = convert_to_uzs(row['total'], row['currency'])
+                if row['transaction_type'] == 'income':
+                    balance_by_date[date_str] += amount_uzs
+                elif row['transaction_type'] == 'expense':
+                    balance_by_date[date_str] -= amount_uzs
+            
+            # Cumulative balance
+            cumulative_balance = 0.0
+            trend = []
+            for date_str in sorted(balance_by_date.keys()):
+                cumulative_balance += balance_by_date[date_str]
+                trend.append({
+                    'date': date_str,
+                    'balance': round(cumulative_balance, 2)
+                })
+            
+            return trend
+    except Exception as e:
+        print(f"❌ Balance trend olishda xatolik: {e}")
+        return []
+    finally:
+        connection.close()
+
+def get_monthly_comparison(user_id, days=365):
+    """Oylik taqqoslash"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            date_from = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days)
+            cursor.execute("""
+                SELECT 
+                    DATE_FORMAT(created_at, '%%Y-%%m') as month,
+                    transaction_type,
+                    currency,
+                    SUM(amount) as total
+                FROM transactions 
+                WHERE user_id = %s AND created_at >= %s
+                GROUP BY DATE_FORMAT(created_at, '%%Y-%%m'), transaction_type, currency
+                ORDER BY month ASC
+            """, (user_id, date_from))
+            results = cursor.fetchall()
+            
+            monthly_data = {}
+            for row in results:
+                month = row['month']
+                if month not in monthly_data:
+                    monthly_data[month] = {'income': 0.0, 'expense': 0.0}
+                
+                amount_uzs = convert_to_uzs(row['total'], row['currency'])
+                if row['transaction_type'] == 'income':
+                    monthly_data[month]['income'] += amount_uzs
+                elif row['transaction_type'] == 'expense':
+                    monthly_data[month]['expense'] += amount_uzs
+            
+            comparison = []
+            for month in sorted(monthly_data.keys()):
+                comparison.append({
+                    'month': month,
+                    'income': round(monthly_data[month]['income'], 2),
+                    'expense': round(monthly_data[month]['expense'], 2)
+                })
+            
+            return comparison
+    except Exception as e:
+        print(f"❌ Monthly comparison olishda xatolik: {e}")
+        return []
+    finally:
+        connection.close()
+
+def get_category_breakdown(user_id, days=30):
+    """Kategoriya bo'yicha taqsimot"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            date_from = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days)
+            cursor.execute("""
+                SELECT 
+                    COALESCE(category, 'Boshqa') as category,
+                    currency,
+                    SUM(amount) as total
+                FROM transactions 
+                WHERE user_id = %s AND transaction_type = 'expense' 
+                    AND created_at >= %s
+                GROUP BY category, currency
+                ORDER BY total DESC
+            """, (user_id, date_from))
+            results = cursor.fetchall()
+            
+            categories = {}
+            for row in results:
+                category = row['category'] or 'Boshqa'
+                if category not in categories:
+                    categories[category] = 0.0
+                amount_uzs = convert_to_uzs(row['total'], row['currency'])
+                categories[category] += amount_uzs
+            
+            breakdown = []
+            for category, amount in sorted(categories.items(), key=lambda x: x[1], reverse=True):
+                breakdown.append({
+                    'category': category,
+                    'amount': round(amount, 2)
+                })
+            
+            return breakdown
+    except Exception as e:
+        print(f"❌ Category breakdown olishda xatolik: {e}")
+        return []
+    finally:
+        connection.close()
+
+def get_daily_spending(user_id, days=30):
+    """Kunlik xarajatlar"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            date_from = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days)
+            cursor.execute("""
+                SELECT 
+                    DATE(created_at) as date,
+                    currency,
+                    SUM(amount) as total
+                FROM transactions 
+                WHERE user_id = %s AND transaction_type = 'expense' 
+                    AND created_at >= %s
+                GROUP BY DATE(created_at), currency
+                ORDER BY date ASC
+            """, (user_id, date_from))
+            results = cursor.fetchall()
+            
+            daily_data = {}
+            for row in results:
+                date_str = str(row['date'])
+                if date_str not in daily_data:
+                    daily_data[date_str] = 0.0
+                
+                amount_uzs = convert_to_uzs(row['total'], row['currency'])
+                daily_data[date_str] += amount_uzs
+            
+            spending = []
+            for date_str in sorted(daily_data.keys()):
+                spending.append({
+                    'date': date_str,
+                    'amount': round(daily_data[date_str], 2)
+                })
+            
+            return spending
+    except Exception as e:
+        print(f"❌ Daily spending olishda xatolik: {e}")
+        return []
+    finally:
+        connection.close()
+
+def get_transaction_stats(user_id, days=30):
+    """Tranzaksiyalar soni va o'rtacha summa"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            date_from = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days)
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as count,
+                    currency,
+                    AVG(amount) as avg_amount
+                FROM transactions 
+                WHERE user_id = %s AND created_at >= %s
+                GROUP BY currency
+            """, (user_id, date_from))
+            results = cursor.fetchall()
+            
+            total_count = 0
+            total_amount_uzs = 0.0
+            for row in results:
+                total_count += row['count']
+                avg_amount_uzs = convert_to_uzs(row['avg_amount'], row['currency'])
+                total_amount_uzs += avg_amount_uzs * row['count']
+            
+            average = (total_amount_uzs / total_count) if total_count > 0 else 0.0
+            
+            return total_count, round(average, 2)
+    except Exception as e:
+        print(f"❌ Transaction stats olishda xatolik: {e}")
+        return 0, 0.0
+    finally:
+        connection.close()
+
+def get_currency_distribution(user_id, days=30):
+    """Valyuta taqsimoti"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            date_from = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days)
+            cursor.execute("""
+                SELECT 
+                    currency,
+                    SUM(amount) as total
+                FROM transactions 
+                WHERE user_id = %s AND created_at >= %s
+                GROUP BY currency
+            """, (user_id, date_from))
+            results = cursor.fetchall()
+            
+            distribution = []
+            for row in results:
+                amount_uzs = convert_to_uzs(row['total'], row['currency'])
+                distribution.append({
+                    'currency': row['currency'],
+                    'amount': round(amount_uzs, 2)
+                })
+            
+            return distribution
+    except Exception as e:
+        print(f"❌ Currency distribution olishda xatolik: {e}")
+        return []
+    finally:
+        connection.close()
+
+def get_weekly_comparison(user_id, days=14):
+    """Haftalik taqqoslash"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            date_from = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days)
+            cursor.execute("""
+                SELECT 
+                    YEARWEEK(created_at, 1) as week,
+                    transaction_type,
+                    currency,
+                    SUM(amount) as total
+                FROM transactions 
+                WHERE user_id = %s AND created_at >= %s
+                GROUP BY YEARWEEK(created_at, 1), transaction_type, currency
+                ORDER BY week ASC
+            """, (user_id, date_from))
+            results = cursor.fetchall()
+            
+            weekly_data = {}
+            for row in results:
+                week = row['week']
+                if week not in weekly_data:
+                    weekly_data[week] = {'income': 0.0, 'expense': 0.0}
+                
+                amount_uzs = convert_to_uzs(row['total'], row['currency'])
+                if row['transaction_type'] == 'income':
+                    weekly_data[week]['income'] += amount_uzs
+                elif row['transaction_type'] == 'expense':
+                    weekly_data[week]['expense'] += amount_uzs
+            
+            # Joriy va o'tgan hafta
+            weeks = sorted(weekly_data.keys())
+            if len(weeks) >= 2:
+                current_week = weeks[-1]
+                previous_week = weeks[-2]
+                comparison = [
+                    {
+                        'week': f'Hafta {current_week}',
+                        'current': round(weekly_data[current_week]['expense'], 2),
+                        'previous': round(weekly_data[previous_week]['expense'], 2)
+                    }
+                ]
+            elif len(weeks) == 1:
+                comparison = [
+                    {
+                        'week': f'Hafta {weeks[0]}',
+                        'current': round(weekly_data[weeks[0]]['expense'], 2),
+                        'previous': 0.0
+                    }
+                ]
+            else:
+                comparison = []
+            
+            return comparison
+    except Exception as e:
+        print(f"❌ Weekly comparison olishda xatolik: {e}")
+        return []
+    finally:
+        connection.close()

@@ -18,6 +18,6 @@ class Config:
     DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
     
     # Telegram Mini App konfiguratsiyasi
-    TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
+    TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8087310424:AAGn99-GObyu8cU7ADPNTt950K3scdtGXUQ')
     TELEGRAM_BOT_USERNAME = os.getenv('TELEGRAM_BOT_USERNAME', 'BalansAiBot')  # Bot username (@username)
 
