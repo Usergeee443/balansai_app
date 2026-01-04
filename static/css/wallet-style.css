@@ -1583,9 +1583,13 @@ body::-webkit-scrollbar {
 
 .tg-balance-gauge {
     position: relative;
-    width: 220px;
-    height: 130px;
-    margin: 0 auto 16px;
+    width: 100%;
+    max-width: 450px;
+    height: 300px;
+    margin: 0 auto 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .tg-gauge-svg {
@@ -1595,11 +1599,12 @@ body::-webkit-scrollbar {
 
 .tg-balance-info {
     position: absolute;
-    bottom: 0;
+    top: 50%;
     left: 50%;
-    transform: translateX(-50%);
+    transform: translate(-50%, -50%);
     text-align: center;
     width: 100%;
+    margin-top: 10px;
 }
 
 .tg-balance-label {
@@ -1613,6 +1618,7 @@ body::-webkit-scrollbar {
     font-weight: 700;
     color: var(--wallet-text-primary);
     letter-spacing: -0.5px;
+    line-height: 1.3;
 }
 
 .tg-balance-cta {
@@ -1847,4 +1853,644 @@ body::-webkit-scrollbar {
     font-size: 12px;
     color: var(--wallet-text-secondary);
     line-height: 1.3;
+}
+
+/* Service Card Soon Badge */
+.service-card-soon {
+    position: relative;
+    opacity: 0.7;
+}
+
+.service-badge-soon {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    background: linear-gradient(135deg, #5E5CE6 0%, #BF5AF2 100%);
+    color: white;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* ========================================
+   TELEGRAM WALLET BALANCE - LARGE GAUGE
+   ======================================== */
+
+.tg-balance-section {
+    text-align: center;
+    padding: 8px var(--wallet-spacing-md) 16px;
+}
+
+.tg-balance-gauge {
+    position: relative;
+    width: 100%;
+    max-width: 320px;
+    height: 180px;
+    margin: 0 auto 20px;
+}
+
+.tg-gauge-svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+}
+
+.tg-balance-info {
+    position: absolute;
+    top: 55%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.tg-balance-label {
+    font-size: 14px;
+    color: var(--wallet-text-secondary);
+    margin-bottom: 4px;
+}
+
+.tg-balance-amount {
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--wallet-text-primary);
+    letter-spacing: -1px;
+}
+
+.tg-balance-cta {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 28px;
+    background: linear-gradient(135deg, #0A84FF 0%, #5AC8FA 100%);
+    border: none;
+    border-radius: var(--wallet-radius-full);
+    color: white;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 20px rgba(10, 132, 255, 0.4);
+}
+
+.tg-balance-cta svg {
+    width: 18px;
+    height: 18px;
+}
+
+.tg-balance-cta:active {
+    transform: scale(0.96);
+    box-shadow: 0 2px 12px rgba(10, 132, 255, 0.3);
+}
+
+/* ========================================
+   NEW ANALYTICS STYLES
+   ======================================== */
+
+/* Weekly Comparison */
+.analytics-comparison {
+    padding: 8px 0;
+}
+
+.comparison-item {
+    margin-bottom: 16px;
+}
+
+.comparison-label {
+    font-size: 13px;
+    color: var(--wallet-text-secondary);
+    margin-bottom: 6px;
+}
+
+.comparison-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--wallet-text-primary);
+    margin-bottom: 8px;
+}
+
+.comparison-bar {
+    height: 8px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.comparison-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #0A84FF 0%, #5AC8FA 100%);
+    border-radius: 4px;
+    transition: width 0.8s ease;
+}
+
+.comparison-bar-fill.secondary {
+    background: linear-gradient(90deg, #636366 0%, #8E8E93 100%);
+}
+
+.comparison-change {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: var(--wallet-radius-md);
+    margin-top: 8px;
+}
+
+.comparison-change .change-icon {
+    font-size: 18px;
+}
+
+.comparison-change .change-text {
+    font-size: 14px;
+    color: var(--wallet-text-primary);
+}
+
+.comparison-change.positive .change-icon {
+    color: var(--wallet-accent-green);
+}
+
+.comparison-change.negative .change-icon {
+    color: var(--wallet-accent-red);
+}
+
+/* Insights Grid */
+.insights-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.insight-card {
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: var(--wallet-radius-md);
+    padding: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.insight-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.insight-icon.blue {
+    background: rgba(10, 132, 255, 0.15);
+}
+
+.insight-icon.blue svg {
+    stroke: #0A84FF;
+}
+
+.insight-icon.green {
+    background: rgba(48, 209, 88, 0.15);
+}
+
+.insight-icon.green svg {
+    stroke: #30D158;
+}
+
+.insight-icon.orange {
+    background: rgba(255, 159, 10, 0.15);
+}
+
+.insight-icon.orange svg {
+    stroke: #FF9F0A;
+}
+
+.insight-icon.purple {
+    background: rgba(191, 90, 242, 0.15);
+}
+
+.insight-icon.purple svg {
+    stroke: #BF5AF2;
+}
+
+.insight-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.insight-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.insight-value {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--wallet-text-primary);
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.insight-label {
+    font-size: 11px;
+    color: var(--wallet-text-secondary);
+}
+
+/* Forecast Styles */
+.forecast-content {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.forecast-gauge {
+    position: relative;
+    width: 160px;
+    height: 90px;
+    margin: 0 auto;
+}
+
+.forecast-svg {
+    width: 100%;
+    height: 100%;
+}
+
+.forecast-value {
+    position: absolute;
+    bottom: 5px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--wallet-text-primary);
+    white-space: nowrap;
+}
+
+.forecast-details {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.forecast-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: var(--wallet-radius-sm);
+}
+
+.forecast-label {
+    font-size: 13px;
+    color: var(--wallet-text-secondary);
+}
+
+.forecast-amount {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--wallet-text-primary);
+}
+
+/* Financial Health Styles */
+.health-content {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.health-score-container {
+    text-align: center;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(48, 209, 88, 0.15) 0%, rgba(10, 132, 255, 0.15) 100%);
+    border-radius: var(--wallet-radius-md);
+    min-width: 80px;
+}
+
+.health-score {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--wallet-accent-green);
+    line-height: 1;
+}
+
+.health-score.medium {
+    color: var(--wallet-accent-orange);
+}
+
+.health-score.low {
+    color: var(--wallet-accent-red);
+}
+
+.health-label {
+    font-size: 11px;
+    color: var(--wallet-text-secondary);
+    margin-top: 4px;
+}
+
+.health-indicators {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.health-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.indicator-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.indicator-dot.green {
+    background: var(--wallet-accent-green);
+}
+
+.indicator-dot.blue {
+    background: var(--wallet-accent-blue);
+}
+
+.indicator-dot.orange {
+    background: var(--wallet-accent-orange);
+}
+
+.indicator-dot.purple {
+    background: var(--wallet-accent-purple);
+}
+
+.indicator-label {
+    flex: 1;
+    font-size: 13px;
+    color: var(--wallet-text-secondary);
+}
+
+.indicator-value {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--wallet-text-primary);
+}
+
+/* ========================================
+   SKELETON ANIMATIONS FOR DEBTS/REMINDERS
+   ======================================== */
+
+.skeleton-list-item {
+    background: var(--wallet-bg-secondary);
+    border-radius: var(--wallet-radius-lg);
+    padding: var(--wallet-spacing-md);
+    margin-bottom: var(--wallet-spacing-sm);
+}
+
+.skeleton-list-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.skeleton-list-title {
+    height: 18px;
+    width: 60%;
+    background: linear-gradient(90deg, var(--wallet-bg-secondary) 0%, var(--wallet-bg-tertiary) 50%, var(--wallet-bg-secondary) 100%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 4px;
+}
+
+.skeleton-list-badge {
+    height: 22px;
+    width: 60px;
+    background: linear-gradient(90deg, var(--wallet-bg-secondary) 0%, var(--wallet-bg-tertiary) 50%, var(--wallet-bg-secondary) 100%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 11px;
+}
+
+.skeleton-list-amount {
+    height: 24px;
+    width: 40%;
+    margin-bottom: 12px;
+    background: linear-gradient(90deg, var(--wallet-bg-secondary) 0%, var(--wallet-bg-tertiary) 50%, var(--wallet-bg-secondary) 100%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 4px;
+}
+
+.skeleton-list-meta {
+    display: flex;
+    gap: 16px;
+}
+
+.skeleton-list-meta-item {
+    height: 14px;
+    width: 80px;
+    background: linear-gradient(90deg, var(--wallet-bg-secondary) 0%, var(--wallet-bg-tertiary) 50%, var(--wallet-bg-secondary) 100%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 4px;
+}
+
+/* ========================================
+   REGISTER PAGE LOADING
+   ======================================== */
+
+.register-loading-screen {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: var(--wallet-bg-primary);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.register-loading-logo {
+    width: 80px;
+    height: 80px;
+    margin-bottom: 24px;
+    background: var(--wallet-gradient-blue);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 36px;
+    font-weight: 700;
+    color: white;
+    animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+}
+
+.register-loading-text {
+    font-size: 16px;
+    color: var(--wallet-text-secondary);
+    margin-bottom: 16px;
+}
+
+.register-loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 3px solid rgba(10, 132, 255, 0.2);
+    border-top-color: #0A84FF;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* ========================================
+   PROFILE PAGE ENHANCEMENTS
+   ======================================== */
+
+.profile-tariff-card {
+    margin: 0 var(--wallet-spacing-md) var(--wallet-spacing-lg);
+    padding: var(--wallet-spacing-md);
+    background: linear-gradient(135deg, rgba(10, 132, 255, 0.15) 0%, rgba(191, 90, 242, 0.15) 100%);
+    border-radius: var(--wallet-radius-lg);
+    border: 1px solid rgba(10, 132, 255, 0.2);
+}
+
+.profile-tariff-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.profile-tariff-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #0A84FF 0%, #BF5AF2 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.profile-tariff-icon svg {
+    width: 24px;
+    height: 24px;
+    stroke: white;
+}
+
+.profile-tariff-info {
+    flex: 1;
+}
+
+.profile-tariff-name {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--wallet-text-primary);
+}
+
+.profile-tariff-status {
+    font-size: 13px;
+    color: var(--wallet-accent-green);
+}
+
+.profile-tariff-status.trial {
+    color: var(--wallet-accent-orange);
+}
+
+.profile-tariff-status.expired {
+    color: var(--wallet-accent-red);
+}
+
+.profile-tariff-details {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.profile-tariff-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+}
+
+.profile-tariff-label {
+    color: var(--wallet-text-secondary);
+}
+
+.profile-tariff-value {
+    color: var(--wallet-text-primary);
+    font-weight: 500;
+}
+
+/* Profile Stats */
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin: 0 var(--wallet-spacing-md) var(--wallet-spacing-lg);
+}
+
+.profile-stat-card {
+    background: var(--wallet-bg-secondary);
+    border-radius: var(--wallet-radius-md);
+    padding: var(--wallet-spacing-md);
+    text-align: center;
+}
+
+.profile-stat-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--wallet-text-primary);
+    margin-bottom: 4px;
+}
+
+.profile-stat-label {
+    font-size: 12px;
+    color: var(--wallet-text-secondary);
+}
+
+/* Profile Skeleton */
+.profile-skeleton-avatar {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    margin: 0 auto 16px;
+    background: linear-gradient(90deg, var(--wallet-bg-secondary) 0%, var(--wallet-bg-tertiary) 50%, var(--wallet-bg-secondary) 100%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+.profile-skeleton-name {
+    width: 150px;
+    height: 24px;
+    margin: 0 auto 8px;
+    background: linear-gradient(90deg, var(--wallet-bg-secondary) 0%, var(--wallet-bg-tertiary) 50%, var(--wallet-bg-secondary) 100%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 4px;
+}
+
+.profile-skeleton-username {
+    width: 100px;
+    height: 16px;
+    margin: 0 auto;
+    background: linear-gradient(90deg, var(--wallet-bg-secondary) 0%, var(--wallet-bg-tertiary) 50%, var(--wallet-bg-secondary) 100%);
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+    border-radius: 4px;
 }

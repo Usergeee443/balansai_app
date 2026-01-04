@@ -38,37 +38,47 @@
                         <circle cx="12" cy="12" r="3"/>
                         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
             </svg>
-                </div>
+        </div>
             </div>
         </div>
 
-        <!-- Balance Section - Telegram Wallet Style with Arc Gauge -->
+        <!-- Balance Section - Telegram Wallet Style with Large Arc Gauge -->
         <div class="tg-balance-section">
-            <!-- Arc Gauge -->
+            <!-- Large Arc Gauge - Like Telegram Wallet -->
             <div class="tg-balance-gauge">
-                <svg class="tg-gauge-svg" viewBox="0 0 200 120">
+                <svg class="tg-gauge-svg" viewBox="0 0 300 180">
                     <defs>
                         <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" style="stop-color:#0A84FF"/>
-                            <stop offset="50%" style="stop-color:#5E5CE6"/>
-                            <stop offset="100%" style="stop-color:#BF5AF2"/>
+                            <stop offset="50%" style="stop-color:#5AC8FA"/>
+                            <stop offset="100%" style="stop-color:#0A84FF"/>
                         </linearGradient>
+                        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
                     </defs>
-                    <!-- Background arc (gray) -->
-                    <path class="tg-gauge-bg" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8" stroke-linecap="round"/>
-                    <!-- Progress arc (gradient) -->
-                    <path class="tg-gauge-fill" id="balanceGaugeFill" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeGradient)" stroke-width="8" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="125"/>
+                    <!-- Background arc (gray) - semicircle -->
+                    <path class="tg-gauge-bg" d="M 25 155 A 125 125 0 0 1 275 155" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="20" stroke-linecap="round"/>
+                    <!-- Progress arc (blue gradient) - semicircle -->
+                    <path class="tg-gauge-fill" id="balanceGaugeFill" d="M 25 155 A 125 125 0 0 1 275 155" fill="none" stroke="url(#gaugeGradient)" stroke-width="20" stroke-linecap="round" stroke-dasharray="393" stroke-dashoffset="196.5" filter="url(#glow)"/>
                 </svg>
 
                 <!-- Balance Info Inside Gauge -->
                 <div class="tg-balance-info">
-                    <div class="tg-balance-label" id="balanceLabel">Umumiy balans</div>
+                    <div class="tg-balance-label" id="balanceLabel">Balans</div>
                     <div class="tg-balance-amount" id="totalBalance">0 so'm</div>
                 </div>
             </div>
 
             <!-- CTA Button -->
             <button class="tg-balance-cta" onclick="showAddTransactionModal()">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
                 Tranzaksiya qo'shish
             </button>
         </div>
@@ -267,6 +277,169 @@
                 <div class="wallet-stat-label">O'rtacha</div>
             </div>
         </div>
+
+        <!-- New Analytics Section -->
+        <div class="wallet-section" style="margin-top: 16px;">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">Qo'shimcha tahlil</h2>
+            </div>
+        </div>
+
+        <!-- Weekly Comparison -->
+        <div class="wallet-chart-card">
+            <div class="wallet-chart-header">
+                <span class="wallet-chart-title">Haftalik taqqoslash</span>
+            </div>
+            <div class="analytics-comparison" id="weeklyComparison">
+                <div class="comparison-item">
+                    <div class="comparison-label">Bu hafta</div>
+                    <div class="comparison-value" id="thisWeekExpense">0 so'm</div>
+                    <div class="comparison-bar">
+                        <div class="comparison-bar-fill" id="thisWeekBar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="comparison-item">
+                    <div class="comparison-label">O'tgan hafta</div>
+                    <div class="comparison-value" id="lastWeekExpense">0 so'm</div>
+                    <div class="comparison-bar">
+                        <div class="comparison-bar-fill secondary" id="lastWeekBar" style="width: 0%"></div>
+                    </div>
+                </div>
+                <div class="comparison-change" id="weeklyChangeText">
+                    <span class="change-icon">→</span>
+                    <span class="change-text">Hisoblanyapti...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Spending Insights -->
+        <div class="wallet-chart-card">
+            <div class="wallet-chart-header">
+                <span class="wallet-chart-title">Xarajat ko'rsatkichlari</span>
+            </div>
+            <div class="insights-grid">
+                <div class="insight-card">
+                    <div class="insight-icon blue">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                    </div>
+                    <div class="insight-content">
+                        <div class="insight-value" id="avgDailyExpense">0 so'm</div>
+                        <div class="insight-label">Kunlik o'rtacha</div>
+                    </div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-icon green">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2v20M2 12h20"/>
+                        </svg>
+                    </div>
+                    <div class="insight-content">
+                        <div class="insight-value" id="maxSingleExpense">0 so'm</div>
+                        <div class="insight-label">Eng katta xarajat</div>
+                    </div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-icon orange">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                    </div>
+                    <div class="insight-content">
+                        <div class="insight-value" id="mostExpensiveDay">-</div>
+                        <div class="insight-label">Eng ko'p xarajat kuni</div>
+                    </div>
+                </div>
+                <div class="insight-card">
+                    <div class="insight-icon purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                        </svg>
+                    </div>
+                    <div class="insight-content">
+                        <div class="insight-value" id="topCategoryName">-</div>
+                        <div class="insight-label">Top kategoriya</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Spending Forecast -->
+        <div class="wallet-chart-card">
+            <div class="wallet-chart-header">
+                <span class="wallet-chart-title">Oylik prognoz</span>
+            </div>
+            <div class="forecast-content">
+                <div class="forecast-gauge">
+                    <svg viewBox="0 0 100 60" class="forecast-svg">
+                        <path d="M 10 55 A 40 40 0 0 1 90 55" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8" stroke-linecap="round"/>
+                        <path id="forecastGaugeFill" d="M 10 55 A 40 40 0 0 1 90 55" fill="none" stroke="url(#forecastGradient)" stroke-width="8" stroke-linecap="round" stroke-dasharray="126" stroke-dashoffset="63"/>
+                        <defs>
+                            <linearGradient id="forecastGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" style="stop-color:#30D158"/>
+                                <stop offset="50%" style="stop-color:#FF9F0A"/>
+                                <stop offset="100%" style="stop-color:#FF453A"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div class="forecast-value" id="forecastValue">0 so'm</div>
+                </div>
+                <div class="forecast-details">
+                    <div class="forecast-item">
+                        <span class="forecast-label">Hozirgi xarajat:</span>
+                        <span class="forecast-amount" id="currentMonthExpense">0 so'm</span>
+                    </div>
+                    <div class="forecast-item">
+                        <span class="forecast-label">Prognoz (oy oxirigacha):</span>
+                        <span class="forecast-amount" id="projectedExpense">0 so'm</span>
+                    </div>
+                    <div class="forecast-item">
+                        <span class="forecast-label">Limit:</span>
+                        <span class="forecast-amount" id="monthlyLimitStat">Belgilanmagan</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Income vs Expense Ratio -->
+        <div class="wallet-chart-card">
+            <div class="wallet-chart-header">
+                <span class="wallet-chart-title">Moliyaviy salomatlik</span>
+            </div>
+            <div class="health-content">
+                <div class="health-score-container">
+                    <div class="health-score" id="financialHealthScore">-</div>
+                    <div class="health-label">Ball</div>
+                </div>
+                <div class="health-indicators">
+                    <div class="health-indicator">
+                        <div class="indicator-dot green"></div>
+                        <span class="indicator-label">Kirim/Chiqim nisbati</span>
+                        <span class="indicator-value" id="incomeExpenseRatio">-</span>
+                    </div>
+                    <div class="health-indicator">
+                        <div class="indicator-dot blue"></div>
+                        <span class="indicator-label">Tejash foizi</span>
+                        <span class="indicator-value" id="savingsPercent">-</span>
+                    </div>
+                    <div class="health-indicator">
+                        <div class="indicator-dot orange"></div>
+                        <span class="indicator-label">Limit holati</span>
+                        <span class="indicator-value" id="limitStatus">-</span>
+                    </div>
+                    <div class="health-indicator">
+                        <div class="indicator-dot purple"></div>
+                        <span class="indicator-label">Tranzaksiya chastotasi</span>
+                        <span class="indicator-value" id="transactionFrequency">-</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <!-- ============================================
@@ -277,27 +450,22 @@
             <h1 class="wallet-page-title">Xizmatlar</h1>
         </div>
 
-        <!-- Featured Service -->
-        <div class="services-featured" onclick="showSetLimitModal()">
-            <div class="services-featured-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M12 6v6l4 2"/>
-                </svg>
-            </div>
-            <div class="services-featured-content">
-                <div class="services-featured-title">Oylik limit o'rnating</div>
-                <div class="services-featured-desc">Xarajatlaringizni nazorat qiling va ko'proq pul tejang</div>
-            </div>
-            <svg class="services-featured-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M9 18l6-6-6-6"/>
-            </svg>
-        </div>
-
         <!-- Services Grid -->
         <div class="services-section">
             <div class="services-section-title">Moliyaviy boshqaruv</div>
             <div class="services-grid">
+                <div class="service-card" onclick="showSetLimitModal()">
+                    <div class="service-card-icon purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 6v6l4 2"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Limit</span>
+                        <span class="service-card-desc">Oylik limit o'rnating</span>
+                    </div>
+                </div>
                 <div class="service-card" onclick="navigateTo('reminders')">
                     <div class="service-card-icon orange">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -333,19 +501,6 @@
                     <div class="service-card-content">
                         <span class="service-card-title">Maqsadlar</span>
                         <span class="service-card-desc">Moliyaviy maqsadlar</span>
-                    </div>
-                </div>
-                <div class="service-card" onclick="showSetLimitModal()">
-                    <div class="service-card-icon purple">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
-                            <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
-                            <path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Byudjet</span>
-                        <span class="service-card-desc">Oylik limit o'rnating</span>
                     </div>
                 </div>
             </div>
@@ -400,6 +555,104 @@
                         <span class="service-card-title">Sozlamalar</span>
                         <span class="service-card-desc">Profil va sozlamalar</span>
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="services-section">
+            <div class="services-section-title">Qo'shimcha xizmatlar</div>
+            <div class="services-grid">
+                <div class="service-card service-card-soon" onclick="showSoonMessage('Valyuta kurslari')">
+                    <div class="service-card-icon blue">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="2" y1="12" x2="22" y2="12"/>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Valyuta kurslari</span>
+                        <span class="service-card-desc">Tez kunda</span>
+                    </div>
+                    <span class="service-badge-soon">Soon</span>
+                </div>
+                <div class="service-card service-card-soon" onclick="showSoonMessage('Jamg\'arma')">
+                    <div class="service-card-icon green">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2V5z"/>
+                            <path d="M2 9v1c0 1.1.9 2 2 2h1"/>
+                            <path d="M16 11h.01"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Jamg'arma</span>
+                        <span class="service-card-desc">Tez kunda</span>
+                    </div>
+                    <span class="service-badge-soon">Soon</span>
+                </div>
+                <div class="service-card service-card-soon" onclick="showSoonMessage('AI maslahatchi')">
+                    <div class="service-card-icon purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
+                            <path d="M7.5 13a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+                            <path d="M16.5 13a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
+                            <path d="M8.5 17h7"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">AI maslahatchi</span>
+                        <span class="service-card-desc">Tez kunda</span>
+                    </div>
+                    <span class="service-badge-soon">Soon</span>
+                </div>
+                <div class="service-card service-card-soon" onclick="showSoonMessage('To\'lov rejasi')">
+                    <div class="service-card-icon cyan">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                            <path d="M8 14h.01"/>
+                            <path d="M12 14h.01"/>
+                            <path d="M16 14h.01"/>
+                            <path d="M8 18h.01"/>
+                            <path d="M12 18h.01"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">To'lov rejasi</span>
+                        <span class="service-card-desc">Tez kunda</span>
+                    </div>
+                    <span class="service-badge-soon">Soon</span>
+                </div>
+                <div class="service-card service-card-soon" onclick="showSoonMessage('Investitsiya')">
+                    <div class="service-card-icon orange">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+                            <polyline points="16 7 22 7 22 13"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Investitsiya</span>
+                        <span class="service-card-desc">Tez kunda</span>
+                    </div>
+                    <span class="service-badge-soon">Soon</span>
+                </div>
+                <div class="service-card service-card-soon" onclick="showSoonMessage('Kredit kalkulyator')">
+                    <div class="service-card-icon red">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="4" y="2" width="16" height="20" rx="2"/>
+                            <line x1="8" y1="6" x2="16" y2="6"/>
+                            <line x1="8" y1="10" x2="16" y2="10"/>
+                            <line x1="8" y1="14" x2="12" y2="14"/>
+                            <line x1="8" y1="18" x2="10" y2="18"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Kredit kalkulator</span>
+                        <span class="service-card-desc">Tez kunda</span>
+                    </div>
+                    <span class="service-badge-soon">Soon</span>
                 </div>
             </div>
         </div>
@@ -830,7 +1083,7 @@
                 <button class="wallet-modal-close" onclick="closeSetLimitModal()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M18 6L6 18M6 6l12 12"/>
-                    </svg>
+            </svg>
                 </button>
             </div>
             <form id="setLimitForm" onsubmit="handleSetLimit(event)">

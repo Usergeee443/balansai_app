@@ -337,11 +337,44 @@ async function loadHomePage() {
 }
 
 function updateGauge(percent) {
-    const gaugeFill = document.getElementById('gaugeFill');
+    const gaugeFill = document.getElementById('balanceGaugeFill');
     if (gaugeFill) {
-        // Arc length is 251, so dashoffset = 251 - (251 * percent / 100)
-        const offset = 251 - (251 * Math.min(100, Math.max(0, percent)) / 100);
+        // Arc length is 220 (for 70% circle), so dashoffset = 220 - (220 * percent / 100)
+        const offset = 220 - (220 * Math.min(100, Math.max(0, percent)) / 100);
         gaugeFill.style.strokeDashoffset = offset;
+    }
+}
+
+async function loadLimitStatus() {
+    try {
+        const limitStatus = await apiRequest('/api/limit');
+        
+        if (limitStatus && limitStatus.limit) {
+            const limit = limitStatus.limit;
+            const spent = limitStatus.spent || 0;
+            const percent = (spent / limit) * 100;
+            
+            // Update gauge
+            updateGauge(percent);
+            
+            // Update label if needed
+            const balanceLabel = document.getElementById('balanceLabel');
+            if (balanceLabel) {
+                const remaining = limit - spent;
+                if (remaining > 0) {
+                    balanceLabel.textContent = `${formatCurrency(remaining)} qoldi`;
+                } else {
+                    balanceLabel.textContent = 'Limit oshib ketdi';
+                }
+            }
+        } else {
+            // No limit set, show 0%
+            updateGauge(0);
+        }
+    } catch (error) {
+        console.error('Limit status error:', error);
+        // On error, show 0%
+        updateGauge(0);
     }
 }
 
@@ -1852,8 +1885,35 @@ async function loadLimitStatus() {
         const status = await apiRequest('/api/limit');
         currentLimitStatus = status;
         updateLimitUI(status);
+        
+        // Update gauge based on limit percentage
+        if (status && status.has_limit) {
+            const percent = status.percent || 0;
+            updateGauge(percent);
+            
+            // Update balance label if needed
+            const balanceLabel = document.getElementById('balanceLabel');
+            if (balanceLabel && status.remaining !== undefined) {
+                if (status.remaining > 0) {
+                    balanceLabel.textContent = `${formatCurrency(status.remaining)} qoldi`;
+                } else if (status.exceeded) {
+                    balanceLabel.textContent = 'Limit oshib ketdi';
+                } else {
+                    balanceLabel.textContent = 'Umumiy balans';
+                }
+            }
+        } else {
+            // No limit set, show 0%
+            updateGauge(0);
+            const balanceLabel = document.getElementById('balanceLabel');
+            if (balanceLabel) {
+                balanceLabel.textContent = 'Umumiy balans';
+            }
+        }
     } catch (error) {
         console.error('Limit status error:', error);
+        // On error, show 0%
+        updateGauge(0);
     }
 }
 
@@ -1995,3 +2055,360 @@ window.closeSetLimitModal = closeSetLimitModal;
 window.setLimitPreset = setLimitPreset;
 window.handleSetLimit = handleSetLimit;
 window.removeLimit = removeLimit;
+
+// ============================================
+// SERVICES PAGE - SOON MESSAGE
+// ============================================
+
+function showSoonMessage(serviceName) {
+    hapticFeedback('light');
+    if (tg?.showPopup) {
+        tg.showPopup({
+            title: 'Tez kunda!',
+            message: `${serviceName} xizmati tez orada ishga tushadi. Kuzatib boring!`,
+            buttons: [{ type: 'ok', text: 'Kutaman' }]
+        });
+    } else {
+        alert(`${serviceName} xizmati tez orada!`);
+    }
+}
+
+window.showSoonMessage = showSoonMessage;
+
+// ============================================
+// NEW ANALYTICS FUNCTIONS
+// ============================================
+
+async function loadAdvancedAnalytics() {
+    try {
+        // Get all transactions for analytics
+        const response = await apiRequest('/api/transactions?limit=1000');
+        const transactions = response.transactions || response || [];
+
+        // Calculate weekly comparison
+        calculateWeeklyComparison(transactions);
+
+        // Calculate spending insights
+        calculateSpendingInsights(transactions);
+
+        // Calculate forecast
+        calculateForecast(transactions);
+
+        // Calculate financial health
+        calculateFinancialHealth(transactions);
+
+    } catch (error) {
+        console.error('Advanced analytics error:', error);
+    }
+}
+
+function calculateWeeklyComparison(transactions) {
+    const now = new Date();
+    const thisWeekStart = new Date(now);
+    thisWeekStart.setDate(now.getDate() - now.getDay());
+    thisWeekStart.setHours(0, 0, 0, 0);
+
+    const lastWeekStart = new Date(thisWeekStart);
+    lastWeekStart.setDate(lastWeekStart.getDate() - 7);
+
+    const lastWeekEnd = new Date(thisWeekStart);
+    lastWeekEnd.setSeconds(lastWeekEnd.getSeconds() - 1);
+
+    let thisWeekExpense = 0;
+    let lastWeekExpense = 0;
+
+    transactions.forEach(t => {
+        if (t.transaction_type !== 'expense') return;
+        const date = new Date(t.created_at);
+        const amount = parseFloat(t.amount) || 0;
+
+        if (date >= thisWeekStart) {
+            thisWeekExpense += amount;
+        } else if (date >= lastWeekStart && date < thisWeekStart) {
+            lastWeekExpense += amount;
+        }
+    });
+
+    // Update UI
+    document.getElementById('thisWeekExpense').textContent = formatCurrency(thisWeekExpense);
+    document.getElementById('lastWeekExpense').textContent = formatCurrency(lastWeekExpense);
+
+    const maxExpense = Math.max(thisWeekExpense, lastWeekExpense, 1);
+    document.getElementById('thisWeekBar').style.width = `${(thisWeekExpense / maxExpense) * 100}%`;
+    document.getElementById('lastWeekBar').style.width = `${(lastWeekExpense / maxExpense) * 100}%`;
+
+    // Change text
+    const changeEl = document.getElementById('weeklyChangeText');
+    if (changeEl) {
+        const diff = thisWeekExpense - lastWeekExpense;
+        const diffPercent = lastWeekExpense > 0 ? Math.round((diff / lastWeekExpense) * 100) : 0;
+
+        if (diff > 0) {
+            changeEl.className = 'comparison-change negative';
+            changeEl.innerHTML = `<span class="change-icon">↑</span><span class="change-text">Bu hafta ${Math.abs(diffPercent)}% ko'proq sarfladingiz</span>`;
+        } else if (diff < 0) {
+            changeEl.className = 'comparison-change positive';
+            changeEl.innerHTML = `<span class="change-icon">↓</span><span class="change-text">Bu hafta ${Math.abs(diffPercent)}% kam sarfladingiz</span>`;
+        } else {
+            changeEl.innerHTML = `<span class="change-icon">→</span><span class="change-text">Xarajatlar teng</span>`;
+        }
+    }
+}
+
+function calculateSpendingInsights(transactions) {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    let totalExpense = 0;
+    let maxExpense = 0;
+    let maxExpenseDesc = '-';
+    const dayExpenses = {};
+    const categoryExpenses = {};
+    let expenseCount = 0;
+
+    transactions.forEach(t => {
+        if (t.transaction_type !== 'expense') return;
+        const date = new Date(t.created_at);
+        if (date < monthStart) return;
+
+        const amount = parseFloat(t.amount) || 0;
+        totalExpense += amount;
+        expenseCount++;
+
+        // Max single expense
+        if (amount > maxExpense) {
+            maxExpense = amount;
+            maxExpenseDesc = t.description || t.category || '-';
+        }
+
+        // Day expenses
+        const dayName = date.toLocaleDateString('uz-UZ', { weekday: 'long' });
+        dayExpenses[dayName] = (dayExpenses[dayName] || 0) + amount;
+
+        // Category expenses
+        const cat = t.category || 'Boshqa';
+        categoryExpenses[cat] = (categoryExpenses[cat] || 0) + amount;
+    });
+
+    // Days passed in this month
+    const daysPassed = Math.max(1, now.getDate());
+    const avgDaily = totalExpense / daysPassed;
+
+    // Most expensive day
+    let mostExpensiveDay = '-';
+    let mostExpensiveDayAmount = 0;
+    Object.entries(dayExpenses).forEach(([day, amount]) => {
+        if (amount > mostExpensiveDayAmount) {
+            mostExpensiveDayAmount = amount;
+            mostExpensiveDay = day;
+        }
+    });
+
+    // Top category
+    let topCategory = '-';
+    let topCategoryAmount = 0;
+    Object.entries(categoryExpenses).forEach(([cat, amount]) => {
+        if (amount > topCategoryAmount) {
+            topCategoryAmount = amount;
+            topCategory = cat;
+        }
+    });
+
+    // Update UI
+    document.getElementById('avgDailyExpense').textContent = formatCurrencyShort(avgDaily) + " so'm";
+    document.getElementById('maxSingleExpense').textContent = formatCurrencyShort(maxExpense) + " so'm";
+    document.getElementById('mostExpensiveDay').textContent = mostExpensiveDay.charAt(0).toUpperCase() + mostExpensiveDay.slice(1);
+    document.getElementById('topCategoryName').textContent = topCategory;
+}
+
+function calculateForecast(transactions) {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+    const totalDaysInMonth = monthEnd.getDate();
+    const daysPassed = now.getDate();
+    const daysRemaining = totalDaysInMonth - daysPassed;
+
+    // Current month expenses
+    let currentMonthExpense = 0;
+    transactions.forEach(t => {
+        if (t.transaction_type !== 'expense') return;
+        const date = new Date(t.created_at);
+        if (date >= monthStart && date <= now) {
+            currentMonthExpense += parseFloat(t.amount) || 0;
+        }
+    });
+
+    // Daily average
+    const dailyAverage = daysPassed > 0 ? currentMonthExpense / daysPassed : 0;
+
+    // Projected expense
+    const projectedExpense = currentMonthExpense + (dailyAverage * daysRemaining);
+
+    // Update UI
+    document.getElementById('currentMonthExpense').textContent = formatCurrency(currentMonthExpense);
+    document.getElementById('projectedExpense').textContent = formatCurrency(projectedExpense);
+    document.getElementById('forecastValue').textContent = formatCurrencyShort(projectedExpense) + " so'm";
+
+    // Update limit status
+    if (currentLimitStatus && currentLimitStatus.has_limit) {
+        document.getElementById('monthlyLimitStat').textContent = formatCurrency(currentLimitStatus.limit);
+
+        // Update gauge based on projected vs limit
+        const forecastGauge = document.getElementById('forecastGaugeFill');
+        if (forecastGauge) {
+            const percent = Math.min(100, (projectedExpense / currentLimitStatus.limit) * 100);
+            const offset = 126 - (126 * percent / 100);
+            forecastGauge.style.strokeDashoffset = offset;
+        }
+    } else {
+        document.getElementById('monthlyLimitStat').textContent = 'Belgilanmagan';
+    }
+}
+
+function calculateFinancialHealth(transactions) {
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    let income = 0;
+    let expense = 0;
+    let transactionCount = 0;
+
+    transactions.forEach(t => {
+        const date = new Date(t.created_at);
+        if (date < monthStart) return;
+
+        const amount = parseFloat(t.amount) || 0;
+        transactionCount++;
+
+        if (t.transaction_type === 'income') {
+            income += amount;
+        } else {
+            expense += amount;
+        }
+    });
+
+    // Income/Expense ratio
+    const ratio = expense > 0 ? (income / expense).toFixed(2) : '-';
+    document.getElementById('incomeExpenseRatio').textContent = ratio !== '-' ? `${ratio}x` : ratio;
+
+    // Savings percent
+    const savingsPercent = income > 0 ? Math.round(((income - expense) / income) * 100) : 0;
+    document.getElementById('savingsPercent').textContent = savingsPercent + '%';
+
+    // Limit status
+    let limitStatusText = 'Belgilanmagan';
+    if (currentLimitStatus && currentLimitStatus.has_limit) {
+        if (currentLimitStatus.exceeded) {
+            limitStatusText = 'Oshgan';
+        } else if (currentLimitStatus.percent > 80) {
+            limitStatusText = 'Ogohlantirish';
+        } else {
+            limitStatusText = 'Normal';
+        }
+    }
+    document.getElementById('limitStatus').textContent = limitStatusText;
+
+    // Transaction frequency
+    const daysPassed = Math.max(1, now.getDate());
+    const frequency = (transactionCount / daysPassed).toFixed(1);
+    document.getElementById('transactionFrequency').textContent = frequency + '/kun';
+
+    // Calculate health score (0-100)
+    let score = 50; // Base score
+
+    // Add points for positive savings
+    if (savingsPercent > 20) score += 20;
+    else if (savingsPercent > 10) score += 10;
+    else if (savingsPercent > 0) score += 5;
+    else score -= 10;
+
+    // Add points for good income/expense ratio
+    if (parseFloat(ratio) >= 1.5) score += 15;
+    else if (parseFloat(ratio) >= 1.2) score += 10;
+    else if (parseFloat(ratio) >= 1) score += 5;
+    else score -= 10;
+
+    // Add points for limit compliance
+    if (currentLimitStatus && currentLimitStatus.has_limit) {
+        if (!currentLimitStatus.exceeded && currentLimitStatus.percent < 80) score += 15;
+        else if (!currentLimitStatus.exceeded) score += 5;
+        else score -= 10;
+    }
+
+    score = Math.max(0, Math.min(100, score));
+
+    // Update health score UI
+    const scoreEl = document.getElementById('financialHealthScore');
+    if (scoreEl) {
+        scoreEl.textContent = score;
+        scoreEl.className = 'health-score';
+        if (score >= 70) scoreEl.classList.add('high');
+        else if (score >= 40) scoreEl.classList.add('medium');
+        else scoreEl.classList.add('low');
+    }
+}
+
+// Override loadStatisticsPage to include advanced analytics
+const originalLoadStatisticsPage = loadStatisticsPage;
+loadStatisticsPage = async function(period) {
+    await originalLoadStatisticsPage.call(this, period);
+    // Load advanced analytics after basic stats
+    await loadAdvancedAnalytics();
+};
+
+// ============================================
+// SKELETON LOADERS FOR DEBTS AND REMINDERS
+// ============================================
+
+function showDebtsSkeleton() {
+    const container = document.getElementById('debtsList');
+    if (!container) return;
+
+    container.innerHTML = Array(3).fill(`
+        <div class="skeleton-list-item">
+            <div class="skeleton-list-header">
+                <div class="skeleton-list-title"></div>
+                <div class="skeleton-list-badge"></div>
+            </div>
+            <div class="skeleton-list-amount"></div>
+            <div class="skeleton-list-meta">
+                <div class="skeleton-list-meta-item"></div>
+                <div class="skeleton-list-meta-item"></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+function showRemindersSkeleton() {
+    const container = document.getElementById('remindersList');
+    if (!container) return;
+
+    container.innerHTML = Array(3).fill(`
+        <div class="skeleton-list-item">
+            <div class="skeleton-list-header">
+                <div class="skeleton-list-title"></div>
+                <div class="skeleton-list-badge"></div>
+            </div>
+            <div class="skeleton-list-amount"></div>
+            <div class="skeleton-list-meta">
+                <div class="skeleton-list-meta-item"></div>
+                <div class="skeleton-list-meta-item"></div>
+            </div>
+        </div>
+    `).join('');
+}
+
+// Override loadDebtsPage to show skeleton first
+const originalLoadDebtsPage = loadDebtsPage;
+loadDebtsPage = async function() {
+    showDebtsSkeleton();
+    await originalLoadDebtsPage.call(this);
+};
+
+// Override loadRemindersPage to show skeleton first
+const originalLoadRemindersPage = loadRemindersPage;
+loadRemindersPage = async function() {
+    showRemindersSkeleton();
+    await originalLoadRemindersPage.call(this);
+};
