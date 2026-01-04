@@ -140,19 +140,42 @@ if (tg) {
     }, 500);
 }
 
+// Show loading screen
+function showLoading() {
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) {
+        loadingScreen.classList.remove('hide');
+        loadingScreen.style.display = 'flex';
+    }
+}
+
+// Hide loading screen
+function hideLoading() {
+    const loadingScreen = document.getElementById('loadingScreen');
+    if (loadingScreen) {
+        loadingScreen.classList.add('hide');
+        setTimeout(() => {
+            loadingScreen.style.display = 'none';
+        }, 300);
+    }
+}
+
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Registration page loaded');
-    
+
+    // Show loading screen
+    showLoading();
+
     // Check if user is already registered
     checkRegistrationStatus();
-    
+
     // Setup form validation
     setupFormValidation();
-    
+
     // Setup form submission
     document.getElementById('registrationForm').addEventListener('submit', handleSubmit);
-    
+
     // Auto-focus on input
     const nameInput = document.getElementById('name');
     if (nameInput && !nameInput.value) {
@@ -165,40 +188,44 @@ async function checkRegistrationStatus() {
     try {
         const userId = getUserId();
         console.log('[REGISTER] Checking registration status for user:', userId);
-        
+
         if (!userId) {
             console.error('[REGISTER] User ID topilmadi');
+            hideLoading();
             return;
         }
-        
+
         const response = await fetch(`/api/user/${userId}`);
         console.log('[REGISTER] API response status:', response.status);
-        
+
         if (response.ok) {
             const user = await response.json();
             console.log('[REGISTER] User data received:', user);
-            
+
             // Check if user exists and registration is complete
             const isComplete = checkRegistrationComplete(user);
             console.log('[REGISTER] Registration complete:', isComplete);
-            
+
             if (isComplete) {
                 // User allaqachon ro'yxatdan o'tgan - asosiy sahifaga yuborish
                 console.log('[REGISTER] User allaqachon ro\'yxatdan o\'tgan, asosiy sahifaga yuborilmoqda...');
-                
+
                 // Kichik kechikish (UI ko'rinishi uchun)
                 await new Promise(resolve => setTimeout(resolve, 300));
-                
+
                 // Asosiy sahifaga yuborish
                 // Telegram Web App'da window.location ishlatish yaxshiroq
                 const baseUrl = window.location.origin;
                 console.log('[REGISTER] Redirecting to:', baseUrl + '/');
-                
+
                 // window.location.href ishlatish (Telegram Web App'da ishlaydi)
                 window.location.href = baseUrl + '/';
                 return;
             }
-            
+
+            // Hide loading screen va registration form'ni ko'rsatish
+            hideLoading();
+
             // Fill form with existing data if partially filled
             console.log('[REGISTER] Registration not complete, filling form with existing data');
             if (user.name && user.name !== 'Xojayin') {
@@ -216,7 +243,7 @@ async function checkRegistrationStatus() {
                     showStep(2);
                 }
             }
-            
+
             if (user.source) {
                 const sourceRadio = document.querySelector(`input[name="source"][value="${user.source}"]`);
                 if (sourceRadio) {
@@ -224,7 +251,7 @@ async function checkRegistrationStatus() {
                 }
                 formData.source = user.source;
             }
-            
+
             if (user.account_type) {
                 const accountRadio = document.querySelector(`input[name="account_type"][value="${user.account_type}"]`);
                 if (accountRadio) {
@@ -232,16 +259,19 @@ async function checkRegistrationStatus() {
                 }
                 formData.account_type = user.account_type;
             }
-            
+
             updateProgress();
         } else if (response.status === 404) {
             // User topilmadi - yangi user, registration davom etadi
             console.log('[REGISTER] Yangi user, registration davom etadi');
+            hideLoading();
         } else {
             console.error('[REGISTER] API error:', response.status, response.statusText);
+            hideLoading();
         }
     } catch (error) {
         console.error('[REGISTER] Error checking registration status:', error);
+        hideLoading();
     }
 }
 

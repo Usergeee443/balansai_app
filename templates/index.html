@@ -809,7 +809,14 @@
             </div>
         </div>
 
-        <div id="remindersList" style="padding: 0 16px;">
+        <!-- Skeleton Loading -->
+        <div id="remindersSkeleton" class="skeleton-list" style="padding: 0 16px;">
+            <div class="skeleton-item"></div>
+            <div class="skeleton-item"></div>
+            <div class="skeleton-item"></div>
+        </div>
+
+        <div id="remindersList" style="padding: 0 16px; display: none;">
             <!-- Loaded via JavaScript -->
         </div>
     </div>
@@ -836,7 +843,14 @@
             <button class="wallet-filter-btn" data-filter="taken" onclick="setDebtFilter('taken', this)">Oldim</button>
         </div>
 
-        <div id="debtsList" style="padding: 0 16px;">
+        <!-- Skeleton Loading -->
+        <div id="debtsSkeleton" class="skeleton-list" style="padding: 0 16px;">
+            <div class="skeleton-item"></div>
+            <div class="skeleton-item"></div>
+            <div class="skeleton-item"></div>
+        </div>
+
+        <div id="debtsList" style="padding: 0 16px; display: none;">
             <!-- Loaded via JavaScript -->
         </div>
     </div>
