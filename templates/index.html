@@ -42,10 +42,11 @@
             </div>
         </div>
 
-        <!-- Balance Section with Gauge -->
-        <div class="wallet-balance-section">
-            <div class="wallet-gauge-container">
-                <svg class="wallet-gauge-svg" viewBox="0 0 200 120">
+        <!-- Balance Section - Telegram Wallet Style with Arc Gauge -->
+        <div class="tg-balance-section">
+            <!-- Arc Gauge -->
+            <div class="tg-balance-gauge">
+                <svg class="tg-gauge-svg" viewBox="0 0 200 120">
                     <defs>
                         <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
                             <stop offset="0%" style="stop-color:#0A84FF"/>
@@ -53,21 +54,21 @@
                             <stop offset="100%" style="stop-color:#BF5AF2"/>
                         </linearGradient>
                     </defs>
-                    <!-- Background arc -->
-                    <path class="wallet-gauge-bg" d="M 20 100 A 80 80 0 0 1 180 100"/>
-                    <!-- Fill arc -->
-                    <path class="wallet-gauge-fill" id="gaugeFill" d="M 20 100 A 80 80 0 0 1 180 100" stroke-dasharray="251" stroke-dashoffset="125"/>
+                    <!-- Background arc (gray) -->
+                    <path class="tg-gauge-bg" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="8" stroke-linecap="round"/>
+                    <!-- Progress arc (gradient) -->
+                    <path class="tg-gauge-fill" id="balanceGaugeFill" d="M 20 100 A 80 80 0 0 1 180 100" fill="none" stroke="url(#gaugeGradient)" stroke-width="8" stroke-linecap="round" stroke-dasharray="251" stroke-dashoffset="125"/>
                 </svg>
-                <div class="wallet-gauge-text">
-                    <div class="wallet-balance-label">Umumiy balans</div>
-                    <div class="wallet-balance-amount" id="totalBalance">0 so'm</div>
-                </div>
-        </div>
 
-            <button class="wallet-cta-btn" onclick="showAddTransactionModal()">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M12 5v14M5 12h14"/>
-                </svg>
+                <!-- Balance Info Inside Gauge -->
+                <div class="tg-balance-info">
+                    <div class="tg-balance-label" id="balanceLabel">Umumiy balans</div>
+                    <div class="tg-balance-amount" id="totalBalance">0 so'm</div>
+                </div>
+            </div>
+
+            <!-- CTA Button -->
+            <button class="tg-balance-cta" onclick="showAddTransactionModal()">
                 Tranzaksiya qo'shish
             </button>
         </div>
@@ -276,79 +277,129 @@
             <h1 class="wallet-page-title">Xizmatlar</h1>
         </div>
 
+        <!-- Featured Service -->
+        <div class="services-featured" onclick="showSetLimitModal()">
+            <div class="services-featured-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <path d="M12 6v6l4 2"/>
+                </svg>
+            </div>
+            <div class="services-featured-content">
+                <div class="services-featured-title">Oylik limit o'rnating</div>
+                <div class="services-featured-desc">Xarajatlaringizni nazorat qiling va ko'proq pul tejang</div>
+            </div>
+            <svg class="services-featured-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 18l6-6-6-6"/>
+            </svg>
+        </div>
+
         <!-- Services Grid -->
-        <div class="wallet-section">
-            <h3 style="font-size: 14px; color: var(--wallet-text-secondary); margin-bottom: 16px; padding: 0;">MOLIYAVIY BOSHQARUV</h3>
-            <div class="wallet-services-grid">
-                <div class="wallet-service-item" onclick="navigateTo('reminders')">
-                    <div class="wallet-service-icon orange">
+        <div class="services-section">
+            <div class="services-section-title">Moliyaviy boshqaruv</div>
+            <div class="services-grid">
+                <div class="service-card" onclick="navigateTo('reminders')">
+                    <div class="service-card-icon orange">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                             <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                         </svg>
                     </div>
-                    <span class="wallet-service-label">Eslatmalar</span>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Eslatmalar</span>
+                        <span class="service-card-desc">To'lovlarni eslab qoling</span>
+                    </div>
                 </div>
-                <div class="wallet-service-item" onclick="navigateTo('debts')">
-                    <div class="wallet-service-icon red">
+                <div class="service-card" onclick="navigateTo('debts')">
+                    <div class="service-card-icon red">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
                             <line x1="1" y1="10" x2="23" y2="10"/>
                         </svg>
                     </div>
-                    <span class="wallet-service-label">Qarzlar</span>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Qarzlar</span>
+                        <span class="service-card-desc">Qarzlarni kuzating</span>
+                    </div>
                 </div>
-                <div class="wallet-service-item" onclick="navigateTo('goals')">
-                    <div class="wallet-service-icon green">
+                <div class="service-card" onclick="showAddGoalModal()">
+                    <div class="service-card-icon green">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <circle cx="12" cy="12" r="10"/>
                             <circle cx="12" cy="12" r="6"/>
                             <circle cx="12" cy="12" r="2"/>
                         </svg>
                     </div>
-                    <span class="wallet-service-label">Maqsadlar</span>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Maqsadlar</span>
+                        <span class="service-card-desc">Moliyaviy maqsadlar</span>
+                    </div>
                 </div>
-                <div class="wallet-service-item" onclick="navigateTo('budgets')">
-                    <div class="wallet-service-icon purple">
+                <div class="service-card" onclick="showSetLimitModal()">
+                    <div class="service-card-icon purple">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/>
                             <path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/>
                             <path d="M18 12a2 2 0 0 0 0 4h4v-4h-4z"/>
                         </svg>
                     </div>
-                    <span class="wallet-service-label">Byudjet</span>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Byudjet</span>
+                        <span class="service-card-desc">Oylik limit o'rnating</span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="wallet-section" style="margin-top: 24px;">
-            <h3 style="font-size: 14px; color: var(--wallet-text-secondary); margin-bottom: 16px; padding: 0;">HISOBOTLAR</h3>
-            <div class="wallet-services-grid">
-                <div class="wallet-service-item" onclick="navigateTo('statistics')">
-                    <div class="wallet-service-icon">
+        <div class="services-section">
+            <div class="services-section-title">Hisobotlar</div>
+            <div class="services-grid">
+                <div class="service-card" onclick="navigateTo('statistics')">
+                    <div class="service-card-icon blue">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M18 20V10M12 20V4M6 20v-6"/>
                         </svg>
                     </div>
-                    <span class="wallet-service-label">Statistika</span>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Statistika</span>
+                        <span class="service-card-desc">Batafsil tahlil</span>
+                    </div>
                 </div>
-                <div class="wallet-service-item" onclick="showExportModal()">
-                    <div class="wallet-service-icon cyan">
+                <div class="service-card" onclick="showExportModal()">
+                    <div class="service-card-icon cyan">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                             <polyline points="7 10 12 15 17 10"/>
                             <line x1="12" y1="15" x2="12" y2="3"/>
                         </svg>
                     </div>
-                    <span class="wallet-service-label">Eksport</span>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Eksport</span>
+                        <span class="service-card-desc">Telegram'ga yuborish</span>
+                    </div>
                 </div>
-                <div class="wallet-service-item" onclick="navigateTo('topExpenses')">
-                    <div class="wallet-service-icon orange">
+                <div class="service-card" onclick="navigateTo('topExpenses')">
+                    <div class="service-card-icon orange">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                         </svg>
                     </div>
-                    <span class="wallet-service-label">Top xarajat</span>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Top xarajatlar</span>
+                        <span class="service-card-desc">Eng katta xarajatlar</span>
+                    </div>
+                </div>
+                <div class="service-card" onclick="navigateTo('profile')">
+                    <div class="service-card-icon gray">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Sozlamalar</span>
+                        <span class="service-card-desc">Profil va sozlamalar</span>
+                    </div>
                 </div>
             </div>
         </div>
@@ -766,6 +817,38 @@
                     <input type="text" class="wallet-form-input" id="debtDescription" placeholder="Qarz haqida">
         </div>
                 <button type="submit" class="wallet-form-btn">Qo'shish</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Set Limit Modal -->
+    <div id="setLimitModal" class="wallet-modal">
+        <div class="wallet-modal-content">
+            <div class="wallet-modal-handle"></div>
+            <div class="wallet-modal-header">
+                <span class="wallet-modal-title">Oylik limit</span>
+                <button class="wallet-modal-close" onclick="closeSetLimitModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="setLimitForm" onsubmit="handleSetLimit(event)">
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Oylik xarajat limiti (so'm)</label>
+                    <input type="number" class="wallet-form-input" id="limitAmount" placeholder="Masalan: 5000000" required>
+                    <div style="margin-top: 8px; font-size: 12px; color: var(--wallet-text-secondary);">
+                        Agar limit oshsa, ogohlantirish olasiz
+                    </div>
+                </div>
+                <div class="wallet-limit-presets">
+                    <button type="button" class="wallet-limit-preset" onclick="setLimitPreset(1000000)">1 mln</button>
+                    <button type="button" class="wallet-limit-preset" onclick="setLimitPreset(2000000)">2 mln</button>
+                    <button type="button" class="wallet-limit-preset" onclick="setLimitPreset(5000000)">5 mln</button>
+                    <button type="button" class="wallet-limit-preset" onclick="setLimitPreset(10000000)">10 mln</button>
+                </div>
+                <button type="submit" class="wallet-form-btn">Saqlash</button>
+                <button type="button" class="wallet-form-btn secondary" style="margin-top: 8px;" onclick="removeLimit()">Limitni o'chirish</button>
             </form>
         </div>
     </div>

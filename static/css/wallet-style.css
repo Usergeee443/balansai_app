@@ -629,6 +629,7 @@ body {
     display: none;
 }
 
+
 /* ========================================
    EXPORT LOADING ANIMATION
    ======================================== */
@@ -1570,3 +1571,280 @@ body::-webkit-scrollbar {
 .mb-lg { margin-bottom: var(--wallet-spacing-lg); }
 
 .hidden { display: none !important; }
+
+/* ========================================
+   TELEGRAM WALLET BALANCE SECTION
+   ======================================== */
+
+.tg-balance-section {
+    text-align: center;
+    padding: 20px var(--wallet-spacing-md) 24px;
+}
+
+.tg-balance-gauge {
+    position: relative;
+    width: 220px;
+    height: 130px;
+    margin: 0 auto 16px;
+}
+
+.tg-gauge-svg {
+    width: 100%;
+    height: 100%;
+}
+
+.tg-balance-info {
+    position: absolute;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    text-align: center;
+    width: 100%;
+}
+
+.tg-balance-label {
+    font-size: 13px;
+    color: var(--wallet-text-secondary);
+    margin-bottom: 4px;
+}
+
+.tg-balance-amount {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--wallet-text-primary);
+    letter-spacing: -0.5px;
+}
+
+.tg-balance-cta {
+    display: inline-block;
+    padding: 12px 28px;
+    background: linear-gradient(135deg, #0A84FF 0%, #5E5CE6 100%);
+    border: none;
+    border-radius: 20px;
+    color: #fff;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 16px rgba(10, 132, 255, 0.3);
+}
+
+.tg-balance-cta:active {
+    transform: scale(0.96);
+    opacity: 0.9;
+}
+
+/* Limit presets */
+.wallet-limit-presets {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+}
+
+.wallet-limit-preset {
+    flex: 1;
+    min-width: 70px;
+    padding: 10px 12px;
+    background: var(--wallet-bg-tertiary);
+    border: none;
+    border-radius: var(--wallet-radius-md);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--wallet-text-primary);
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.wallet-limit-preset:active {
+    background: var(--wallet-accent-blue);
+    transform: scale(0.95);
+}
+
+/* ========================================
+   SERVICES PAGE - Modern UI
+   ======================================== */
+
+/* Featured Service Card */
+.services-featured {
+    margin: 0 var(--wallet-spacing-md) var(--wallet-spacing-lg);
+    padding: var(--wallet-spacing-md);
+    background: linear-gradient(135deg, rgba(10, 132, 255, 0.2) 0%, rgba(94, 92, 230, 0.15) 100%);
+    border-radius: var(--wallet-radius-lg);
+    border: 1px solid rgba(10, 132, 255, 0.25);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.services-featured:active {
+    transform: scale(0.98);
+    background: linear-gradient(135deg, rgba(10, 132, 255, 0.3) 0%, rgba(94, 92, 230, 0.25) 100%);
+}
+
+.services-featured-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, #0A84FF 0%, #5E5CE6 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.services-featured-icon svg {
+    width: 26px;
+    height: 26px;
+    stroke: white;
+}
+
+.services-featured-content {
+    flex: 1;
+}
+
+.services-featured-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--wallet-text-primary);
+    margin-bottom: 4px;
+}
+
+.services-featured-desc {
+    font-size: 13px;
+    color: var(--wallet-text-secondary);
+    line-height: 1.3;
+}
+
+.services-featured-arrow {
+    width: 20px;
+    height: 20px;
+    stroke: var(--wallet-text-tertiary);
+    flex-shrink: 0;
+}
+
+/* Services Section */
+.services-section {
+    padding: 0 var(--wallet-spacing-md);
+    margin-bottom: var(--wallet-spacing-lg);
+}
+
+.services-section-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--wallet-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 12px;
+}
+
+/* Services Grid */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+/* Service Card */
+.service-card {
+    background: var(--wallet-bg-secondary);
+    border-radius: var(--wallet-radius-lg);
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.service-card:active {
+    transform: scale(0.96);
+    background: var(--wallet-bg-tertiary);
+}
+
+.service-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(10, 132, 255, 0.15);
+}
+
+.service-card-icon svg {
+    width: 24px;
+    height: 24px;
+    stroke: #0A84FF;
+}
+
+/* Icon color variants */
+.service-card-icon.orange {
+    background: rgba(255, 159, 10, 0.15);
+}
+.service-card-icon.orange svg {
+    stroke: #FF9F0A;
+}
+
+.service-card-icon.red {
+    background: rgba(255, 69, 58, 0.15);
+}
+.service-card-icon.red svg {
+    stroke: #FF453A;
+}
+
+.service-card-icon.green {
+    background: rgba(48, 209, 88, 0.15);
+}
+.service-card-icon.green svg {
+    stroke: #30D158;
+}
+
+.service-card-icon.purple {
+    background: rgba(191, 90, 242, 0.15);
+}
+.service-card-icon.purple svg {
+    stroke: #BF5AF2;
+}
+
+.service-card-icon.blue {
+    background: rgba(10, 132, 255, 0.15);
+}
+.service-card-icon.blue svg {
+    stroke: #0A84FF;
+}
+
+.service-card-icon.cyan {
+    background: rgba(100, 210, 255, 0.15);
+}
+.service-card-icon.cyan svg {
+    stroke: #64D2FF;
+}
+
+.service-card-icon.gray {
+    background: rgba(142, 142, 147, 0.15);
+}
+.service-card-icon.gray svg {
+    stroke: #8E8E93;
+}
+
+.service-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.service-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--wallet-text-primary);
+}
+
+.service-card-desc {
+    font-size: 12px;
+    color: var(--wallet-text-secondary);
+    line-height: 1.3;
+}

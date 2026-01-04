@@ -1,4 +1,15 @@
-/* Registration App - Apple Style */
+/* Registration App - Telegram Wallet Style */
+
+:root {
+    --reg-bg-primary: #1C1C1E;
+    --reg-bg-secondary: #2C2C2E;
+    --reg-bg-tertiary: #3A3A3C;
+    --reg-text-primary: #FFFFFF;
+    --reg-text-secondary: #8E8E93;
+    --reg-accent-blue: #0A84FF;
+    --reg-accent-green: #30D158;
+    --reg-accent-purple: #BF5AF2;
+}
 
 * {
     margin: 0;
@@ -9,9 +20,9 @@
 
 body {
     font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', 'Helvetica Neue', Arial, sans-serif;
-    background: #000000;
+    background: var(--reg-bg-primary);
     min-height: 100vh;
-    color: #ffffff;
+    color: var(--reg-text-primary);
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     overflow-x: hidden;
@@ -38,7 +49,7 @@ html {
     min-height: 100vh;
     display: flex;
     flex-direction: column;
-    background: linear-gradient(180deg, #1a1a1a 0%, #000000 100%);
+    background: linear-gradient(180deg, #1C1C1E 0%, #121214 100%);
     position: relative;
 }
 
@@ -78,7 +89,7 @@ html {
     width: 24px;
     height: 8px;
     border-radius: 4px;
-    background: #ffffff;
+    background: linear-gradient(90deg, var(--reg-accent-blue) 0%, var(--reg-accent-purple) 100%);
 }
 
 /* Form Container */
@@ -270,8 +281,9 @@ html {
 }
 
 .radio-option input:checked + .radio-content {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: linear-gradient(135deg, rgba(10, 132, 255, 0.15) 0%, rgba(191, 90, 242, 0.1) 100%);
+    border-color: var(--reg-accent-blue);
+    box-shadow: 0 0 20px rgba(10, 132, 255, 0.15);
 }
 
 .radio-icon {
@@ -543,12 +555,13 @@ html {
 }
 
 .btn-primary {
-    background: #ffffff;
-    color: #000000;
+    background: linear-gradient(135deg, var(--reg-accent-blue) 0%, var(--reg-accent-purple) 100%);
+    color: #ffffff;
+    box-shadow: 0 4px 20px rgba(10, 132, 255, 0.3);
 }
 
 .btn-primary:active {
-    background: rgba(255, 255, 255, 0.9);
+    opacity: 0.9;
     transform: scale(0.98);
 }
 
@@ -702,8 +715,9 @@ html {
 }
 
 .select-option input:checked + .select-option-content {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.4);
+    background: linear-gradient(135deg, rgba(10, 132, 255, 0.15) 0%, rgba(191, 90, 242, 0.1) 100%);
+    border-color: var(--reg-accent-blue);
+    box-shadow: 0 0 20px rgba(10, 132, 255, 0.15);
 }
 
 .select-option-icon {
@@ -800,9 +814,9 @@ html {
 }
 
 .tariff-option input:checked + .tariff-content {
-    background: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 4px 20px rgba(255, 255, 255, 0.1);
+    background: linear-gradient(135deg, rgba(10, 132, 255, 0.15) 0%, rgba(191, 90, 242, 0.1) 100%);
+    border-color: var(--reg-accent-blue);
+    box-shadow: 0 4px 24px rgba(10, 132, 255, 0.2);
     transform: scale(1.02);
 }
 

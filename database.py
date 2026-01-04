@@ -11,6 +11,40 @@ import threading
 _pool = None
 _pool_lock = threading.Lock()
 
+# Migrationlar bajarilganligini tekshirish
+_migrations_done = False
+
+def run_migrations():
+    """Database migrationlarni ishlatish"""
+    global _migrations_done
+    if _migrations_done:
+        return
+
+    try:
+        connection = get_db_connection()
+        with connection.cursor() as cursor:
+            # monthly_limit ustunini qo'shish (agar mavjud bo'lmasa)
+            try:
+                cursor.execute("""
+                    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'monthly_limit'
+                """)
+                if not cursor.fetchone():
+                    cursor.execute("""
+                        ALTER TABLE users ADD COLUMN monthly_limit DECIMAL(15, 2) DEFAULT NULL
+                    """)
+                    connection.commit()
+                    print("✅ Migration: monthly_limit ustuni qo'shildi")
+            except Exception as e:
+                print(f"⚠️ Migration xatosi (monthly_limit): {e}")
+
+        _migrations_done = True
+        print("✅ Barcha migrationlar bajarildi")
+    except Exception as e:
+        print(f"❌ Migration xatosi: {e}")
+    finally:
+        connection.close()
+
 def _get_pool():
     """Connection pool ni olish yoki yaratish (singleton pattern)"""
     global _pool
@@ -1526,30 +1560,30 @@ def get_weekly_comparison(user_id, days=14):
         with connection.cursor() as cursor:
             date_from = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0) - timedelta(days=days)
             cursor.execute("""
-                SELECT 
+                SELECT
                     YEARWEEK(created_at, 1) as week,
                     transaction_type,
                     currency,
                     SUM(amount) as total
-                FROM transactions 
+                FROM transactions
                 WHERE user_id = %s AND created_at >= %s
                 GROUP BY YEARWEEK(created_at, 1), transaction_type, currency
                 ORDER BY week ASC
             """, (user_id, date_from))
             results = cursor.fetchall()
-            
+
             weekly_data = {}
             for row in results:
                 week = row['week']
                 if week not in weekly_data:
                     weekly_data[week] = {'income': 0.0, 'expense': 0.0}
-                
+
                 amount_uzs = convert_to_uzs(row['total'], row['currency'])
                 if row['transaction_type'] == 'income':
                     weekly_data[week]['income'] += amount_uzs
                 elif row['transaction_type'] == 'expense':
                     weekly_data[week]['expense'] += amount_uzs
-            
+
             # Joriy va o'tgan hafta
             weeks = sorted(weekly_data.keys())
             if len(weeks) >= 2:
@@ -1572,10 +1606,110 @@ def get_weekly_comparison(user_id, days=14):
                 ]
             else:
                 comparison = []
-            
+
             return comparison
     except Exception as e:
         print(f"❌ Weekly comparison olishda xatolik: {e}")
         return []
     finally:
         connection.close()
+
+
+# ============================================
+# OYLIK LIMIT FUNKSIYALARI
+# ============================================
+
+def get_monthly_limit(user_id):
+    """Foydalanuvchining oylik limitini olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT monthly_limit FROM users WHERE user_id = %s
+            """, (user_id,))
+            result = cursor.fetchone()
+            if result and result.get('monthly_limit'):
+                return float(result['monthly_limit'])
+            return None
+    except Exception as e:
+        print(f"❌ Oylik limit olishda xatolik: {e}")
+        return None
+    finally:
+        connection.close()
+
+def set_monthly_limit(user_id, limit_amount):
+    """Foydalanuvchining oylik limitini o'rnatish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                UPDATE users SET monthly_limit = %s, updated_at = NOW() WHERE user_id = %s
+            """, (limit_amount, user_id))
+            connection.commit()
+            return True
+    except Exception as e:
+        print(f"❌ Oylik limit o'rnatishda xatolik: {e}")
+        connection.rollback()
+        return False
+    finally:
+        connection.close()
+
+def get_monthly_expense(user_id):
+    """Joriy oydagi xarajatlarni olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Joriy oyning boshi
+            now = datetime.now()
+            month_start = now.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+
+            cursor.execute("""
+                SELECT
+                    currency,
+                    SUM(amount) as total
+                FROM transactions
+                WHERE user_id = %s
+                    AND transaction_type = 'expense'
+                    AND created_at >= %s
+                GROUP BY currency
+            """, (user_id, month_start))
+            results = cursor.fetchall()
+
+            total_expense = 0.0
+            for row in results:
+                total_expense += convert_to_uzs(row['total'], row['currency'])
+
+            return total_expense
+    except Exception as e:
+        print(f"❌ Oylik xarajat olishda xatolik: {e}")
+        return 0.0
+    finally:
+        connection.close()
+
+def get_limit_status(user_id):
+    """Limit holati (limit, sarflangan, foiz, ogohlantirish)"""
+    limit = get_monthly_limit(user_id)
+    if not limit or limit <= 0:
+        return {
+            'has_limit': False,
+            'limit': 0,
+            'spent': 0,
+            'remaining': 0,
+            'percent': 0,
+            'warning': False,
+            'exceeded': False
+        }
+
+    spent = get_monthly_expense(user_id)
+    remaining = limit - spent
+    percent = min(100, (spent / limit) * 100) if limit > 0 else 0
+
+    return {
+        'has_limit': True,
+        'limit': round(limit, 2),
+        'spent': round(spent, 2),
+        'remaining': round(remaining, 2),
+        'percent': round(percent, 1),
+        'warning': percent >= 80,
+        'exceeded': spent > limit
+    }

@@ -25,8 +25,10 @@ const dataCache = {
     statistics: {},
     reminders: null,
     debts: null,
+    limit: null,
     lastUpdate: {},
-    TTL: 30000, // 30 sekund cache
+    TTL: 60000, // 60 sekund cache (1 minut)
+    pageLoaded: {}, // Qaysi sahifa yuklangan
 
     get(key) {
         const now = Date.now();
@@ -41,6 +43,18 @@ const dataCache = {
         this.lastUpdate[key] = Date.now();
     },
 
+    isPageLoaded(page) {
+        const now = Date.now();
+        if (this.pageLoaded[page] && (now - this.pageLoaded[page]) < this.TTL) {
+            return true;
+        }
+        return false;
+    },
+
+    setPageLoaded(page) {
+        this.pageLoaded[page] = Date.now();
+    },
+
     clear(key) {
         if (key) {
             this[key] = null;
@@ -51,7 +65,9 @@ const dataCache = {
             this.statistics = {};
             this.reminders = null;
             this.debts = null;
+            this.limit = null;
             this.lastUpdate = {};
+            this.pageLoaded = {};
         }
     }
 };
@@ -207,7 +223,7 @@ function navigateTo(pageName) {
         newPage.classList.add('active');
     }
 
-    // Update nav (support both old and new navbar)
+    // Update nav
     document.querySelectorAll('.wallet-nav-item, .tg-wallet-nav-item').forEach(item => {
         item.classList.remove('active');
         if (item.dataset.page === pageName) {
@@ -223,24 +239,40 @@ function navigateTo(pageName) {
 
 async function loadPageData(pageName) {
     try {
+        // Agar sahifa allaqachon yuklangan bo'lsa, qayta yuklamaslik
+        if (dataCache.isPageLoaded(pageName) && pageName !== 'home') {
+            console.log(`[Cache] ${pageName} sahifasi cache'dan`);
+            return;
+        }
+
         switch (pageName) {
+            case 'home':
+                // Home har doim yangilansin (limit, balance)
+                await loadHomePage();
+                break;
             case 'transactions':
                 await loadTransactionsPage();
+                dataCache.setPageLoaded(pageName);
                 break;
             case 'statistics':
                 await loadStatisticsPage('week');
+                dataCache.setPageLoaded(pageName);
                 break;
             case 'reminders':
                 await loadRemindersPage();
+                dataCache.setPageLoaded(pageName);
                 break;
             case 'debts':
                 await loadDebtsPage();
+                dataCache.setPageLoaded(pageName);
                 break;
             case 'profile':
                 await loadProfilePage();
+                dataCache.setPageLoaded(pageName);
                 break;
             case 'topExpenses':
                 await loadTopExpensesPage();
+                dataCache.setPageLoaded(pageName);
                 break;
         }
     } catch (error) {
@@ -290,11 +322,8 @@ async function loadHomePage() {
             balanceEl.textContent = formatCurrency(user.balance || 0);
         }
 
-        // Update gauge based on savings rate
-        const totalIncome = user.total_income || 0;
-        const totalExpense = user.total_expense || 0;
-        const savingsPercent = totalIncome > 0 ? Math.round(((totalIncome - totalExpense) / totalIncome) * 100) : 50;
-        updateGauge(Math.max(0, Math.min(100, savingsPercent)));
+        // Load monthly limit status
+        await loadLimitStatus();
 
         // Load transactions for home
         await loadHomeTransactions();
@@ -1811,3 +1840,158 @@ window.showSupport = showSupport;
 window.showAbout = showAbout;
 window.handleLogout = handleLogout;
 window.openTelegramBot = openTelegramBot;
+
+// ============================================
+// MONTHLY LIMIT FUNCTIONS
+// ============================================
+
+let currentLimitStatus = null;
+
+async function loadLimitStatus() {
+    try {
+        const status = await apiRequest('/api/limit');
+        currentLimitStatus = status;
+        updateLimitUI(status);
+    } catch (error) {
+        console.error('Limit status error:', error);
+    }
+}
+
+function updateLimitUI(status) {
+    const limitSection = document.getElementById('limitSection');
+    const setLimitCta = document.getElementById('setLimitCta');
+
+    if (!status.has_limit) {
+        // Limit o'rnatilmagan - CTA ko'rsatish
+        if (limitSection) limitSection.style.display = 'none';
+        if (setLimitCta) setLimitCta.style.display = 'flex';
+        return;
+    }
+
+    // Limit bor - progress bar ko'rsatish
+    if (setLimitCta) setLimitCta.style.display = 'none';
+    if (limitSection) {
+        limitSection.style.display = 'block';
+
+        // Values
+        document.getElementById('limitSpent').textContent = formatCurrencyShort(status.spent);
+        document.getElementById('limitTotal').textContent = formatCurrencyShort(status.limit);
+        document.getElementById('limitRemaining').textContent = `Qoldi: ${formatCurrency(Math.max(0, status.remaining))}`;
+        document.getElementById('limitPercent').textContent = `${Math.round(status.percent)}%`;
+
+        // Progress bar
+        const progressFill = document.getElementById('limitProgressFill');
+        if (progressFill) {
+            progressFill.style.width = `${Math.min(100, status.percent)}%`;
+        }
+
+        // Warning states
+        limitSection.classList.remove('warning', 'exceeded');
+        if (status.exceeded) {
+            limitSection.classList.add('exceeded');
+            // Show warning
+            if (tg?.showPopup && !sessionStorage.getItem('limitExceededWarning')) {
+                sessionStorage.setItem('limitExceededWarning', 'true');
+                tg.showPopup({
+                    title: 'Limit oshdi!',
+                    message: `Siz oylik ${formatCurrency(status.limit)} limitidan ${formatCurrency(status.spent - status.limit)} ga ko'proq sarfladingiz.`,
+                    buttons: [{ type: 'ok', text: 'Tushundim' }]
+                });
+            }
+        } else if (status.warning) {
+            limitSection.classList.add('warning');
+        }
+    }
+}
+
+function showSetLimitModal() {
+    hapticFeedback('light');
+    const modal = document.getElementById('setLimitModal');
+    if (modal) {
+        modal.classList.add('active');
+        // Agar oldingi limit bor bo'lsa, ko'rsatish
+        if (currentLimitStatus?.has_limit && currentLimitStatus.limit > 0) {
+            document.getElementById('limitAmount').value = currentLimitStatus.limit;
+        }
+    }
+}
+
+function closeSetLimitModal() {
+    hapticFeedback('light');
+    const modal = document.getElementById('setLimitModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+function setLimitPreset(amount) {
+    hapticFeedback('light');
+    document.getElementById('limitAmount').value = amount;
+}
+
+async function handleSetLimit(event) {
+    event.preventDefault();
+    hapticFeedback('medium');
+
+    const amount = parseFloat(document.getElementById('limitAmount').value);
+    if (!amount || amount <= 0) {
+        alert('Iltimos, to\'g\'ri summa kiriting');
+        return;
+    }
+
+    try {
+        const response = await apiRequest('/api/limit', {
+            method: 'POST',
+            body: JSON.stringify({ limit: amount })
+        });
+
+        if (response.success) {
+            hapticFeedback('success');
+            closeSetLimitModal();
+            await loadLimitStatus();
+
+            if (tg?.showPopup) {
+                tg.showPopup({
+                    title: 'Muvaffaqiyatli!',
+                    message: `Oylik limit ${formatCurrency(amount)} ga o'rnatildi.`,
+                    buttons: [{ type: 'ok', text: 'OK' }]
+                });
+            }
+        } else {
+            throw new Error(response.error || 'Xatolik');
+        }
+    } catch (error) {
+        hapticFeedback('error');
+        alert('Xatolik: ' + error.message);
+    }
+}
+
+async function removeLimit() {
+    hapticFeedback('medium');
+
+    if (!confirm('Limitni o\'chirishni xohlaysizmi?')) {
+        return;
+    }
+
+    try {
+        const response = await apiRequest('/api/limit', {
+            method: 'POST',
+            body: JSON.stringify({ limit: 0 })
+        });
+
+        if (response.success) {
+            hapticFeedback('success');
+            closeSetLimitModal();
+            await loadLimitStatus();
+        }
+    } catch (error) {
+        hapticFeedback('error');
+        alert('Xatolik: ' + error.message);
+    }
+}
+
+window.showSetLimitModal = showSetLimitModal;
+window.closeSetLimitModal = closeSetLimitModal;
+window.setLimitPreset = setLimitPreset;
+window.handleSetLimit = handleSetLimit;
+window.removeLimit = removeLimit;

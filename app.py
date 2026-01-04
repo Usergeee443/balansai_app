@@ -15,7 +15,9 @@ from database import (
     get_category_transactions, get_category_details,
     get_balance_trend, get_monthly_comparison, get_category_breakdown,
     get_daily_spending, get_transaction_stats, get_currency_distribution,
-    get_weekly_comparison
+    get_weekly_comparison,
+    get_monthly_limit, set_monthly_limit, get_limit_status,
+    run_migrations
 )
 import os
 import hmac
@@ -31,6 +33,9 @@ load_dotenv()
 
 app = Flask(__name__)
 app.config.from_object(Config)
+
+# Database migrationlarni ishlatish
+run_migrations()
 
 # Telegram Mini App validatsiyasi
 def validate_telegram_webapp(init_data):
@@ -1189,6 +1194,62 @@ def api_get_category_details(category_name):
         print(f"❌ API: Kategoriya tafsilotlarini olishda xatolik: {e}")
         import traceback
         traceback.print_exc()
+        return jsonify({'error': str(e)}), 500
+
+
+# ============================================
+# TELEGRAM EXPORT ENDPOINT
+# ============================================
+
+# ============================================
+# OYLIK LIMIT API ENDPOINTS
+# ============================================
+
+@app.route('/api/limit', methods=['GET'])
+def api_get_limit():
+    """Oylik limit holatini olish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        status = get_limit_status(user_id)
+        return jsonify(status)
+    except Exception as e:
+        print(f"❌ API: Limit olishda xatolik: {e}")
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/limit', methods=['POST'])
+def api_set_limit():
+    """Oylik limit o'rnatish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'error': 'Unauthorized'}), 401
+
+        data = request.get_json()
+        limit_amount = data.get('limit')
+
+        if limit_amount is None:
+            return jsonify({'error': 'limit majburiy'}), 400
+
+        limit_amount = float(limit_amount)
+        if limit_amount < 0:
+            return jsonify({'error': 'Limit 0 dan katta bo\'lishi kerak'}), 400
+
+        success = set_monthly_limit(user_id, limit_amount)
+
+        if success:
+            status = get_limit_status(user_id)
+            return jsonify({
+                'success': True,
+                'message': 'Limit o\'rnatildi',
+                **status
+            })
+        else:
+            return jsonify({'error': 'Limit o\'rnatilmadi'}), 500
+    except Exception as e:
+        print(f"❌ API: Limit o'rnatishda xatolik: {e}")
         return jsonify({'error': str(e)}), 500
 
 
