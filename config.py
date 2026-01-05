@@ -9,15 +9,21 @@ class Config:
     MYSQL_PASSWORD = os.getenv('MYSQL_PASSWORD', 'PMA_Str0ng!2025')
     MYSQL_DATABASE = os.getenv('MYSQL_DATABASE', 'BalansAiBot')
     MYSQL_PORT = int(os.getenv('MYSQL_PORT', 3306))
-    
+
     # Flask konfiguratsiyasi
     SECRET_KEY = os.getenv('SECRET_KEY', 'your-secret-key-here-change-in-production')
     # Development uchun default True, production'da .env orqali False qiling
     # Render'da default False bo'ladi
     # Local development uchun True qiling
     DEBUG = os.getenv('DEBUG', 'True').lower() == 'true'
-    
+
     # Telegram Mini App konfiguratsiyasi
     TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '8087310424:AAGn99-GObyu8cU7ADPNTt950K3scdtGXUQ')
     TELEGRAM_BOT_USERNAME = os.getenv('TELEGRAM_BOT_USERNAME', 'BalansAiBot')  # Bot username (@username)
+
+    # Tarif sinov muddatlari (kunlarda)
+    # Adminlar bu qiymatlarni o'zgartirishi mumkin
+    TRIAL_DAYS_FREE = int(os.getenv('TRIAL_DAYS_FREE', 0))  # Bepul - sinov yo'q
+    TRIAL_DAYS_PLUS = int(os.getenv('TRIAL_DAYS_PLUS', 7))  # Plus - 7 kunlik sinov
+    TRIAL_DAYS_BIZNES = int(os.getenv('TRIAL_DAYS_BIZNES', 7))  # Biznes - 7 kunlik sinov
 

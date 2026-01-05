@@ -195,7 +195,12 @@ def register():
 def get_config():
     """Ilova konfiguratsiyasini olish"""
     return jsonify({
-        'bot_username': Config.TELEGRAM_BOT_USERNAME
+        'bot_username': Config.TELEGRAM_BOT_USERNAME,
+        'trial_days': {
+            'free': Config.TRIAL_DAYS_FREE,
+            'plus': Config.TRIAL_DAYS_PLUS,
+            'biznes': Config.TRIAL_DAYS_BIZNES
+        }
     })
 
 @app.route('/profile')
@@ -1097,32 +1102,51 @@ def save_onboarding(user_id):
 
 @app.route('/api/user/<int:user_id>/tariff', methods=['POST'])
 def set_tariff(user_id):
-    """Tarif tanlash (7 kunlik sinov bilan)"""
+    """Tarif tanlash (konfiguratsiya asosida sinov muddati bilan)"""
     try:
+        from database import get_db_connection
         data = request.get_json()
-        
+
         if not data or 'tariff' not in data:
             return jsonify({'error': 'Tarif topilmadi'}), 400
-        
+
         tariff = data['tariff']
-        
-        # 7 kunlik sinov muddati
+
+        # Tarif bo'yicha sinov muddatini olish (Config dan)
+        trial_days = {
+            'FREE': Config.TRIAL_DAYS_FREE,
+            'PLUS': Config.TRIAL_DAYS_PLUS,
+            'PRO': Config.TRIAL_DAYS_PLUS,  # PRO ham PLUS kabi
+            'BUSINESS': Config.TRIAL_DAYS_BIZNES,
+            'BIZNES': Config.TRIAL_DAYS_BIZNES
+        }
+
+        days = trial_days.get(tariff.upper(), 0)
+
+        # Sinov muddatini hisoblash
         from datetime import datetime, timedelta
-        trial_expires_at = datetime.now() + timedelta(days=7)
-        
+        trial_expires_at = datetime.now() + timedelta(days=days) if days > 0 else None
+
         connection = get_db_connection()
         try:
             with connection.cursor() as cursor:
-                cursor.execute(
-                    "UPDATE users SET tariff = %s, tariff_expires_at = %s, updated_at = NOW() WHERE user_id = %s",
-                    (tariff, trial_expires_at, user_id)
-                )
+                if trial_expires_at:
+                    cursor.execute(
+                        "UPDATE users SET tariff = %s, tariff_expires_at = %s, updated_at = NOW() WHERE user_id = %s",
+                        (tariff, trial_expires_at, user_id)
+                    )
+                else:
+                    cursor.execute(
+                        "UPDATE users SET tariff = %s, tariff_expires_at = NULL, updated_at = NOW() WHERE user_id = %s",
+                        (tariff, user_id)
+                    )
                 connection.commit()
                 return jsonify({
                     'success': True,
                     'message': 'Tarif yangilandi',
                     'tariff': tariff,
-                    'trial_expires_at': trial_expires_at.isoformat()
+                    'trial_days': days,
+                    'trial_expires_at': trial_expires_at.isoformat() if trial_expires_at else None
                 })
         except Exception as e:
             connection.rollback()

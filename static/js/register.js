@@ -14,6 +14,11 @@ let formData = {
     card_balance: 0,
     debts: []
 };
+let trialConfig = {
+    free: 0,
+    plus: 7,
+    biznes: 7
+};
 
 // Telegram Web App initialization
 if (tg) {
@@ -167,6 +172,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Show loading screen
     showLoading();
 
+    // Load trial configuration
+    loadTrialConfig();
+
     // Check if user is already registered
     checkRegistrationStatus();
 
@@ -182,6 +190,56 @@ document.addEventListener('DOMContentLoaded', () => {
         setTimeout(() => nameInput.focus(), 300);
     }
 });
+
+// Load trial configuration from API
+async function loadTrialConfig() {
+    try {
+        const response = await fetch('/api/config');
+        if (response.ok) {
+            const config = await response.json();
+            trialConfig = config.trial_days || { free: 0, plus: 7, biznes: 7 };
+            updateTrialDaysUI();
+        }
+    } catch (error) {
+        console.error('Error loading trial config:', error);
+    }
+}
+
+// Update trial days in UI
+function updateTrialDaysUI() {
+    // Plus trial days
+    const plusTrialDaysElements = document.querySelectorAll('#plusTrialDays, #plusTrialDaysBtn');
+    plusTrialDaysElements.forEach(el => {
+        el.textContent = trialConfig.plus;
+    });
+
+    // Business trial days
+    const businessTrialDaysElements = document.querySelectorAll('#businessTrialDays, #businessTrialDaysBtn');
+    businessTrialDaysElements.forEach(el => {
+        el.textContent = trialConfig.biznes;
+    });
+
+    // Update button text based on trial days
+    if (trialConfig.plus === 0) {
+        document.getElementById('plusBtnText').textContent = 'Sotib olish';
+    }
+    if (trialConfig.biznes === 0) {
+        document.getElementById('businessBtnText').textContent = 'Sotib olish';
+    }
+}
+
+// Select tariff
+function selectTariff(tariff) {
+    formData.tariff = tariff;
+
+    // Move to next step if FREE, otherwise go to review
+    if (tariff === 'FREE') {
+        nextStep(7);
+    } else {
+        // For Plus and Business, go to review
+        nextStep(7);
+    }
+}
 
 // Check if user is already registered
 async function checkRegistrationStatus() {
@@ -392,18 +450,7 @@ function setupFormValidation() {
         });
     });
     
-    // Tariff radios
-    const tariffRadios = document.querySelectorAll('input[name="tariff"]');
-    tariffRadios.forEach(radio => {
-        radio.addEventListener('change', () => {
-            const tariffError = document.getElementById('tariffError');
-            if (radio.checked) {
-                tariffError.textContent = '';
-                // Auto proceed after selection
-                setTimeout(() => nextStep(7), 300);
-            }
-        });
-    });
+    // Note: Tariff selection is now handled by selectTariff() function
 }
 
 // Validate field
@@ -458,11 +505,14 @@ function nextStep(step) {
         // Collect debts
         formData.debts = collectDebts();
     } else if (currentStep === 6) {
-        const tariff = document.querySelector('input[name="tariff"]:checked')?.value;
-        if (!validateField('tariff', tariff)) {
+        // Tariff validation (already selected via button)
+        if (!formData.tariff) {
+            const tariffError = document.getElementById('tariffError');
+            if (tariffError) {
+                tariffError.textContent = 'Iltimos, tarifni tanlang';
+            }
             return;
         }
-        formData.tariff = tariff;
     }
     
     // Show next step
@@ -619,8 +669,10 @@ function updateReview() {
     
     const tariffMap = {
         'FREE': 'Bepul',
-        'PRO': 'Pro',
-        'BUSINESS': 'Biznes'
+        'PLUS': 'Plus',
+        'PRO': 'Plus',
+        'BUSINESS': 'Biznes',
+        'BIZNES': 'Biznes'
     };
     document.getElementById('reviewTariff').textContent = tariffMap[formData.tariff] || '-';
     
@@ -665,20 +717,42 @@ async function handleSubmit(e) {
         
         // Save onboarding data
         await saveOnboardingData(userId);
-        
+
+        // Check if need to redirect to payment
+        if (formData.tariff === 'PLUS' || formData.tariff === 'PRO') {
+            // Check if trial is available
+            if (trialConfig.plus === 0) {
+                // No trial, redirect to payment
+                window.location.href = 'https://balansai.onrender.com/payment-plus';
+                return;
+            }
+        } else if (formData.tariff === 'BUSINESS' || formData.tariff === 'BIZNES') {
+            // Check if trial is available
+            if (trialConfig.biznes === 0) {
+                // No trial, redirect to payment
+                window.location.href = 'https://balansai.onrender.com/payment-biznes';
+                return;
+            }
+        }
+
         // Show success screen
         document.querySelector('.form-container').style.display = 'none';
         document.getElementById('successScreen').style.display = 'flex';
-        
+
         // Haptic feedback
         if (tg && tg.HapticFeedback) {
             tg.HapticFeedback.notificationOccurred('success');
         }
-        
+
         // Send data to bot (if needed)
         if (tg && tg.sendData) {
             tg.sendData(JSON.stringify({ action: 'registration_complete' }));
         }
+
+        // Redirect to home after 2 seconds
+        setTimeout(() => {
+            window.location.href = '/';
+        }, 2000);
         
     } catch (error) {
         console.error('Error submitting form:', error);
