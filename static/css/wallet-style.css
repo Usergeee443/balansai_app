@@ -2494,3 +2494,114 @@ body::-webkit-scrollbar {
     animation: skeleton-loading 1.5s ease-in-out infinite;
     border-radius: 4px;
 }
+
+/* ============================================
+   PREMIUM ANALYTICS STYLES
+   ============================================ */
+.premium-analytics {
+    position: relative;
+}
+
+.premium-badge {
+    background: linear-gradient(90deg, #0A84FF 0%, #BF5AF2 100%);
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 10px;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+}
+
+.analytics-locked {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(28, 28, 30, 0.95);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border-radius: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px;
+    text-align: center;
+    z-index: 10;
+}
+
+.locked-icon {
+    font-size: 48px;
+    margin-bottom: 16px;
+    opacity: 0.8;
+}
+
+.locked-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: #ffffff;
+    margin-bottom: 8px;
+}
+
+.locked-text {
+    font-size: 15px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 24px;
+    line-height: 1.4;
+}
+
+.locked-btn {
+    background: linear-gradient(90deg, #0A84FF 0%, #BF5AF2 100%);
+    color: #ffffff;
+    border: none;
+    padding: 12px 24px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.locked-btn:active {
+    transform: scale(0.97);
+    opacity: 0.9;
+}
+
+.analytics-content {
+    position: relative;
+}
+
+.premium-analytics.locked .analytics-content {
+    filter: blur(8px);
+    pointer-events: none;
+}
+
+.monthly-breakdown-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 12px;
+    padding: 8px 0;
+}
+
+.month-card {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 16px;
+    text-align: center;
+}
+
+.month-card-month {
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.6);
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.month-card-amount {
+    font-size: 18px;
+    font-weight: 700;
+    color: #ffffff;
+}

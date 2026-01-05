@@ -308,75 +308,66 @@
                         </svg>
                     </button>
                     <h1 class="step-title">Tarif tanlang</h1>
-                    <p class="step-subtitle">7 kunlik sinov muddati bilan</p>
+                    <p class="step-subtitle">O'zingizga mos tarifni tanlang</p>
                 </div>
 
                 <div class="form-content">
-                    <div class="tariff-options">
-                        <label class="tariff-option">
-                            <input type="radio" name="tariff" value="FREE" required>
-                            <div class="tariff-content">
-                                <div class="tariff-header">
-                                    <div class="tariff-icon">🆓</div>
-                                    <div class="tariff-info">
-                                        <div class="tariff-name">Bepul</div>
-                                        <div class="tariff-price">0 so'm</div>
-                                    </div>
-                                </div>
-                                <div class="tariff-features">
-                                    <div class="tariff-feature">✓ 7 kunlik sinov</div>
-                                    <div class="tariff-feature">✓ Asosiy funksiyalar</div>
-                                </div>
+                    <div class="tariff-cards">
+                        <!-- FREE Tariff -->
+                        <div class="tariff-card" id="tariffFree">
+                            <div class="tariff-card-header">
+                                <div class="tariff-card-icon">🆓</div>
+                                <div class="tariff-card-title">Bepul</div>
+                                <div class="tariff-card-price">0 so'm</div>
                             </div>
-                        </label>
+                            <div class="tariff-card-features">
+                                <div class="tariff-card-feature">✓ Asosiy funksiyalar</div>
+                                <div class="tariff-card-feature">✓ Cheklovli statistika</div>
+                                <div class="tariff-card-feature">✓ 2-3 ta tahlil</div>
+                            </div>
+                            <button type="button" class="tariff-card-btn" onclick="selectTariff('FREE')">
+                                Davom etish
+                            </button>
+                        </div>
 
-                        <label class="tariff-option">
-                            <input type="radio" name="tariff" value="PRO" required>
-                            <div class="tariff-content">
-                                <div class="tariff-header">
-                                    <div class="tariff-icon">⭐</div>
-                                    <div class="tariff-info">
-                                        <div class="tariff-name">Pro</div>
-                                        <div class="tariff-price">Premium</div>
-                                    </div>
-                                </div>
-                                <div class="tariff-features">
-                                    <div class="tariff-feature">✓ 7 kunlik sinov</div>
-                                    <div class="tariff-feature">✓ Barcha funksiyalar</div>
-                                    <div class="tariff-feature">✓ Premium qo'llab-quvvatlash</div>
-                                </div>
+                        <!-- PLUS Tariff -->
+                        <div class="tariff-card tariff-card-popular" id="tariffPlus">
+                            <div class="tariff-card-badge">Ommabop</div>
+                            <div class="tariff-card-header">
+                                <div class="tariff-card-icon">⭐</div>
+                                <div class="tariff-card-title">Plus</div>
+                                <div class="tariff-card-price">Premium</div>
                             </div>
-                        </label>
+                            <div class="tariff-card-features">
+                                <div class="tariff-card-feature">✓ Barcha funksiyalar</div>
+                                <div class="tariff-card-feature">✓ To'liq statistika</div>
+                                <div class="tariff-card-feature">✓ Premium qo'llab-quvvatlash</div>
+                                <div class="tariff-card-feature">✓ <span id="plusTrialDays">7</span> kunlik bepul sinov</div>
+                            </div>
+                            <button type="button" class="tariff-card-btn tariff-card-btn-primary" onclick="selectTariff('PLUS')">
+                                <span id="plusBtnText"><span id="plusTrialDaysBtn">7</span> kun sinash</span>
+                            </button>
+                        </div>
 
-                        <label class="tariff-option">
-                            <input type="radio" name="tariff" value="BUSINESS" required>
-                            <div class="tariff-content">
-                                <div class="tariff-header">
-                                    <div class="tariff-icon">💼</div>
-                                    <div class="tariff-info">
-                                        <div class="tariff-name">Biznes</div>
-                                        <div class="tariff-price">Professional</div>
-                                    </div>
-                                </div>
-                                <div class="tariff-features">
-                                    <div class="tariff-feature">✓ 7 kunlik sinov</div>
-                                    <div class="tariff-feature">✓ Biznes funksiyalari</div>
-                                    <div class="tariff-feature">✓ Ko'p foydalanuvchi</div>
-                                </div>
+                        <!-- BUSINESS Tariff -->
+                        <div class="tariff-card" id="tariffBusiness">
+                            <div class="tariff-card-header">
+                                <div class="tariff-card-icon">💼</div>
+                                <div class="tariff-card-title">Biznes</div>
+                                <div class="tariff-card-price">Professional</div>
                             </div>
-                        </label>
+                            <div class="tariff-card-features">
+                                <div class="tariff-card-feature">✓ Plus funksiyalar</div>
+                                <div class="tariff-card-feature">✓ Biznes tahlillar</div>
+                                <div class="tariff-card-feature">✓ Ko'p foydalanuvchi</div>
+                                <div class="tariff-card-feature">✓ <span id="businessTrialDays">7</span> kunlik bepul sinov</div>
+                            </div>
+                            <button type="button" class="tariff-card-btn" onclick="selectTariff('BUSINESS')">
+                                <span id="businessBtnText"><span id="businessTrialDaysBtn">7</span> kun sinash</span>
+                            </button>
+                        </div>
                     </div>
                     <span class="error-message" id="tariffError"></span>
-                </div>
-
-                <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-secondary" onclick="prevStep(5)">Orqaga</button>
-                    <button type="button" class="btn-primary" onclick="nextStep(7)">
-                        Davom etish
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
                 </div>
             </div>
 
