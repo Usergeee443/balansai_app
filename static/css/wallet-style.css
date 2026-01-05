@@ -2605,3 +2605,82 @@ body::-webkit-scrollbar {
     font-weight: 700;
     color: #ffffff;
 }
+
+/* ============================================
+   MONTHLY BREAKDOWN STYLES
+   ============================================ */
+
+.monthly-breakdown-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.monthly-breakdown-item {
+    background: var(--wallet-bg-secondary);
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid var(--wallet-bg-tertiary);
+}
+
+.monthly-breakdown-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--wallet-bg-tertiary);
+}
+
+.monthly-breakdown-month {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--wallet-text-primary);
+}
+
+.monthly-breakdown-count {
+    font-size: 12px;
+    color: var(--wallet-text-secondary);
+    background: var(--wallet-bg-tertiary);
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+
+.monthly-breakdown-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.monthly-breakdown-stat {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.monthly-breakdown-stat .stat-label {
+    font-size: 13px;
+    color: var(--wallet-text-secondary);
+}
+
+.monthly-breakdown-stat .stat-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--wallet-text-primary);
+}
+
+.monthly-breakdown-stat .stat-value.income {
+    color: var(--wallet-accent-green);
+}
+
+.monthly-breakdown-stat .stat-value.expense {
+    color: var(--wallet-accent-red);
+}
+
+.monthly-breakdown-stat .stat-value.positive {
+    color: var(--wallet-accent-green);
+}
+
+.monthly-breakdown-stat .stat-value.negative {
+    color: var(--wallet-accent-red);
+}

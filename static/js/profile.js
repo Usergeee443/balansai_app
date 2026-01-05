@@ -216,6 +216,9 @@ async function loadUserData() {
         document.getElementById('totalIncome').textContent = formatCurrency(user.total_income || 0);
         document.getElementById('totalExpense').textContent = formatCurrency(user.total_expense || 0);
 
+        // Load tariff features
+        loadTariffFeatures(tariff);
+
         return user;
     } catch (error) {
         console.error('User yuklanmadi:', error);
@@ -228,9 +231,63 @@ function getTariffName(tariff) {
         'NONE': 'Tarif yo\'q',
         'FREE': 'Bepul',
         'PRO': 'Pro',
+        'PLUS': 'Plus',
         'BUSINESS': 'Biznes'
     };
     return names[tariff] || tariff;
+}
+
+function loadTariffFeatures(currentTariff) {
+    const container = document.getElementById('tariffFeaturesList');
+    if (!container) return;
+
+    // Define all features with their required plan
+    const allFeatures = [
+        { name: 'Asosiy tranzaksiyalar', desc: 'Kirim va chiqimlarni boshqarish', icon: '💳', requiredPlan: 'NONE' },
+        { name: 'Kategoriyalar', desc: 'Xarajatlarni kategoriyalash', icon: '📊', requiredPlan: 'NONE' },
+        { name: 'Asosiy statistika', desc: 'Umumiy hisobotlar va grafiklar', icon: '📈', requiredPlan: 'NONE' },
+        { name: 'Eslatmalar', desc: "To'lovlar haqida eslatmalar", icon: '⏰', requiredPlan: 'FREE' },
+        { name: 'Qarzlar', desc: 'Qarzlarni kuzatish', icon: '💰', requiredPlan: 'FREE' },
+        { name: 'Oylik limit', desc: 'Xarajatlar uchun limit belgilash', icon: '🎯', requiredPlan: 'FREE' },
+        { name: 'Kengaytirilgan statistika', desc: "Ko'proq tahlil va hisobotlar", icon: '📊', requiredPlan: 'PLUS' },
+        { name: 'Kategoriya bo\'yicha trend', desc: 'Har bir kategoriya uchun trend tahlili', icon: '📉', requiredPlan: 'PLUS' },
+        { name: 'Oylik taqsimot', desc: 'Oylar bo\'yicha batafsil taqsimot', icon: '📅', requiredPlan: 'PLUS' },
+        { name: 'Eksport funksiyasi', desc: 'Hisobotlarni yuklash', icon: '📥', requiredPlan: 'PLUS' },
+        { name: 'AI maslahatchi', desc: 'Sun\'iy intellekt orqali maslahat', icon: '🤖', requiredPlan: 'PRO' },
+        { name: 'Prioritet qo\'llab-quvvatlash', desc: 'Tez yordam va qo\'llab-quvvatlash', icon: '🎯', requiredPlan: 'PRO' }
+    ];
+
+    // Plan hierarchy
+    const planHierarchy = {
+        'NONE': 0,
+        'FREE': 1,
+        'PLUS': 2,
+        'PRO': 3,
+        'BUSINESS': 4
+    };
+
+    const currentLevel = planHierarchy[currentTariff] || 0;
+
+    // Render features
+    container.innerHTML = allFeatures.map(feature => {
+        const requiredLevel = planHierarchy[feature.requiredPlan] || 0;
+        const isAvailable = currentLevel >= requiredLevel;
+
+        return `
+            <div class="tariff-feature-item">
+                <div class="tariff-feature-icon ${isAvailable ? 'available' : 'locked'}">
+                    ${isAvailable ? feature.icon : '🔒'}
+                </div>
+                <div class="tariff-feature-content">
+                    <div class="tariff-feature-name">${feature.name}</div>
+                    <div class="tariff-feature-desc">${feature.desc}</div>
+                </div>
+                <div class="tariff-feature-badge ${isAvailable ? 'available' : 'locked'}">
+                    ${isAvailable ? 'Faol' : feature.requiredPlan}
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 // Upgrade tariff

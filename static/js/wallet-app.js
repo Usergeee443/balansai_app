@@ -1147,14 +1147,13 @@ function renderTopCategoriesList(categories) {
 // ============================================
 
 async function loadRemindersPage() {
+    const skeleton = document.getElementById('remindersSkeleton');
     const container = document.getElementById('remindersList');
     if (!container) return;
 
-    container.innerHTML = `
-        <div style="padding: 40px 20px; text-align: center;">
-            <div class="wallet-spinner"></div>
-        </div>
-    `;
+    // Show skeleton, hide content
+    if (skeleton) skeleton.style.display = 'block';
+    container.style.display = 'none';
 
     try {
         const reminders = await apiRequest('/api/reminders');
@@ -1173,10 +1172,13 @@ async function loadRemindersPage() {
                     <div class="wallet-empty-text">To'lovlarni eslab qolish uchun eslatma qo'shing</div>
                 </div>
             `;
-            return;
+        } else {
+            container.innerHTML = remindersList.map(r => renderReminderItem(r)).join('');
         }
 
-        container.innerHTML = remindersList.map(r => renderReminderItem(r)).join('');
+        // Hide skeleton, show content
+        if (skeleton) skeleton.style.display = 'none';
+        container.style.display = 'block';
 
     } catch (error) {
         console.error('Reminders error:', error);
@@ -1185,6 +1187,9 @@ async function loadRemindersPage() {
                 Yuklanmadi
             </div>
         `;
+        // Hide skeleton, show content even on error
+        if (skeleton) skeleton.style.display = 'none';
+        container.style.display = 'block';
     }
 }
 
@@ -1255,20 +1260,23 @@ async function toggleReminder(id, completed) {
 // ============================================
 
 async function loadDebtsPage() {
+    const skeleton = document.getElementById('debtsSkeleton');
     const container = document.getElementById('debtsList');
     if (!container) return;
 
-    container.innerHTML = `
-        <div style="padding: 40px 20px; text-align: center;">
-            <div class="wallet-spinner"></div>
-        </div>
-    `;
+    // Show skeleton, hide content
+    if (skeleton) skeleton.style.display = 'block';
+    container.style.display = 'none';
 
     try {
         const debts = await apiRequest('/api/debts');
         const debtsList = debts.debts || debts || [];
 
         renderDebtsList(debtsList);
+
+        // Hide skeleton, show content
+        if (skeleton) skeleton.style.display = 'none';
+        container.style.display = 'block';
 
     } catch (error) {
         console.error('Debts error:', error);
@@ -1277,6 +1285,9 @@ async function loadDebtsPage() {
                 Yuklanmadi
             </div>
         `;
+        // Hide skeleton, show content even on error
+        if (skeleton) skeleton.style.display = 'none';
+        container.style.display = 'block';
     }
 }
 
@@ -2097,9 +2108,222 @@ async function loadAdvancedAnalytics() {
         // Calculate financial health
         calculateFinancialHealth(transactions);
 
+        // Load premium analytics if user has Plus or higher plan
+        await loadPremiumAnalytics(transactions);
+
     } catch (error) {
         console.error('Advanced analytics error:', error);
     }
+}
+
+async function loadPremiumAnalytics(transactions) {
+    try {
+        // Get user to check plan
+        const user = currentUser || await apiRequest('/api/user');
+        if (!user) return;
+
+        const userPlan = user.tariff || 'NONE';
+
+        // Plan hierarchy
+        const planLevels = {
+            'NONE': 0,
+            'FREE': 1,
+            'PLUS': 2,
+            'PRO': 3,
+            'BUSINESS': 4
+        };
+
+        const userLevel = planLevels[userPlan] || 0;
+        const requiredLevel = planLevels['PLUS'] || 2;
+
+        // Handle Category Trend Analytics
+        const categoryTrendCard = document.getElementById('categoryTrendAnalytics');
+        if (categoryTrendCard) {
+            const locked = categoryTrendCard.querySelector('.analytics-locked');
+            const content = categoryTrendCard.querySelector('.analytics-content');
+
+            if (userLevel >= requiredLevel) {
+                // User has access - show content, hide lock
+                if (locked) locked.style.display = 'none';
+                if (content) content.style.display = 'block';
+                // Load category trend chart
+                loadCategoryTrendChart(transactions);
+            } else {
+                // User doesn't have access - show lock, hide content
+                if (locked) locked.style.display = 'block';
+                if (content) content.style.display = 'none';
+            }
+        }
+
+        // Handle Monthly Breakdown Analytics
+        const monthlyBreakdownCard = document.getElementById('monthlyBreakdownAnalytics');
+        if (monthlyBreakdownCard) {
+            const locked = monthlyBreakdownCard.querySelector('.analytics-locked');
+            const content = monthlyBreakdownCard.querySelector('.analytics-content');
+
+            if (userLevel >= requiredLevel) {
+                // User has access - show content, hide lock
+                if (locked) locked.style.display = 'none';
+                if (content) content.style.display = 'block';
+                // Load monthly breakdown
+                loadMonthlyBreakdown(transactions);
+            } else {
+                // User doesn't have access - show lock, hide content
+                if (locked) locked.style.display = 'block';
+                if (content) content.style.display = 'none';
+            }
+        }
+
+    } catch (error) {
+        console.error('Premium analytics error:', error);
+    }
+}
+
+function loadCategoryTrendChart(transactions) {
+    const canvas = document.getElementById('categoryTrendChart');
+    if (!canvas) return;
+
+    // Destroy existing chart if any
+    if (charts.categoryTrend) {
+        charts.categoryTrend.destroy();
+    }
+
+    // Group transactions by category and month
+    const categoryData = {};
+    const months = new Set();
+
+    transactions.forEach(t => {
+        if (t.transaction_type !== 'expense') return;
+        const date = new Date(t.created_at);
+        const month = date.toLocaleDateString('uz-UZ', { month: 'short', year: 'numeric' });
+        const category = t.category || 'Boshqa';
+        const amount = parseFloat(t.amount) || 0;
+
+        months.add(month);
+
+        if (!categoryData[category]) {
+            categoryData[category] = {};
+        }
+        categoryData[category][month] = (categoryData[category][month] || 0) + amount;
+    });
+
+    const monthsArray = Array.from(months).sort();
+    const categories = Object.keys(categoryData).slice(0, 5); // Top 5 categories
+
+    const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
+
+    const datasets = categories.map((category, index) => ({
+        label: category,
+        data: monthsArray.map(month => categoryData[category][month] || 0),
+        borderColor: colors[index],
+        backgroundColor: colors[index] + '33',
+        fill: false,
+        tension: 0.4
+    }));
+
+    charts.categoryTrend = new Chart(canvas, {
+        type: 'line',
+        data: {
+            labels: monthsArray,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: true,
+            aspectRatio: 2,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        boxWidth: 12,
+                        padding: 10,
+                        font: { size: 11 }
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.dataset.label + ': ' + formatCurrency(context.parsed.y);
+                        }
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return formatCurrencyShort(value);
+                        }
+                    }
+                }
+            }
+        }
+    });
+}
+
+function loadMonthlyBreakdown(transactions) {
+    const container = document.getElementById('monthlyBreakdownContent');
+    if (!container) return;
+
+    // Group transactions by month
+    const monthlyData = {};
+
+    transactions.forEach(t => {
+        const date = new Date(t.created_at);
+        const month = date.toLocaleDateString('uz-UZ', { month: 'long', year: 'numeric' });
+        const amount = parseFloat(t.amount) || 0;
+
+        if (!monthlyData[month]) {
+            monthlyData[month] = { income: 0, expense: 0, count: 0 };
+        }
+
+        if (t.transaction_type === 'income') {
+            monthlyData[month].income += amount;
+        } else {
+            monthlyData[month].expense += amount;
+        }
+        monthlyData[month].count += 1;
+    });
+
+    // Convert to array and sort by date
+    const monthlyArray = Object.entries(monthlyData)
+        .map(([month, data]) => ({ month, ...data }))
+        .reverse()
+        .slice(0, 6); // Last 6 months
+
+    if (monthlyArray.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: var(--wallet-text-secondary); padding: 20px;">Ma\'lumot yo\'q</p>';
+        return;
+    }
+
+    container.innerHTML = monthlyArray.map(item => {
+        const net = item.income - item.expense;
+        const netClass = net >= 0 ? 'positive' : 'negative';
+
+        return `
+            <div class="monthly-breakdown-item">
+                <div class="monthly-breakdown-header">
+                    <div class="monthly-breakdown-month">${item.month}</div>
+                    <div class="monthly-breakdown-count">${item.count} ta</div>
+                </div>
+                <div class="monthly-breakdown-stats">
+                    <div class="monthly-breakdown-stat">
+                        <span class="stat-label">Kirim:</span>
+                        <span class="stat-value income">${formatCurrency(item.income)}</span>
+                    </div>
+                    <div class="monthly-breakdown-stat">
+                        <span class="stat-label">Chiqim:</span>
+                        <span class="stat-value expense">${formatCurrency(item.expense)}</span>
+                    </div>
+                    <div class="monthly-breakdown-stat">
+                        <span class="stat-label">Sof:</span>
+                        <span class="stat-value ${netClass}">${formatCurrency(net)}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
 }
 
 function calculateWeeklyComparison(transactions) {
@@ -2399,16 +2623,4 @@ function showRemindersSkeleton() {
     `).join('');
 }
 
-// Override loadDebtsPage to show skeleton first
-const originalLoadDebtsPage = loadDebtsPage;
-loadDebtsPage = async function() {
-    showDebtsSkeleton();
-    await originalLoadDebtsPage.call(this);
-};
-
-// Override loadRemindersPage to show skeleton first
-const originalLoadRemindersPage = loadRemindersPage;
-loadRemindersPage = async function() {
-    showRemindersSkeleton();
-    await originalLoadRemindersPage.call(this);
-};
+// Skeleton loading is now integrated directly into loadDebtsPage and loadRemindersPage functions
