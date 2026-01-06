@@ -153,6 +153,17 @@ def validate_telegram_webapp(init_data):
 @app.route('/')
 def index():
     """Asosiy sahifa (SPA)"""
+    # Foydalanuvchining tarifini tekshirish
+    try:
+        user_id = get_user_id_from_request()
+        if user_id:
+            user = database.get_user(user_id)
+            if user and user.get('tariff') in ['BUSINESS', 'BIZNES']:
+                # Biznes foydalanuvchini biznes ilovasiga yo'naltirish
+                return redirect('/business')
+    except Exception as e:
+        print(f"[DEBUG] Tarif tekshirishda xato: {e}")
+
     return render_template('index.html')
 
 @app.route('/register')
@@ -1335,6 +1346,377 @@ def api_export_to_telegram():
         import traceback
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
+
+
+# ==================== BIZNES TARIFI API ENDPOINTLARI ====================
+
+# OMBOR (WAREHOUSE) ENDPOINTLARI
+
+@app.route('/api/business/warehouse', methods=['GET'])
+def api_get_warehouse():
+    """Barcha ombor mahsulotlarini olish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    limit = request.args.get('limit', 100, type=int)
+    offset = request.args.get('offset', 0, type=int)
+
+    items = database.get_warehouse_items(user_id, limit, offset)
+    return jsonify(items)
+
+
+@app.route('/api/business/warehouse/<int:item_id>', methods=['GET'])
+def api_get_warehouse_item(item_id):
+    """Bitta mahsulotni olish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    item = database.get_warehouse_item(item_id)
+    if item and item['user_id'] == user_id:
+        return jsonify(item)
+    return jsonify({'error': 'Mahsulot topilmadi'}), 404
+
+
+@app.route('/api/business/warehouse', methods=['POST'])
+def api_add_warehouse():
+    """Yangi mahsulot qo'shish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    data = request.get_json()
+    item_id = database.add_warehouse_item(
+        user_id=user_id,
+        product_name=data.get('product_name'),
+        product_code=data.get('product_code'),
+        category=data.get('category'),
+        quantity=data.get('quantity', 0),
+        unit=data.get('unit', 'dona'),
+        buy_price=data.get('buy_price'),
+        sell_price=data.get('sell_price'),
+        currency=data.get('currency', 'UZS'),
+        min_stock=data.get('min_stock', 0),
+        description=data.get('description')
+    )
+
+    return jsonify({'success': True, 'id': item_id}), 201
+
+
+@app.route('/api/business/warehouse/<int:item_id>', methods=['PUT'])
+def api_update_warehouse(item_id):
+    """Mahsulotni yangilash"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    # Mahsulot foydalanuvchiga tegishli ekanligini tekshirish
+    item = database.get_warehouse_item(item_id)
+    if not item or item['user_id'] != user_id:
+        return jsonify({'error': 'Ruxsat yo\'q'}), 403
+
+    data = request.get_json()
+    success = database.update_warehouse_item(item_id, **data)
+
+    if success:
+        return jsonify({'success': True})
+    return jsonify({'error': 'Yangilashda xatolik'}), 500
+
+
+@app.route('/api/business/warehouse/<int:item_id>', methods=['DELETE'])
+def api_delete_warehouse(item_id):
+    """Mahsulotni o'chirish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    # Mahsulot foydalanuvchiga tegishli ekanligini tekshirish
+    item = database.get_warehouse_item(item_id)
+    if not item or item['user_id'] != user_id:
+        return jsonify({'error': 'Ruxsat yo\'q'}), 403
+
+    success = database.delete_warehouse_item(item_id)
+    if success:
+        return jsonify({'success': True})
+    return jsonify({'error': 'O\'chirishda xatolik'}), 500
+
+
+@app.route('/api/business/warehouse/movements', methods=['POST'])
+def api_add_warehouse_movement():
+    """Ombor harakatini qo'shish (kirim/chiqim)"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    data = request.get_json()
+    movement_id = database.add_warehouse_movement(
+        user_id=user_id,
+        warehouse_id=data.get('warehouse_id'),
+        movement_type=data.get('movement_type'),
+        quantity=data.get('quantity'),
+        price=data.get('price'),
+        currency=data.get('currency', 'UZS'),
+        notes=data.get('notes')
+    )
+
+    return jsonify({'success': True, 'id': movement_id}), 201
+
+
+@app.route('/api/business/warehouse/movements', methods=['GET'])
+def api_get_warehouse_movements():
+    """Ombor harakatlarini olish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    warehouse_id = request.args.get('warehouse_id', type=int)
+    limit = request.args.get('limit', 100, type=int)
+    offset = request.args.get('offset', 0, type=int)
+
+    movements = database.get_warehouse_movements(user_id, warehouse_id, limit, offset)
+    return jsonify(movements)
+
+
+@app.route('/api/business/warehouse/low-stock', methods=['GET'])
+def api_get_low_stock():
+    """Qoldig'i kam mahsulotlar"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    items = database.get_low_stock_items(user_id)
+    return jsonify(items)
+
+
+# XODIMLAR (EMPLOYEES) ENDPOINTLARI
+
+@app.route('/api/business/employees', methods=['GET'])
+def api_get_employees():
+    """Barcha xodimlarni olish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    status = request.args.get('status')
+    limit = request.args.get('limit', 100, type=int)
+    offset = request.args.get('offset', 0, type=int)
+
+    employees = database.get_employees(user_id, status, limit, offset)
+    return jsonify(employees)
+
+
+@app.route('/api/business/employees/<int:employee_id>', methods=['GET'])
+def api_get_employee(employee_id):
+    """Bitta xodimni olish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    employee = database.get_employee(employee_id)
+    if employee and employee['user_id'] == user_id:
+        return jsonify(employee)
+    return jsonify({'error': 'Xodim topilmadi'}), 404
+
+
+@app.route('/api/business/employees', methods=['POST'])
+def api_add_employee():
+    """Yangi xodim qo'shish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    data = request.get_json()
+    employee_id = database.add_employee(
+        user_id=user_id,
+        full_name=data.get('full_name'),
+        position=data.get('position'),
+        phone=data.get('phone'),
+        salary=data.get('salary'),
+        currency=data.get('currency', 'UZS'),
+        hire_date=data.get('hire_date'),
+        photo_url=data.get('photo_url'),
+        address=data.get('address'),
+        notes=data.get('notes')
+    )
+
+    return jsonify({'success': True, 'id': employee_id}), 201
+
+
+@app.route('/api/business/employees/<int:employee_id>', methods=['PUT'])
+def api_update_employee(employee_id):
+    """Xodimni yangilash"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    employee = database.get_employee(employee_id)
+    if not employee or employee['user_id'] != user_id:
+        return jsonify({'error': 'Ruxsat yo\'q'}), 403
+
+    data = request.get_json()
+    success = database.update_employee(employee_id, **data)
+
+    if success:
+        return jsonify({'success': True})
+    return jsonify({'error': 'Yangilashda xatolik'}), 500
+
+
+@app.route('/api/business/employees/<int:employee_id>', methods=['DELETE'])
+def api_delete_employee(employee_id):
+    """Xodimni o'chirish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    employee = database.get_employee(employee_id)
+    if not employee or employee['user_id'] != user_id:
+        return jsonify({'error': 'Ruxsat yo\'q'}), 403
+
+    success = database.delete_employee(employee_id)
+    if success:
+        return jsonify({'success': True})
+    return jsonify({'error': 'O\'chirishda xatolik'}), 500
+
+
+# VAZIFALAR (TASKS) ENDPOINTLARI
+
+@app.route('/api/business/tasks', methods=['GET'])
+def api_get_tasks():
+    """Barcha vazifalarni olish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    status = request.args.get('status')
+    assigned_to = request.args.get('assigned_to', type=int)
+    limit = request.args.get('limit', 100, type=int)
+    offset = request.args.get('offset', 0, type=int)
+
+    tasks = database.get_tasks(user_id, status, assigned_to, limit, offset)
+    return jsonify(tasks)
+
+
+@app.route('/api/business/tasks/<int:task_id>', methods=['GET'])
+def api_get_task(task_id):
+    """Bitta vazifani olish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    task = database.get_task(task_id)
+    if task and task['user_id'] == user_id:
+        return jsonify(task)
+    return jsonify({'error': 'Vazifa topilmadi'}), 404
+
+
+@app.route('/api/business/tasks', methods=['POST'])
+def api_add_task():
+    """Yangi vazifa qo'shish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    data = request.get_json()
+    task_id = database.add_task(
+        user_id=user_id,
+        title=data.get('title'),
+        description=data.get('description'),
+        assigned_to=data.get('assigned_to'),
+        priority=data.get('priority', 'medium'),
+        status=data.get('status', 'pending'),
+        due_date=data.get('due_date')
+    )
+
+    return jsonify({'success': True, 'id': task_id}), 201
+
+
+@app.route('/api/business/tasks/<int:task_id>', methods=['PUT'])
+def api_update_task(task_id):
+    """Vazifani yangilash"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    task = database.get_task(task_id)
+    if not task or task['user_id'] != user_id:
+        return jsonify({'error': 'Ruxsat yo\'q'}), 403
+
+    data = request.get_json()
+    success = database.update_task(task_id, **data)
+
+    if success:
+        return jsonify({'success': True})
+    return jsonify({'error': 'Yangilashda xatolik'}), 500
+
+
+@app.route('/api/business/tasks/<int:task_id>', methods=['DELETE'])
+def api_delete_task(task_id):
+    """Vazifani o'chirish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    task = database.get_task(task_id)
+    if not task or task['user_id'] != user_id:
+        return jsonify({'error': 'Ruxsat yo\'q'}), 403
+
+    success = database.delete_task(task_id)
+    if success:
+        return jsonify({'success': True})
+    return jsonify({'error': 'O\'chirishda xatolik'}), 500
+
+
+# BIZNES STATISTIKALARI
+
+@app.route('/api/business/statistics/warehouse', methods=['GET'])
+def api_warehouse_statistics():
+    """Ombor statistikasi"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    stats = database.get_warehouse_statistics(user_id)
+    return jsonify(stats)
+
+
+@app.route('/api/business/statistics/employees', methods=['GET'])
+def api_employee_statistics():
+    """Xodimlar statistikasi"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    stats = database.get_employee_statistics(user_id)
+    return jsonify(stats)
+
+
+@app.route('/api/business/statistics/tasks', methods=['GET'])
+def api_task_statistics():
+    """Vazifalar statistikasi"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    stats = database.get_task_statistics(user_id)
+    return jsonify(stats)
+
+
+# BIZNES ILOVASI SAHIFASI
+
+@app.route('/business')
+def business_app():
+    """Biznes tarifi uchun asosiy ilova"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return redirect('/')
+
+    # Foydalanuvchining tarifini tekshirish
+    user = database.get_user(user_id)
+    if not user or user.get('tariff') not in ['BUSINESS', 'BIZNES']:
+        return redirect('/')  # Oddiy ilovaga yo'naltirish
+
+    return render_template('business.html')
 
 
 if __name__ == '__main__':

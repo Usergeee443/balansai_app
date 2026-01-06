@@ -38,6 +38,117 @@ def run_migrations():
             except Exception as e:
                 print(f"⚠️ Migration xatosi (monthly_limit): {e}")
 
+            # BIZNES TARIFI UCHUN JADVALLAR
+
+            # Ombor (warehouse) jadvali
+            try:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS warehouse (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id BIGINT NOT NULL,
+                        product_name VARCHAR(255) NOT NULL,
+                        product_code VARCHAR(100),
+                        category VARCHAR(100),
+                        quantity DECIMAL(15, 2) NOT NULL DEFAULT 0,
+                        unit VARCHAR(50) DEFAULT 'dona',
+                        buy_price DECIMAL(15, 2),
+                        sell_price DECIMAL(15, 2),
+                        currency VARCHAR(3) DEFAULT 'UZS',
+                        min_stock DECIMAL(15, 2) DEFAULT 0,
+                        description TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                        INDEX idx_user_id (user_id),
+                        INDEX idx_product_code (product_code)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """)
+                connection.commit()
+                print("✅ Migration: warehouse jadvali yaratildi")
+            except Exception as e:
+                print(f"⚠️ Migration xatosi (warehouse): {e}")
+
+            # Xodimlar (employees) jadvali
+            try:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS employees (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id BIGINT NOT NULL,
+                        full_name VARCHAR(255) NOT NULL,
+                        position VARCHAR(100),
+                        phone VARCHAR(20),
+                        salary DECIMAL(15, 2),
+                        currency VARCHAR(3) DEFAULT 'UZS',
+                        hire_date DATE,
+                        status VARCHAR(50) DEFAULT 'active',
+                        photo_url VARCHAR(500),
+                        address TEXT,
+                        notes TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                        INDEX idx_user_id (user_id),
+                        INDEX idx_status (status)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """)
+                connection.commit()
+                print("✅ Migration: employees jadvali yaratildi")
+            except Exception as e:
+                print(f"⚠️ Migration xatosi (employees): {e}")
+
+            # Vazifalar (tasks) jadvali
+            try:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS tasks (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id BIGINT NOT NULL,
+                        title VARCHAR(255) NOT NULL,
+                        description TEXT,
+                        assigned_to INT,
+                        priority VARCHAR(50) DEFAULT 'medium',
+                        status VARCHAR(50) DEFAULT 'pending',
+                        due_date DATETIME,
+                        completed_at DATETIME,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                        FOREIGN KEY (assigned_to) REFERENCES employees(id) ON DELETE SET NULL,
+                        INDEX idx_user_id (user_id),
+                        INDEX idx_status (status),
+                        INDEX idx_assigned_to (assigned_to)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """)
+                connection.commit()
+                print("✅ Migration: tasks jadvali yaratildi")
+            except Exception as e:
+                print(f"⚠️ Migration xatosi (tasks): {e}")
+
+            # Ombor harakatlari (warehouse_movements) jadvali
+            try:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS warehouse_movements (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        user_id BIGINT NOT NULL,
+                        warehouse_id INT NOT NULL,
+                        movement_type VARCHAR(50) NOT NULL,
+                        quantity DECIMAL(15, 2) NOT NULL,
+                        price DECIMAL(15, 2),
+                        currency VARCHAR(3) DEFAULT 'UZS',
+                        notes TEXT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                        FOREIGN KEY (warehouse_id) REFERENCES warehouse(id) ON DELETE CASCADE,
+                        INDEX idx_user_id (user_id),
+                        INDEX idx_warehouse_id (warehouse_id),
+                        INDEX idx_movement_type (movement_type),
+                        INDEX idx_created_at (created_at)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """)
+                connection.commit()
+                print("✅ Migration: warehouse_movements jadvali yaratildi")
+            except Exception as e:
+                print(f"⚠️ Migration xatosi (warehouse_movements): {e}")
+
         _migrations_done = True
         print("✅ Barcha migrationlar bajarildi")
     except Exception as e:
@@ -1713,3 +1824,499 @@ def get_limit_status(user_id):
         'warning': percent >= 80,
         'exceeded': spent > limit
     }
+
+
+# ==================== BIZNES TARIFI FUNKSIYALARI ====================
+
+# OMBOR (WAREHOUSE) FUNKSIYALARI
+
+def get_warehouse_items(user_id, limit=100, offset=0):
+    """Foydalanuvchining barcha ombor mahsulotlarini olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT * FROM warehouse
+                WHERE user_id = %s
+                ORDER BY created_at DESC
+                LIMIT %s OFFSET %s
+            """, (user_id, limit, offset))
+            items = cursor.fetchall()
+
+            # Decimal qiymatlarni float ga aylantirish
+            for item in items:
+                if 'quantity' in item and item['quantity']:
+                    item['quantity'] = float(item['quantity'])
+                if 'buy_price' in item and item['buy_price']:
+                    item['buy_price'] = float(item['buy_price'])
+                if 'sell_price' in item and item['sell_price']:
+                    item['sell_price'] = float(item['sell_price'])
+                if 'min_stock' in item and item['min_stock']:
+                    item['min_stock'] = float(item['min_stock'])
+
+            return items
+    finally:
+        connection.close()
+
+
+def get_warehouse_item(item_id):
+    """Bitta ombor mahsulotini olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM warehouse WHERE id = %s", (item_id,))
+            item = cursor.fetchone()
+
+            if item:
+                if 'quantity' in item and item['quantity']:
+                    item['quantity'] = float(item['quantity'])
+                if 'buy_price' in item and item['buy_price']:
+                    item['buy_price'] = float(item['buy_price'])
+                if 'sell_price' in item and item['sell_price']:
+                    item['sell_price'] = float(item['sell_price'])
+                if 'min_stock' in item and item['min_stock']:
+                    item['min_stock'] = float(item['min_stock'])
+
+            return item
+    finally:
+        connection.close()
+
+
+def add_warehouse_item(user_id, product_name, product_code=None, category=None,
+                       quantity=0, unit='dona', buy_price=None, sell_price=None,
+                       currency='UZS', min_stock=0, description=None):
+    """Yangi mahsulot qo'shish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO warehouse
+                (user_id, product_name, product_code, category, quantity, unit,
+                 buy_price, sell_price, currency, min_stock, description)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """, (user_id, product_name, product_code, category, quantity, unit,
+                  buy_price, sell_price, currency, min_stock, description))
+            connection.commit()
+            return cursor.lastrowid
+    finally:
+        connection.close()
+
+
+def update_warehouse_item(item_id, **kwargs):
+    """Mahsulot ma'lumotlarini yangilash"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            allowed_fields = ['product_name', 'product_code', 'category', 'quantity',
+                            'unit', 'buy_price', 'sell_price', 'currency', 'min_stock', 'description']
+
+            updates = []
+            values = []
+            for key, value in kwargs.items():
+                if key in allowed_fields:
+                    updates.append(f"{key} = %s")
+                    values.append(value)
+
+            if updates:
+                values.append(item_id)
+                query = f"UPDATE warehouse SET {', '.join(updates)} WHERE id = %s"
+                cursor.execute(query, values)
+                connection.commit()
+                return cursor.rowcount > 0
+            return False
+    finally:
+        connection.close()
+
+
+def delete_warehouse_item(item_id):
+    """Mahsulotni o'chirish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM warehouse WHERE id = %s", (item_id,))
+            connection.commit()
+            return cursor.rowcount > 0
+    finally:
+        connection.close()
+
+
+def add_warehouse_movement(user_id, warehouse_id, movement_type, quantity,
+                          price=None, currency='UZS', notes=None):
+    """Ombor harakatini qo'shish (kirim/chiqim)"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Harakatni qo'shish
+            cursor.execute("""
+                INSERT INTO warehouse_movements
+                (user_id, warehouse_id, movement_type, quantity, price, currency, notes)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (user_id, warehouse_id, movement_type, quantity, price, currency, notes))
+
+            # Ombor miqdorini yangilash
+            if movement_type == 'income':
+                cursor.execute("""
+                    UPDATE warehouse SET quantity = quantity + %s WHERE id = %s
+                """, (quantity, warehouse_id))
+            elif movement_type == 'outcome':
+                cursor.execute("""
+                    UPDATE warehouse SET quantity = quantity - %s WHERE id = %s
+                """, (quantity, warehouse_id))
+
+            connection.commit()
+            return cursor.lastrowid
+    finally:
+        connection.close()
+
+
+def get_warehouse_movements(user_id, warehouse_id=None, limit=100, offset=0):
+    """Ombor harakatlarini olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            if warehouse_id:
+                cursor.execute("""
+                    SELECT wm.*, w.product_name
+                    FROM warehouse_movements wm
+                    JOIN warehouse w ON wm.warehouse_id = w.id
+                    WHERE wm.user_id = %s AND wm.warehouse_id = %s
+                    ORDER BY wm.created_at DESC
+                    LIMIT %s OFFSET %s
+                """, (user_id, warehouse_id, limit, offset))
+            else:
+                cursor.execute("""
+                    SELECT wm.*, w.product_name
+                    FROM warehouse_movements wm
+                    JOIN warehouse w ON wm.warehouse_id = w.id
+                    WHERE wm.user_id = %s
+                    ORDER BY wm.created_at DESC
+                    LIMIT %s OFFSET %s
+                """, (user_id, limit, offset))
+
+            movements = cursor.fetchall()
+
+            for movement in movements:
+                if 'quantity' in movement and movement['quantity']:
+                    movement['quantity'] = float(movement['quantity'])
+                if 'price' in movement and movement['price']:
+                    movement['price'] = float(movement['price'])
+
+            return movements
+    finally:
+        connection.close()
+
+
+def get_low_stock_items(user_id):
+    """Qoldig'i kam bo'lgan mahsulotlarni olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT * FROM warehouse
+                WHERE user_id = %s AND quantity <= min_stock AND min_stock > 0
+                ORDER BY quantity ASC
+            """, (user_id,))
+            items = cursor.fetchall()
+
+            for item in items:
+                if 'quantity' in item and item['quantity']:
+                    item['quantity'] = float(item['quantity'])
+                if 'min_stock' in item and item['min_stock']:
+                    item['min_stock'] = float(item['min_stock'])
+
+            return items
+    finally:
+        connection.close()
+
+
+# XODIMLAR (EMPLOYEES) FUNKSIYALARI
+
+def get_employees(user_id, status=None, limit=100, offset=0):
+    """Barcha xodimlarni olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            if status:
+                cursor.execute("""
+                    SELECT * FROM employees
+                    WHERE user_id = %s AND status = %s
+                    ORDER BY created_at DESC
+                    LIMIT %s OFFSET %s
+                """, (user_id, status, limit, offset))
+            else:
+                cursor.execute("""
+                    SELECT * FROM employees
+                    WHERE user_id = %s
+                    ORDER BY created_at DESC
+                    LIMIT %s OFFSET %s
+                """, (user_id, limit, offset))
+
+            employees = cursor.fetchall()
+
+            for emp in employees:
+                if 'salary' in emp and emp['salary']:
+                    emp['salary'] = float(emp['salary'])
+
+            return employees
+    finally:
+        connection.close()
+
+
+def get_employee(employee_id):
+    """Bitta xodimni olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT * FROM employees WHERE id = %s", (employee_id,))
+            emp = cursor.fetchone()
+
+            if emp and 'salary' in emp and emp['salary']:
+                emp['salary'] = float(emp['salary'])
+
+            return emp
+    finally:
+        connection.close()
+
+
+def add_employee(user_id, full_name, position=None, phone=None, salary=None,
+                currency='UZS', hire_date=None, photo_url=None, address=None, notes=None):
+    """Yangi xodim qo'shish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO employees
+                (user_id, full_name, position, phone, salary, currency, hire_date,
+                 photo_url, address, notes, status)
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active')
+            """, (user_id, full_name, position, phone, salary, currency, hire_date,
+                  photo_url, address, notes))
+            connection.commit()
+            return cursor.lastrowid
+    finally:
+        connection.close()
+
+
+def update_employee(employee_id, **kwargs):
+    """Xodim ma'lumotlarini yangilash"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            allowed_fields = ['full_name', 'position', 'phone', 'salary', 'currency',
+                            'hire_date', 'status', 'photo_url', 'address', 'notes']
+
+            updates = []
+            values = []
+            for key, value in kwargs.items():
+                if key in allowed_fields:
+                    updates.append(f"{key} = %s")
+                    values.append(value)
+
+            if updates:
+                values.append(employee_id)
+                query = f"UPDATE employees SET {', '.join(updates)} WHERE id = %s"
+                cursor.execute(query, values)
+                connection.commit()
+                return cursor.rowcount > 0
+            return False
+    finally:
+        connection.close()
+
+
+def delete_employee(employee_id):
+    """Xodimni o'chirish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM employees WHERE id = %s", (employee_id,))
+            connection.commit()
+            return cursor.rowcount > 0
+    finally:
+        connection.close()
+
+
+# VAZIFALAR (TASKS) FUNKSIYALARI
+
+def get_tasks(user_id, status=None, assigned_to=None, limit=100, offset=0):
+    """Barcha vazifalarni olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            query = """
+                SELECT t.*, e.full_name as employee_name
+                FROM tasks t
+                LEFT JOIN employees e ON t.assigned_to = e.id
+                WHERE t.user_id = %s
+            """
+            params = [user_id]
+
+            if status:
+                query += " AND t.status = %s"
+                params.append(status)
+
+            if assigned_to:
+                query += " AND t.assigned_to = %s"
+                params.append(assigned_to)
+
+            query += " ORDER BY t.created_at DESC LIMIT %s OFFSET %s"
+            params.extend([limit, offset])
+
+            cursor.execute(query, params)
+            return cursor.fetchall()
+    finally:
+        connection.close()
+
+
+def get_task(task_id):
+    """Bitta vazifani olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT t.*, e.full_name as employee_name
+                FROM tasks t
+                LEFT JOIN employees e ON t.assigned_to = e.id
+                WHERE t.id = %s
+            """, (task_id,))
+            return cursor.fetchone()
+    finally:
+        connection.close()
+
+
+def add_task(user_id, title, description=None, assigned_to=None,
+            priority='medium', status='pending', due_date=None):
+    """Yangi vazifa qo'shish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO tasks
+                (user_id, title, description, assigned_to, priority, status, due_date)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (user_id, title, description, assigned_to, priority, status, due_date))
+            connection.commit()
+            return cursor.lastrowid
+    finally:
+        connection.close()
+
+
+def update_task(task_id, **kwargs):
+    """Vazifa ma'lumotlarini yangilash"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            allowed_fields = ['title', 'description', 'assigned_to', 'priority',
+                            'status', 'due_date', 'completed_at']
+
+            updates = []
+            values = []
+            for key, value in kwargs.items():
+                if key in allowed_fields:
+                    updates.append(f"{key} = %s")
+                    values.append(value)
+
+            # Agar status 'completed' bo'lsa, completed_at ni yangilash
+            if 'status' in kwargs and kwargs['status'] == 'completed':
+                if 'completed_at' not in kwargs:
+                    updates.append("completed_at = NOW()")
+
+            if updates:
+                values.append(task_id)
+                query = f"UPDATE tasks SET {', '.join(updates)} WHERE id = %s"
+                cursor.execute(query, values)
+                connection.commit()
+                return cursor.rowcount > 0
+            return False
+    finally:
+        connection.close()
+
+
+def delete_task(task_id):
+    """Vazifani o'chirish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("DELETE FROM tasks WHERE id = %s", (task_id,))
+            connection.commit()
+            return cursor.rowcount > 0
+    finally:
+        connection.close()
+
+
+def get_warehouse_statistics(user_id):
+    """Ombor statistikasi"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Umumiy mahsulotlar soni
+            cursor.execute("""
+                SELECT COUNT(*) as total_products,
+                       SUM(quantity * buy_price) as total_value,
+                       COUNT(CASE WHEN quantity <= min_stock AND min_stock > 0 THEN 1 END) as low_stock_count
+                FROM warehouse
+                WHERE user_id = %s
+            """, (user_id,))
+            stats = cursor.fetchone()
+
+            # Kategoriyalar bo'yicha
+            cursor.execute("""
+                SELECT category, COUNT(*) as count, SUM(quantity * sell_price) as value
+                FROM warehouse
+                WHERE user_id = %s
+                GROUP BY category
+                ORDER BY value DESC
+            """, (user_id,))
+            categories = cursor.fetchall()
+
+            return {
+                'total_products': stats['total_products'] or 0,
+                'total_value': float(stats['total_value']) if stats['total_value'] else 0,
+                'low_stock_count': stats['low_stock_count'] or 0,
+                'categories': categories
+            }
+    finally:
+        connection.close()
+
+
+def get_employee_statistics(user_id):
+    """Xodimlar statistikasi"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    COUNT(*) as total_employees,
+                    COUNT(CASE WHEN status = 'active' THEN 1 END) as active_employees,
+                    SUM(CASE WHEN status = 'active' THEN salary ELSE 0 END) as total_salary
+                FROM employees
+                WHERE user_id = %s
+            """, (user_id,))
+            stats = cursor.fetchone()
+
+            return {
+                'total_employees': stats['total_employees'] or 0,
+                'active_employees': stats['active_employees'] or 0,
+                'total_salary': float(stats['total_salary']) if stats['total_salary'] else 0
+            }
+    finally:
+        connection.close()
+
+
+def get_task_statistics(user_id):
+    """Vazifalar statistikasi"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT
+                    COUNT(*) as total_tasks,
+                    COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_tasks,
+                    COUNT(CASE WHEN status = 'in_progress' THEN 1 END) as in_progress_tasks,
+                    COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_tasks,
+                    COUNT(CASE WHEN due_date < NOW() AND status != 'completed' THEN 1 END) as overdue_tasks
+                FROM tasks
+                WHERE user_id = %s
+            """, (user_id,))
+            return cursor.fetchone()
+    finally:
+        connection.close()
