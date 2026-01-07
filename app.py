@@ -1,6 +1,7 @@
 # Flask backend server
 from flask import Flask, render_template, request, jsonify, session, redirect
 from config import Config
+import database
 from database import (
     get_user, get_transactions, add_transaction, get_balance,
     get_statistics, get_debts, add_debt, get_reminders,
@@ -1795,6 +1796,7 @@ def set_theme():
     if theme_mode not in ['light', 'dark']:
         return jsonify({'error': 'Noto\'g\'ri theme_mode qiymati'}), 400
 
+    connection = None
     try:
         connection = database.get_db_connection()
         with connection.cursor() as cursor:
@@ -1828,6 +1830,7 @@ def change_tariff():
     if tariff not in ['FREE', 'PLUS', 'BIZNES', 'BUSINESS']:
         return jsonify({'error': 'Noto\'g\'ri tariff qiymati'}), 400
 
+    connection = None
     try:
         connection = database.get_db_connection()
         with connection.cursor() as cursor:
