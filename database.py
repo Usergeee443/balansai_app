@@ -38,6 +38,68 @@ def run_migrations():
             except Exception as e:
                 print(f"⚠️ Migration xatosi (monthly_limit): {e}")
 
+            # Migration: theme_mode ustuni qo'shish
+            try:
+                cursor.execute("""
+                    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'theme_mode'
+                """)
+                if not cursor.fetchone():
+                    cursor.execute("""
+                        ALTER TABLE users ADD COLUMN theme_mode VARCHAR(10) DEFAULT 'dark'
+                    """)
+                    connection.commit()
+                    print("✅ Migration: theme_mode ustuni qo'shildi")
+            except Exception as e:
+                print(f"⚠️ Migration xatosi (theme_mode): {e}")
+
+            # Migration: tariff ustuni qo'shish
+            try:
+                cursor.execute("""
+                    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'tariff'
+                """)
+                if not cursor.fetchone():
+                    cursor.execute("""
+                        ALTER TABLE users ADD COLUMN tariff VARCHAR(50) DEFAULT 'FREE'
+                    """)
+                    connection.commit()
+                    print("✅ Migration: tariff ustuni qo'shildi")
+                else:
+                    # Ustun turini to'g'rilash (VARCHAR(50) ga)
+                    try:
+                        cursor.execute("""
+                            ALTER TABLE users MODIFY COLUMN tariff VARCHAR(50) DEFAULT 'FREE'
+                        """)
+                        connection.commit()
+                        print("✅ Migration: tariff ustuni VARCHAR(50) ga o'zgartirildi")
+                    except:
+                        pass
+
+                    # Mavjud NULL qiymatlarni FREE ga o'zgartirish
+                    cursor.execute("""
+                        UPDATE users SET tariff = 'FREE' WHERE tariff IS NULL OR tariff = ''
+                    """)
+                    connection.commit()
+                    print("✅ Migration: NULL tariff qiymatlari FREE ga o'zgartirildi")
+            except Exception as e:
+                print(f"⚠️ Migration xatosi (tariff): {e}")
+
+            # Migration: tariff_expires_at ustuni qo'shish
+            try:
+                cursor.execute("""
+                    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'tariff_expires_at'
+                """)
+                if not cursor.fetchone():
+                    cursor.execute("""
+                        ALTER TABLE users ADD COLUMN tariff_expires_at DATETIME DEFAULT NULL
+                    """)
+                    connection.commit()
+                    print("✅ Migration: tariff_expires_at ustuni qo'shildi")
+            except Exception as e:
+                print(f"⚠️ Migration xatosi (tariff_expires_at): {e}")
+
             # BIZNES TARIFI UCHUN JADVALLAR
 
             # Ombor (warehouse) jadvali
@@ -216,7 +278,12 @@ def get_user(user_id):
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
-            return cursor.fetchone()
+            user = cursor.fetchone()
+            if user:
+                print(f"[DEBUG] User {user_id} tariff: {user.get('tariff', 'KEY YOQ')}")
+            else:
+                print(f"[DEBUG] User {user_id} topilmadi")
+            return user
     except Exception as e:
         print(f"❌ Foydalanuvchini olishda xatolik: {e}")
         return None
