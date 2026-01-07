@@ -38,6 +38,21 @@ def run_migrations():
             except Exception as e:
                 print(f"⚠️ Migration xatosi (monthly_limit): {e}")
 
+            # Migration: theme_mode ustuni qo'shish
+            try:
+                cursor.execute("""
+                    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'theme_mode'
+                """)
+                if not cursor.fetchone():
+                    cursor.execute("""
+                        ALTER TABLE users ADD COLUMN theme_mode VARCHAR(10) DEFAULT 'dark'
+                    """)
+                    connection.commit()
+                    print("✅ Migration: theme_mode ustuni qo'shildi")
+            except Exception as e:
+                print(f"⚠️ Migration xatosi (theme_mode): {e}")
+
             # BIZNES TARIFI UCHUN JADVALLAR
 
             # Ombor (warehouse) jadvali
