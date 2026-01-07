@@ -2624,3 +2624,57 @@ function showRemindersSkeleton() {
 }
 
 // Skeleton loading is now integrated directly into loadDebtsPage and loadRemindersPage functions
+
+// ==================== THEME MODE (LIGHT/DARK) ====================
+
+async function loadTheme() {
+    try {
+        const response = await fetch('/api/user/theme');
+        const data = await response.json();
+        applyTheme(data.theme_mode || 'dark');
+    } catch (error) {
+        console.error('Theme yuklashda xato:', error);
+        applyTheme('dark'); // Default
+    }
+}
+
+function applyTheme(theme) {
+    const moonIcon = document.getElementById('moonIcon');
+    const sunIcon = document.getElementById('sunIcon');
+    
+    if (!moonIcon || !sunIcon) return;
+    
+    if (theme === 'light') {
+        document.body.classList.add('light-mode');
+        moonIcon.style.display = 'none';
+        sunIcon.style.display = 'block';
+    } else {
+        document.body.classList.remove('light-mode');
+        moonIcon.style.display = 'block';
+        sunIcon.style.display = 'none';
+    }
+}
+
+async function toggleTheme() {
+    const isLightMode = document.body.classList.contains('light-mode');
+    const newTheme = isLightMode ? 'dark' : 'light';
+
+    // Apply theme immediately for better UX
+    applyTheme(newTheme);
+
+    // Save to backend
+    try {
+        await fetch('/api/user/theme', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ theme_mode: newTheme })
+        });
+    } catch (error) {
+        console.error('Theme saqlashda xato:', error);
+    }
+}
+
+// Load theme on page load
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => loadTheme(), 100);
+});

@@ -367,3 +367,59 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Hide skeleton after loading
     hideSkeleton();
 });
+
+// ==================== THEME MODE (LIGHT/DARK) ====================
+
+async function loadTheme() {
+    try {
+        const response = await apiRequest('/api/user/theme');
+        const data = await response.json();
+        applyTheme(data.theme_mode || 'dark');
+    } catch (error) {
+        console.error('Theme yuklashda xato:', error);
+        applyTheme('dark');
+    }
+}
+
+function applyTheme(theme) {
+    const profileMoonIcon = document.getElementById('profileMoonIcon');
+    const profileSunIcon = document.getElementById('profileSunIcon');
+    const themeDesc = document.getElementById('themeDesc');
+    
+    if (theme === 'light') {
+        document.body.classList.add('light-mode');
+        if (profileMoonIcon) profileMoonIcon.style.display = 'none';
+        if (profileSunIcon) profileSunIcon.style.display = 'block';
+        if (themeDesc) themeDesc.textContent = 'Yorug\' rejim';
+    } else {
+        document.body.classList.remove('light-mode');
+        if (profileMoonIcon) profileMoonIcon.style.display = 'block';
+        if (profileSunIcon) profileSunIcon.style.display = 'none';
+        if (themeDesc) themeDesc.textContent = 'Qorong\'u rejim';
+    }
+}
+
+async function toggleThemeFromProfile() {
+    const isLightMode = document.body.classList.contains('light-mode');
+    const newTheme = isLightMode ? 'dark' : 'light';
+
+    applyTheme(newTheme);
+
+    try {
+        await apiRequest('/api/user/theme', {
+            method: 'POST',
+            body: JSON.stringify({ theme_mode: newTheme })
+        });
+        
+        if (tg) {
+            tg.HapticFeedback?.impactOccurred('light');
+        }
+    } catch (error) {
+        console.error('Theme saqlashda xato:', error);
+    }
+}
+
+// Load theme on page load
+window.addEventListener('load', () => {
+    setTimeout(() => loadTheme(), 100);
+});
