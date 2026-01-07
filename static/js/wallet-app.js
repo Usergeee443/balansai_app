@@ -240,7 +240,8 @@ function navigateTo(pageName) {
 async function loadPageData(pageName) {
     try {
         // Agar sahifa allaqachon yuklangan bo'lsa, qayta yuklamaslik
-        if (dataCache.isPageLoaded(pageName) && pageName !== 'home') {
+        // home va settings har doim yangilanadi
+        if (dataCache.isPageLoaded(pageName) && pageName !== 'home' && pageName !== 'settings') {
             console.log(`[Cache] ${pageName} sahifasi cache'dan`);
             return;
         }
@@ -268,6 +269,11 @@ async function loadPageData(pageName) {
                 break;
             case 'profile':
                 await loadProfilePage();
+                dataCache.setPageLoaded(pageName);
+                break;
+            case 'settings':
+                // Load tariff info when settings page opens
+                await loadTariffInfo();
                 dataCache.setPageLoaded(pageName);
                 break;
             case 'topExpenses':
