@@ -2699,9 +2699,15 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadTariffInfo() {
     try {
-        const response = await fetch('/api/user');
+        const response = await fetch('/api/user', {
+            headers: {
+                'X-Telegram-Init-Data': getInitData()
+            }
+        });
         const user = await response.json();
-        
+
+        console.log('[DEBUG] loadTariffInfo - User:', user.user_id, 'Tariff:', user.tariff);
+
         const tariff = user.tariff || 'FREE';
         const tariffNames = {
             'FREE': 'Bepul tarif',
@@ -2739,6 +2745,18 @@ async function loadTariffInfo() {
         if (tariffInfoBadge) {
             tariffInfoBadge.textContent = tariff;
             tariffInfoBadge.className = `tariff-info-badge ${tariff}`;
+        }
+
+        // Show/hide business services section based on tariff
+        const businessSection = document.getElementById('businessServicesSection');
+        if (businessSection) {
+            if (tariff === 'BIZNES' || tariff === 'BUSINESS') {
+                businessSection.style.display = 'block';
+                console.log('[DEBUG] Biznes bo\'limi ko\'rsatildi');
+            } else {
+                businessSection.style.display = 'none';
+                console.log('[DEBUG] Biznes bo\'limi yashirildi');
+            }
         }
     } catch (error) {
         console.error('Tarif ma\'lumotlarini yuklashda xato:', error);

@@ -24,7 +24,7 @@
         <div class="wallet-header">
             <div class="wallet-header-left">
                 <div class="wallet-avatar" id="userAvatar">B</div>
-                <span class="wallet-title">Balans AI <span style="font-size: 12px; opacity: 0.7;">v1.0.3</span></span>
+                <span class="wallet-title">Balans AI <span style="font-size: 12px; opacity: 0.7;">v1.0.4</span></span>
             </div>
             <div class="wallet-header-right">
                 <div class="wallet-header-icon" id="themeToggleBtn" onclick="toggleTheme()" title="Rejimni o'zgartirish">
@@ -763,6 +763,61 @@
                         <span class="service-card-desc">Tez kunda</span>
                     </div>
                     <span class="service-badge-soon">Soon</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Business Section (Hidden by default, shown only for BUSINESS tariff) -->
+        <div class="services-section" id="businessServicesSection" style="display: none;">
+            <div class="services-section-title">Biznes boshqaruvi 💼</div>
+            <div class="services-grid">
+                <div class="service-card" onclick="window.location.href='/business'">
+                    <div class="service-card-icon purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Ombor</span>
+                        <span class="service-card-desc">Mahsulotlar boshqaruvi</span>
+                    </div>
+                </div>
+                <div class="service-card" onclick="window.location.href='/business'">
+                    <div class="service-card-icon green">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Xodimlar</span>
+                        <span class="service-card-desc">Xodimlar boshqaruvi</span>
+                    </div>
+                </div>
+                <div class="service-card" onclick="window.location.href='/business'">
+                    <div class="service-card-icon blue">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 11l3 3L22 4"/>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Vazifalar</span>
+                        <span class="service-card-desc">Vazifalar boshqaruvi</span>
+                    </div>
+                </div>
+                <div class="service-card" onclick="window.location.href='/business'">
+                    <div class="service-card-icon orange">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 20V10M12 20V4M6 20v-6"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Biznes statistika</span>
+                        <span class="service-card-desc">To'liq tahlil</span>
+                    </div>
                 </div>
             </div>
         </div>
