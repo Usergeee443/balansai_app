@@ -278,7 +278,12 @@ def get_user(user_id):
     try:
         with connection.cursor() as cursor:
             cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
-            return cursor.fetchone()
+            user = cursor.fetchone()
+            if user:
+                print(f"[DEBUG] User {user_id} tariff: {user.get('tariff', 'KEY YO\'Q')}")
+            else:
+                print(f"[DEBUG] User {user_id} topilmadi")
+            return user
     except Exception as e:
         print(f"❌ Foydalanuvchini olishda xatolik: {e}")
         return None
