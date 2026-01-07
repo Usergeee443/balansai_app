@@ -27,6 +27,24 @@
                 <span class="wallet-title">Balans AI</span>
             </div>
             <div class="wallet-header-right">
+                <div class="wallet-header-icon" id="themeToggleBtn" onclick="toggleTheme()" title="Rejimni o'zgartirish">
+                    <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <!-- Moon icon (dark mode) -->
+                        <path id="moonIcon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        <!-- Sun icon (light mode) - hidden by default -->
+                        <g id="sunIcon" style="display: none;">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3"/>
+                            <line x1="12" y1="21" x2="12" y2="23"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                            <line x1="1" y1="12" x2="3" y2="12"/>
+                            <line x1="21" y1="12" x2="23" y2="12"/>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                        </g>
+                    </svg>
+                </div>
                 <div class="wallet-header-icon" onclick="showNotifications()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -101,17 +119,16 @@
                 </div>
                 <span class="wallet-action-label">Chiqim</span>
             </div>
-            <div class="wallet-action-item" onclick="navigateTo('debts')">
-                <div class="wallet-action-icon orange">
+            <div class="wallet-action-item" onclick="showAddWarehouseModal()">
+                <div class="wallet-action-icon purple">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M17 11h4a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h4"/>
-                        <rect x="8" y="5" width="8" height="12" rx="1"/>
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
                     </svg>
                 </div>
-                <span class="wallet-action-label">Qarzlar</span>
+                <span class="wallet-action-label">Ombor</span>
             </div>
             <div class="wallet-action-item" onclick="navigateTo('statistics')">
-                <div class="wallet-action-icon purple">
+                <div class="wallet-action-icon blue">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M18 20V10M12 20V4M6 20v-6"/>
                     </svg>
@@ -275,6 +292,46 @@
             <div class="wallet-stat-card">
                 <div class="wallet-stat-value" id="statAvgTransaction">0</div>
                 <div class="wallet-stat-label">O'rtacha</div>
+            </div>
+        </div>
+
+        <!-- Business Statistics Section -->
+        <div class="wallet-section" style="margin-top: 16px;">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">Biznes statistikasi</h2>
+            </div>
+        </div>
+
+        <!-- Business Stats Grid -->
+        <div class="wallet-stats-overview">
+            <div class="wallet-stat-card" onclick="navigateTo('warehouse')" style="cursor: pointer;">
+                <div class="wallet-stat-icon" style="background: rgba(191, 90, 242, 0.15); margin-bottom: 8px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#BF5AF2" stroke-width="2" width="20" height="20">
+                        <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                    </svg>
+                </div>
+                <div class="wallet-stat-value" id="statsWarehouseProducts">0</div>
+                <div class="wallet-stat-label">Ombor mahsulotlari</div>
+            </div>
+            <div class="wallet-stat-card" onclick="navigateTo('employees')" style="cursor: pointer;">
+                <div class="wallet-stat-icon" style="background: rgba(52, 199, 89, 0.15); margin-bottom: 8px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#34C759" stroke-width="2" width="20" height="20">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                    </svg>
+                </div>
+                <div class="wallet-stat-value" id="statsEmployees">0</div>
+                <div class="wallet-stat-label">Xodimlar</div>
+            </div>
+            <div class="wallet-stat-card" onclick="navigateTo('tasks')" style="cursor: pointer;">
+                <div class="wallet-stat-icon" style="background: rgba(10, 132, 255, 0.15); margin-bottom: 8px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#0A84FF" stroke-width="2" width="20" height="20">
+                        <path d="M9 11l3 3L22 4"/>
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                    </svg>
+                </div>
+                <div class="wallet-stat-value" id="statsPendingTasks">0</div>
+                <div class="wallet-stat-label">Kutilayotgan vazifalar</div>
             </div>
         </div>
 
@@ -537,6 +594,51 @@
                     <div class="service-card-content">
                         <span class="service-card-title">Maqsadlar</span>
                         <span class="service-card-desc">Moliyaviy maqsadlar</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="services-section">
+            <div class="services-section-title">Biznes boshqaruvi</div>
+            <div class="services-grid">
+                <div class="service-card" onclick="navigateTo('warehouse')">
+                    <div class="service-card-icon purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                            <line x1="12" y1="22.08" x2="12" y2="12"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Ombor</span>
+                        <span class="service-card-desc">Mahsulotlar boshqaruvi</span>
+                    </div>
+                </div>
+                <div class="service-card" onclick="navigateTo('employees')">
+                    <div class="service-card-icon green">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Xodimlar</span>
+                        <span class="service-card-desc">Xodimlarni boshqarish</span>
+                    </div>
+                </div>
+                <div class="service-card" onclick="navigateTo('tasks')">
+                    <div class="service-card-icon blue">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 11l3 3L22 4"/>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Vazifalar</span>
+                        <span class="service-card-desc">Vazifalar boshqaruvi</span>
                     </div>
                 </div>
             </div>

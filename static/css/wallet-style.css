@@ -2684,3 +2684,423 @@ body::-webkit-scrollbar {
 .monthly-breakdown-stat .stat-value.negative {
     color: var(--wallet-accent-red);
 }
+
+/* ==================== MODAL STYLES ==================== */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(10px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    padding: 16px;
+    animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.modal-content {
+    background: var(--wallet-bg-secondary, #2C2C2E);
+    border-radius: 16px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(50px);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--wallet-text-primary, #FFFFFF);
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: var(--wallet-text-secondary, #8E8E93);
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.modal-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--wallet-text-primary, #FFFFFF);
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.modal-footer {
+    display: flex;
+    gap: 12px;
+    padding: 20px;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-footer button {
+    flex: 1;
+}
+
+/* ==================== FORM STYLES ==================== */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--wallet-text-secondary, #8E8E93);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.wallet-input {
+    width: 100%;
+    padding: 12px 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    color: var(--wallet-text-primary, #FFFFFF);
+    font-size: 16px;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.wallet-input:focus {
+    outline: none;
+    border-color: var(--wallet-accent-blue, #0A84FF);
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.wallet-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.wallet-input option {
+    background: #2C2C2E;
+    color: #FFFFFF;
+}
+
+textarea.wallet-input {
+    resize: vertical;
+    min-height: 80px;
+}
+
+.wallet-btn-primary {
+    background: var(--wallet-accent-blue, #0A84FF);
+    color: white;
+    border: none;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.wallet-btn-primary:hover {
+    background: #0077ED;
+    transform: translateY(-1px);
+}
+
+.wallet-btn-primary:active {
+    transform: translateY(0);
+}
+
+.wallet-btn-secondary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--wallet-text-primary, #FFFFFF);
+    border: none;
+    padding: 14px 24px;
+    border-radius: 12px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.wallet-btn-secondary:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+/* ==================== DETAIL ITEM STYLES ==================== */
+.detail-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.detail-item:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-size: 14px;
+    color: var(--wallet-text-secondary, #8E8E93);
+}
+
+.detail-value {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--wallet-text-primary, #FFFFFF);
+    text-align: right;
+    max-width: 60%;
+    word-wrap: break-word;
+}
+
+/* ==================== SERVICES GRID STYLES ==================== */
+.services-section {
+    margin: 24px 16px;
+}
+
+.services-section-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--wallet-text-secondary, #8E8E93);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+}
+
+.service-card {
+    background: var(--wallet-bg-secondary, #2C2C2E);
+    border-radius: 16px;
+    padding: 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.service-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+}
+
+.service-card:active {
+    transform: translateY(0);
+}
+
+.service-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.service-card-icon.blue {
+    background: rgba(10, 132, 255, 0.15);
+}
+
+.service-card-icon.purple {
+    background: rgba(191, 90, 242, 0.15);
+}
+
+.service-card-icon.green {
+    background: rgba(52, 199, 89, 0.15);
+}
+
+.service-card-icon.orange {
+    background: rgba(255, 149, 0, 0.15);
+}
+
+.service-card-icon.red {
+    background: rgba(255, 69, 58, 0.15);
+}
+
+.service-card-icon.cyan {
+    background: rgba(90, 200, 250, 0.15);
+}
+
+.service-card-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.service-card-icon.blue svg {
+    stroke: #0A84FF;
+}
+
+.service-card-icon.purple svg {
+    stroke: #BF5AF2;
+}
+
+.service-card-icon.green svg {
+    stroke: #34C759;
+}
+
+.service-card-icon.orange svg {
+    stroke: #FF9500;
+}
+
+.service-card-icon.red svg {
+    stroke: #FF453A;
+}
+
+.service-card-icon.cyan svg {
+    stroke: #5AC8FA;
+}
+
+.service-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.service-card-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--wallet-text-primary, #FFFFFF);
+}
+
+.service-card-desc {
+    font-size: 13px;
+    color: var(--wallet-text-secondary, #8E8E93);
+}
+
+/* ==================== LIGHT MODE THEME ==================== */
+body.light-mode {
+    --wallet-bg-primary: #F2F2F7;
+    --wallet-bg-secondary: #FFFFFF;
+    --wallet-text-primary: #000000;
+    --wallet-text-secondary: #3C3C43;
+    --wallet-text-tertiary: #48484A;
+    
+    /* Light mode adjustments */
+    background: #F2F2F7;
+    color: #000000;
+}
+
+body.light-mode .wallet-card,
+body.light-mode .modal-content,
+body.light-mode .service-card,
+body.light-mode .wallet-chart-card,
+body.light-mode .wallet-stat-card,
+body.light-mode .wallet-info-card {
+    background: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+body.light-mode .wallet-input {
+    background: #F2F2F7;
+    border-color: rgba(0, 0, 0, 0.1);
+    color: #000000;
+}
+
+body.light-mode .wallet-input::placeholder {
+    color: rgba(0, 0, 0, 0.3);
+}
+
+body.light-mode .wallet-btn-secondary {
+    background: #F2F2F7;
+    color: #000000;
+}
+
+body.light-mode .wallet-transaction-subtitle,
+body.light-mode .detail-label,
+body.light-mode .service-card-desc {
+    color: #3C3C43;
+}
+
+body.light-mode .modal-header,
+body.light-mode .modal-footer,
+body.light-mode .detail-item {
+    border-color: rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .tg-gauge-bg {
+    stroke: rgba(0, 0, 0, 0.06);
+}
+
+body.light-mode .wallet-action-icon {
+    opacity: 1;
+}
+
+/* Theme toggle button */
+.theme-toggle-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    border-radius: 20px;
+    padding: 8px 16px;
+    color: var(--wallet-text-primary);
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.theme-toggle-btn:hover {
+    background: rgba(255, 255, 255, 0.15);
+}
+
+.theme-toggle-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+body.light-mode .theme-toggle-btn {
+    background: #F2F2F7;
+}
+
+body.light-mode .theme-toggle-btn:hover {
+    background: #E5E5EA;
+}
