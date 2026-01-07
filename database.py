@@ -280,7 +280,7 @@ def get_user(user_id):
             cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
             user = cursor.fetchone()
             if user:
-                print(f"[DEBUG] User {user_id} tariff: {user.get('tariff', 'KEY YO\'Q')}")
+                print(f"[DEBUG] User {user_id} tariff: {user.get('tariff', 'KEY YOQ')}")
             else:
                 print(f"[DEBUG] User {user_id} topilmadi")
             return user
