@@ -1702,6 +1702,149 @@ def api_task_statistics():
     return jsonify(stats)
 
 
+# TELEGRAM BOT ESLATMALARI
+
+@app.route('/api/business/send-task-notification', methods=['POST'])
+def send_task_notification():
+    """Xodimga Telegram orqali vazifa eslatmasini yuborish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    data = request.get_json()
+    employee_id = data.get('employee_id')
+    task_title = data.get('task_title')
+
+    if not employee_id or not task_title:
+        return jsonify({'error': 'Employee ID va task title kerak'}), 400
+
+    try:
+        # Xodim ma'lumotlarini olish
+        employee = database.get_employee(employee_id)
+        if not employee:
+            return jsonify({'error': 'Xodim topilmadi'}), 404
+
+        # Xodimning telefon raqamini Telegram user_id sifatida ishlatish
+        # ESLATMA: Bu oddiy implementatsiya. To'liq ishlashi uchun xodimning
+        # Telegram user ID sini olish va saqlash kerak
+
+        # Telegram bot orqali xabar yuborish
+        import requests
+        bot_token = config.TELEGRAM_BOT_TOKEN
+
+        # Foydalanuvchining o'ziga xabar yuborish (demo)
+        # To'liq versiyada xodimning telegram_user_id ishlatiladi
+        message = f"""
+🔔 Yangi vazifa berildi!
+
+📋 Vazifa: {task_title}
+👤 Xodim: {employee['full_name']}
+📍 Lavozim: {employee['position']}
+
+Vazifani bajarish uchun botga kiring:
+@{config.TELEGRAM_BOT_USERNAME}
+        """
+
+        # Demo: Biznes egasiga xabar yuborish
+        telegram_api_url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        response = requests.post(telegram_api_url, json={
+            'chat_id': user_id,  # Biznes egasiga yuboriladi
+            'text': message,
+            'parse_mode': 'HTML'
+        })
+
+        if response.status_code == 200:
+            return jsonify({'success': True, 'message': 'Eslatma yuborildi'})
+        else:
+            return jsonify({'success': False, 'message': 'Telegram xatosi'}), 500
+
+    except Exception as e:
+        print(f"Telegram eslatma yuborishda xato: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# THEME MODE API
+
+@app.route('/api/user/theme', methods=['GET'])
+def get_theme():
+    """Foydalanuvchining theme preference sini olish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'theme_mode': 'dark'})  # Default
+
+    try:
+        user = database.get_user(user_id)
+        theme_mode = user.get('theme_mode', 'dark') if user else 'dark'
+        return jsonify({'theme_mode': theme_mode})
+    except Exception as e:
+        print(f"Theme olishda xato: {e}")
+        return jsonify({'theme_mode': 'dark'})
+
+
+@app.route('/api/user/theme', methods=['POST'])
+def set_theme():
+    """Foydalanuvchining theme preference sini saqlash"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    data = request.get_json()
+    theme_mode = data.get('theme_mode', 'dark')
+
+    # Faqat 'light' yoki 'dark' qabul qilish
+    if theme_mode not in ['light', 'dark']:
+        return jsonify({'error': 'Noto\'g\'ri theme_mode qiymati'}), 400
+
+    try:
+        connection = database.get_db_connection()
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                UPDATE users SET theme_mode = %s WHERE telegram_user_id = %s
+            """, (theme_mode, user_id))
+            connection.commit()
+
+        return jsonify({'success': True, 'theme_mode': theme_mode})
+    except Exception as e:
+        print(f"Theme saqlashda xato: {e}")
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if connection:
+            connection.close()
+
+
+# TARIFF CHANGE API
+
+@app.route('/api/user/tariff', methods=['POST'])
+def change_tariff():
+    """Foydalanuvchining tarifini o'zgartirish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    data = request.get_json()
+    tariff = data.get('tariff', 'FREE')
+
+    # Faqat ma'lum tariflarni qabul qilish
+    if tariff not in ['FREE', 'PLUS', 'BIZNES', 'BUSINESS']:
+        return jsonify({'error': 'Noto\'g\'ri tariff qiymati'}), 400
+
+    try:
+        connection = database.get_db_connection()
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                UPDATE users SET tariff = %s WHERE telegram_user_id = %s
+            """, (tariff, user_id))
+            connection.commit()
+
+        return jsonify({'success': True, 'tariff': tariff})
+    except Exception as e:
+        print(f"Tarifni o'zgartirishda xato: {e}")
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if connection:
+            connection.close()
+
+
 # BIZNES ILOVASI SAHIFASI
 
 @app.route('/business')
