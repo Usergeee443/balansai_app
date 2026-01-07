@@ -53,6 +53,36 @@ def run_migrations():
             except Exception as e:
                 print(f"⚠️ Migration xatosi (theme_mode): {e}")
 
+            # Migration: tariff ustuni qo'shish
+            try:
+                cursor.execute("""
+                    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'tariff'
+                """)
+                if not cursor.fetchone():
+                    cursor.execute("""
+                        ALTER TABLE users ADD COLUMN tariff VARCHAR(20) DEFAULT 'FREE'
+                    """)
+                    connection.commit()
+                    print("✅ Migration: tariff ustuni qo'shildi")
+            except Exception as e:
+                print(f"⚠️ Migration xatosi (tariff): {e}")
+
+            # Migration: tariff_expires_at ustuni qo'shish
+            try:
+                cursor.execute("""
+                    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'tariff_expires_at'
+                """)
+                if not cursor.fetchone():
+                    cursor.execute("""
+                        ALTER TABLE users ADD COLUMN tariff_expires_at DATETIME DEFAULT NULL
+                    """)
+                    connection.commit()
+                    print("✅ Migration: tariff_expires_at ustuni qo'shildi")
+            except Exception as e:
+                print(f"⚠️ Migration xatosi (tariff_expires_at): {e}")
+
             # BIZNES TARIFI UCHUN JADVALLAR
 
             # Ombor (warehouse) jadvali

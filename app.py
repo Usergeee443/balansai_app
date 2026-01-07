@@ -1799,7 +1799,7 @@ def set_theme():
         connection = database.get_db_connection()
         with connection.cursor() as cursor:
             cursor.execute("""
-                UPDATE users SET theme_mode = %s WHERE telegram_user_id = %s
+                UPDATE users SET theme_mode = %s WHERE user_id = %s
             """, (theme_mode, user_id))
             connection.commit()
 
@@ -1832,7 +1832,7 @@ def change_tariff():
         connection = database.get_db_connection()
         with connection.cursor() as cursor:
             cursor.execute("""
-                UPDATE users SET tariff = %s WHERE telegram_user_id = %s
+                UPDATE users SET tariff = %s WHERE user_id = %s
             """, (tariff, user_id))
             connection.commit()
 
