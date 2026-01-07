@@ -61,11 +61,21 @@ def run_migrations():
                 """)
                 if not cursor.fetchone():
                     cursor.execute("""
-                        ALTER TABLE users ADD COLUMN tariff VARCHAR(20) DEFAULT 'FREE'
+                        ALTER TABLE users ADD COLUMN tariff VARCHAR(50) DEFAULT 'FREE'
                     """)
                     connection.commit()
                     print("✅ Migration: tariff ustuni qo'shildi")
                 else:
+                    # Ustun turini to'g'rilash (VARCHAR(50) ga)
+                    try:
+                        cursor.execute("""
+                            ALTER TABLE users MODIFY COLUMN tariff VARCHAR(50) DEFAULT 'FREE'
+                        """)
+                        connection.commit()
+                        print("✅ Migration: tariff ustuni VARCHAR(50) ga o'zgartirildi")
+                    except:
+                        pass
+
                     # Mavjud NULL qiymatlarni FREE ga o'zgartirish
                     cursor.execute("""
                         UPDATE users SET tariff = 'FREE' WHERE tariff IS NULL OR tariff = ''
