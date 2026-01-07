@@ -65,6 +65,13 @@ def run_migrations():
                     """)
                     connection.commit()
                     print("✅ Migration: tariff ustuni qo'shildi")
+                else:
+                    # Mavjud NULL qiymatlarni FREE ga o'zgartirish
+                    cursor.execute("""
+                        UPDATE users SET tariff = 'FREE' WHERE tariff IS NULL OR tariff = ''
+                    """)
+                    connection.commit()
+                    print("✅ Migration: NULL tariff qiymatlari FREE ga o'zgartirildi")
             except Exception as e:
                 print(f"⚠️ Migration xatosi (tariff): {e}")
 
