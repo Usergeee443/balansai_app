@@ -1812,6 +1812,39 @@ def set_theme():
             connection.close()
 
 
+# TARIFF CHANGE API
+
+@app.route('/api/user/tariff', methods=['POST'])
+def change_tariff():
+    """Foydalanuvchining tarifini o'zgartirish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    data = request.get_json()
+    tariff = data.get('tariff', 'FREE')
+
+    # Faqat ma'lum tariflarni qabul qilish
+    if tariff not in ['FREE', 'PLUS', 'BIZNES', 'BUSINESS']:
+        return jsonify({'error': 'Noto\'g\'ri tariff qiymati'}), 400
+
+    try:
+        connection = database.get_db_connection()
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                UPDATE users SET tariff = %s WHERE telegram_user_id = %s
+            """, (tariff, user_id))
+            connection.commit()
+
+        return jsonify({'success': True, 'tariff': tariff})
+    except Exception as e:
+        print(f"Tarifni o'zgartirishda xato: {e}")
+        return jsonify({'error': str(e)}), 500
+    finally:
+        if connection:
+            connection.close()
+
+
 # BIZNES ILOVASI SAHIFASI
 
 @app.route('/business')

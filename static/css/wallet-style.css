@@ -3104,3 +3104,93 @@ body.light-mode .theme-toggle-btn {
 body.light-mode .theme-toggle-btn:hover {
     background: #E5E5EA;
 }
+
+/* ==================== TARIFF INFO CARD (INDEX) ==================== */
+.tariff-info-card {
+    background: var(--wallet-bg-secondary, #2C2C2E);
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.tariff-info-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.tariff-info-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    background: rgba(255, 159, 10, 0.15);
+}
+
+.tariff-info-content {
+    flex: 1;
+}
+
+.tariff-info-name {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--wallet-text-primary, #FFFFFF);
+    margin-bottom: 4px;
+}
+
+.tariff-info-desc {
+    font-size: 13px;
+    color: var(--wallet-text-secondary, #8E8E93);
+}
+
+.tariff-info-badge {
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    background: rgba(255, 159, 10, 0.15);
+    color: #FF9F0A;
+}
+
+.tariff-info-badge.FREE {
+    background: rgba(142, 142, 147, 0.15);
+    color: #8E8E93;
+}
+
+.tariff-info-badge.PLUS {
+    background: rgba(10, 132, 255, 0.15);
+    color: #0A84FF;
+}
+
+.tariff-info-badge.BIZNES,
+.tariff-info-badge.BUSINESS {
+    background: rgba(191, 90, 242, 0.15);
+    color: #BF5AF2;
+}
+
+.tariff-upgrade-btn-small {
+    width: 100%;
+    padding: 12px;
+    background: var(--wallet-accent-blue, #0A84FF);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.tariff-upgrade-btn-small:hover {
+    background: #0077ED;
+    transform: translateY(-1px);
+}
+
+body.light-mode .tariff-info-card {
+    background: #FFFFFF;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}

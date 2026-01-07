@@ -2639,19 +2639,29 @@ async function loadTheme() {
 }
 
 function applyTheme(theme) {
+    // Header icons
     const moonIcon = document.getElementById('moonIcon');
     const sunIcon = document.getElementById('sunIcon');
-    
-    if (!moonIcon || !sunIcon) return;
-    
+
+    // Settings page icons
+    const indexMoonIcon = document.getElementById('indexMoonIcon');
+    const indexSunIcon = document.getElementById('indexSunIcon');
+    const indexThemeDesc = document.getElementById('indexThemeDesc');
+
     if (theme === 'light') {
         document.body.classList.add('light-mode');
-        moonIcon.style.display = 'none';
-        sunIcon.style.display = 'block';
+        if (moonIcon) moonIcon.style.display = 'none';
+        if (sunIcon) sunIcon.style.display = 'block';
+        if (indexMoonIcon) indexMoonIcon.style.display = 'none';
+        if (indexSunIcon) indexSunIcon.style.display = 'block';
+        if (indexThemeDesc) indexThemeDesc.textContent = 'Yorug\' rejim';
     } else {
         document.body.classList.remove('light-mode');
-        moonIcon.style.display = 'block';
-        sunIcon.style.display = 'none';
+        if (moonIcon) moonIcon.style.display = 'block';
+        if (sunIcon) sunIcon.style.display = 'none';
+        if (indexMoonIcon) indexMoonIcon.style.display = 'block';
+        if (indexSunIcon) indexSunIcon.style.display = 'none';
+        if (indexThemeDesc) indexThemeDesc.textContent = 'Qorong\'u rejim';
     }
 }
 
@@ -2677,4 +2687,153 @@ async function toggleTheme() {
 // Load theme on page load
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(() => loadTheme(), 100);
+});
+
+// ==================== TARIFF INFO LOADING ====================
+
+async function loadTariffInfo() {
+    try {
+        const response = await fetch('/api/user');
+        const user = await response.json();
+        
+        const tariff = user.tariff || 'FREE';
+        const tariffNames = {
+            'FREE': 'Bepul tarif',
+            'PLUS': 'Plus tarif',
+            'BIZNES': 'Biznes tarif',
+            'BUSINESS': 'Biznes tarif',
+            'NONE': 'Tarif tanlanmagan'
+        };
+        
+        const tariffIcons = {
+            'FREE': '🆓',
+            'PLUS': '⭐',
+            'BIZNES': '💼',
+            'BUSINESS': '💼',
+            'NONE': '⭐'
+        };
+        
+        // Update tariff info
+        const tariffInfoIcon = document.getElementById('tariffInfoIcon');
+        const tariffInfoName = document.getElementById('tariffInfoName');
+        const tariffInfoDesc = document.getElementById('tariffInfoDesc');
+        const tariffInfoBadge = document.getElementById('tariffInfoBadge');
+        
+        if (tariffInfoIcon) tariffInfoIcon.textContent = tariffIcons[tariff] || '⭐';
+        if (tariffInfoName) tariffInfoName.textContent = tariffNames[tariff] || tariff;
+        if (tariffInfoDesc) {
+            if (tariff === 'BIZNES' || tariff === 'BUSINESS') {
+                tariffInfoDesc.textContent = 'Ombor, xodimlar, vazifalar';
+            } else if (tariff === 'PLUS') {
+                tariffInfoDesc.textContent = 'Kengaytirilgan funksiyalar';
+            } else {
+                tariffInfoDesc.textContent = 'Asosiy funksiyalar';
+            }
+        }
+        if (tariffInfoBadge) {
+            tariffInfoBadge.textContent = tariff;
+            tariffInfoBadge.className = `tariff-info-badge ${tariff}`;
+        }
+    } catch (error) {
+        console.error('Tarif ma\'lumotlarini yuklashda xato:', error);
+    }
+}
+
+function showChangeTariffModal() {
+    const modalHTML = `
+        <div class="modal-overlay" id="changeTariffModal" onclick="if(event.target === this) closeChangeTariffModal()">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Tarifni o'zgartirish</h2>
+                    <button class="modal-close" onclick="closeChangeTariffModal()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div style="margin-bottom: 16px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 500;">Tarif tanlang:</label>
+                        <select id="selectTariff" class="wallet-input">
+                            <option value="FREE">🆓 Bepul tarif</option>
+                            <option value="PLUS">⭐ Plus tarif</option>
+                            <option value="BIZNES">💼 Biznes tarif</option>
+                        </select>
+                    </div>
+                    <div style="padding: 12px; background: rgba(255, 159, 10, 0.1); border-radius: 12px; margin-top: 16px;">
+                        <p style="margin: 0; font-size: 13px; color: var(--wallet-text-secondary);">
+                            💡 Tarifni o'zgartirgandan keyin sahifani yangilang (refresh).
+                        </p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="wallet-btn-secondary" onclick="closeChangeTariffModal()">Bekor qilish</button>
+                    <button class="wallet-btn-primary" onclick="changeTariff()">Saqlash</button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+}
+
+function closeChangeTariffModal() {
+    const modal = document.getElementById('changeTariffModal');
+    if (modal) modal.remove();
+}
+
+async function changeTariff() {
+    const selectTariff = document.getElementById('selectTariff');
+    const newTariff = selectTariff.value;
+    
+    try {
+        const initData = getInitData();
+        const params = new URLSearchParams(window.location.search);
+        const testUserId = params.get('test_user_id');
+        
+        let url = '/api/user/tariff';
+        if (testUserId) {
+            url += `?test_user_id=${testUserId}`;
+        }
+        
+        const response = await fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Telegram-Init-Data': initData
+            },
+            body: JSON.stringify({ tariff: newTariff })
+        });
+        
+        if (response.ok) {
+            alert('Tarif o\'zgartirildi! Sahifani yangilang (refresh).');
+            closeChangeTariffModal();
+            loadTariffInfo();
+            
+            // If changed to BIZNES, redirect to business page
+            if (newTariff === 'BIZNES' || newTariff === 'BUSINESS') {
+                setTimeout(() => {
+                    window.location.href = '/business';
+                }, 1000);
+            }
+        } else {
+            alert('Xatolik yuz berdi!');
+        }
+    } catch (error) {
+        console.error('Tarifni o\'zgartirishda xato:', error);
+        alert('Xatolik yuz berdi!');
+    }
+}
+
+// Helper function
+function getInitData() {
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+        return window.Telegram.WebApp.initData;
+    }
+    return '';
+}
+
+// Load tariff info on profile page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if we're on profile page
+    const profilePage = document.getElementById('pageProfile');
+    if (profilePage) {
+        setTimeout(() => loadTariffInfo(), 100);
+    }
 });

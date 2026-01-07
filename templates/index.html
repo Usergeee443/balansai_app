@@ -778,6 +778,24 @@
             <div class="wallet-profile-username" id="profileUsername">@username</div>
         </div>
 
+        <!-- Tariff Info -->
+        <div class="wallet-settings-group">
+            <div class="wallet-settings-title">Tarif ma'lumotlari</div>
+            <div class="tariff-info-card" id="tariffInfoCard">
+                <div class="tariff-info-header">
+                    <div class="tariff-info-icon" id="tariffInfoIcon">⭐</div>
+                    <div class="tariff-info-content">
+                        <div class="tariff-info-name" id="tariffInfoName">FREE</div>
+                        <div class="tariff-info-desc" id="tariffInfoDesc">Bepul tarif</div>
+                    </div>
+                    <div class="tariff-info-badge" id="tariffInfoBadge">FREE</div>
+                </div>
+                <button class="tariff-upgrade-btn-small" onclick="showChangeTariffModal()">
+                    Tarifni o'zgartirish
+                </button>
+            </div>
+        </div>
+
         <!-- Settings Groups -->
         <div class="wallet-settings-group">
             <div class="wallet-settings-title">Sozlamalar</div>
@@ -812,6 +830,33 @@
                     </div>
                     <div class="wallet-settings-value">
                         UZS
+                        <svg class="wallet-settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="wallet-settings-item" onclick="toggleTheme()">
+                    <div class="wallet-settings-icon purple">
+                        <svg id="indexThemeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path id="indexMoonIcon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                            <g id="indexSunIcon" style="display: none;">
+                                <circle cx="12" cy="12" r="5"/>
+                                <line x1="12" y1="1" x2="12" y2="3"/>
+                                <line x1="12" y1="21" x2="12" y2="23"/>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                <line x1="1" y1="12" x2="3" y2="12"/>
+                                <line x1="21" y1="12" x2="23" y2="12"/>
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="wallet-settings-content">
+                        <div class="wallet-settings-label">Ko'rinish</div>
+                        <div class="wallet-settings-desc" id="indexThemeDesc">Qorong'u rejim</div>
+                    </div>
+                    <div class="wallet-settings-value">
                         <svg class="wallet-settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M9 18l6-6-6-6"/>
                         </svg>
