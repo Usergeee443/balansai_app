@@ -334,11 +334,92 @@ async function loadHomePage() {
         // Load transactions for home
         await loadHomeTransactions();
 
+        // Load business features for BUSINESS tariff users
+        if (user.tariff === 'BUSINESS' || user.tariff === 'BIZNES') {
+            await loadBusinessQuickFeatures();
+        }
+
     } catch (error) {
         console.error('Home page error:', error);
         if (error.code === 'USER_NOT_FOUND') {
             showNotRegisteredModal();
         }
+    }
+}
+
+// ============================================
+// BUSINESS QUICK FEATURES (For home page)
+// ============================================
+
+async function loadBusinessQuickFeatures() {
+    const businessSection = document.getElementById('businessQuickActions');
+    if (!businessSection) return;
+
+    // Show the business section
+    businessSection.style.display = 'block';
+
+    try {
+        // Load quick stats
+        const stats = await apiRequest('/api/business/quick-stats');
+
+        document.getElementById('businessStatProducts').textContent = stats.products || 0;
+        document.getElementById('businessStatEmployees').textContent = stats.employees || 0;
+        document.getElementById('businessStatTasks').textContent = stats.tasks || 0;
+
+        // Load AI recommendations
+        await loadAIRecommendations();
+
+    } catch (error) {
+        console.error('Business quick features error:', error);
+    }
+}
+
+async function loadAIRecommendations() {
+    const recommendationsSection = document.getElementById('aiRecommendations');
+    const recommendationsList = document.getElementById('aiRecommendationsList');
+
+    if (!recommendationsSection || !recommendationsList) return;
+
+    try {
+        const recommendations = await apiRequest('/api/business/ai-recommendations');
+
+        if (recommendations && recommendations.length > 0) {
+            recommendationsSection.style.display = 'block';
+
+            recommendationsList.innerHTML = recommendations.map(rec => {
+                const priorityColors = {
+                    'high': '#FF453A',
+                    'medium': '#FF9F0A',
+                    'low': '#0A84FF',
+                    'info': '#34C759'
+                };
+                const color = priorityColors[rec.priority] || '#8E8E93';
+
+                return `
+                    <div class="wallet-transaction-item" style="cursor: default; margin-bottom: 8px;">
+                        <div class="wallet-transaction-icon" style="background: ${color}20;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2">
+                                ${rec.type === 'low_stock' ? '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>' : ''}
+                                ${rec.type === 'best_seller' ? '<path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>' : ''}
+                                ${rec.type === 'stagnant' ? '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>' : ''}
+                                ${rec.type === 'urgent_task' ? '<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>' : ''}
+                            </svg>
+                        </div>
+                        <div class="wallet-transaction-info">
+                            <div class="wallet-transaction-name">${rec.title}</div>
+                            <div class="wallet-transaction-category">${rec.description}</div>
+                            <div style="font-size: 11px; color: ${color}; margin-top: 4px;">💡 ${rec.action}</div>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            recommendationsSection.style.display = 'none';
+        }
+
+    } catch (error) {
+        console.error('AI recommendations error:', error);
+        recommendationsSection.style.display = 'none';
     }
 }
 
@@ -684,6 +765,59 @@ function renderStatisticsData(apiStats) {
     document.getElementById('statSavingsRate').textContent = savingsRate + '%';
     document.getElementById('statTransactionCount').textContent = apiStats.transaction_count || 0;
     document.getElementById('statAvgTransaction').textContent = formatCurrencyShort(apiStats.average_transaction || 0);
+
+    // Load business analytics for BUSINESS tariff users
+    if (currentUser && (currentUser.tariff === 'BUSINESS' || currentUser.tariff === 'BIZNES')) {
+        loadBusinessAnalytics();
+    }
+}
+
+// ============================================
+// BUSINESS ANALYTICS (For statistics page)
+// ============================================
+
+async function loadBusinessAnalytics() {
+    const businessSection = document.getElementById('businessAnalyticsSection');
+    if (!businessSection) return;
+
+    // Show the business section
+    businessSection.style.display = 'block';
+
+    try {
+        // Load warehouse statistics
+        const warehouseStats = await apiRequest('/api/business/statistics/warehouse');
+        document.getElementById('bizStatWarehouse').textContent = formatCurrencyShort(warehouseStats.total_value || 0);
+        document.getElementById('bizStatLowStock').textContent = warehouseStats.low_stock_count || 0;
+        document.getElementById('bizWarehouseProducts').textContent = warehouseStats.total_products || 0;
+
+        // Find best seller
+        const recommendations = await apiRequest('/api/business/ai-recommendations');
+        const bestSeller = recommendations.find(r => r.type === 'best_seller');
+        if (bestSeller) {
+            document.getElementById('bizBestSeller').textContent = bestSeller.title.replace('Ko\'p sotilayapti: ', '');
+        } else {
+            document.getElementById('bizBestSeller').textContent = '-';
+        }
+
+        // Load employee statistics
+        const employeeStats = await apiRequest('/api/business/statistics/employees');
+        document.getElementById('bizStatEmployees').textContent = employeeStats.active_employees || 0;
+        document.getElementById('bizTotalEmployees').textContent = employeeStats.total_employees || 0;
+
+        // Load task statistics
+        const taskStats = await apiRequest('/api/business/statistics/tasks');
+        const inProgressTasks = taskStats.in_progress_tasks || 0;
+        document.getElementById('bizStatTasks').textContent = inProgressTasks;
+
+        // Calculate task progress percentage
+        const totalTasks = taskStats.total_tasks || 0;
+        const completedTasks = taskStats.completed_tasks || 0;
+        const progressPercentage = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+        document.getElementById('bizTasksProgress').textContent = progressPercentage + '%';
+
+    } catch (error) {
+        console.error('Business analytics error:', error);
+    }
 }
 
 // API-based stat functions

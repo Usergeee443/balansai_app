@@ -1703,6 +1703,28 @@ def api_task_statistics():
     return jsonify(stats)
 
 
+@app.route('/api/business/ai-recommendations', methods=['GET'])
+def api_ai_recommendations():
+    """AI tavsiyalar - kam qolgan tovar, ko'p sotilganlar"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    recommendations = database.get_ai_recommendations(user_id)
+    return jsonify(recommendations)
+
+
+@app.route('/api/business/quick-stats', methods=['GET'])
+def api_business_quick_stats():
+    """Biznes tarifi uchun tez statistika (asosiy sahifa uchun)"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    stats = database.get_business_quick_stats(user_id)
+    return jsonify(stats)
+
+
 # TELEGRAM BOT ESLATMALARI
 
 @app.route('/api/business/send-task-notification', methods=['POST'])

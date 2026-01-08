@@ -138,6 +138,69 @@
             </div>
         </div>
 
+        <!-- Business Quick Actions (Only for BUSINESS tariff) -->
+        <div id="businessQuickActions" class="wallet-section" style="display: none;">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">💼 Biznes boshqaruvi</h2>
+            </div>
+            <div class="wallet-actions" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="wallet-action-item" onclick="window.location.href='/business?page=warehouse'">
+                    <div class="wallet-action-icon purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                        </svg>
+                    </div>
+                    <span class="wallet-action-label">Ombor</span>
+                </div>
+                <div class="wallet-action-item" onclick="window.location.href='/business?page=employees'">
+                    <div class="wallet-action-icon green">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </div>
+                    <span class="wallet-action-label">Xodimlar</span>
+                </div>
+                <div class="wallet-action-item" onclick="window.location.href='/business?page=tasks'">
+                    <div class="wallet-action-icon blue">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 11l3 3L22 4"/>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                    </div>
+                    <span class="wallet-action-label">Vazifalar</span>
+                </div>
+            </div>
+
+            <!-- Business Statistics Preview -->
+            <div class="wallet-stats-overview" style="margin-top: 12px;">
+                <div class="wallet-stat-card">
+                    <div class="wallet-stat-value" id="businessStatProducts">0</div>
+                    <div class="wallet-stat-label">Mahsulotlar</div>
+                </div>
+                <div class="wallet-stat-card">
+                    <div class="wallet-stat-value" id="businessStatEmployees">0</div>
+                    <div class="wallet-stat-label">Xodimlar</div>
+                </div>
+                <div class="wallet-stat-card">
+                    <div class="wallet-stat-value" id="businessStatTasks">0</div>
+                    <div class="wallet-stat-label">Vazifalar</div>
+                </div>
+            </div>
+
+            <!-- AI Recommendations -->
+            <div id="aiRecommendations" class="wallet-chart-card" style="margin-top: 16px; display: none;">
+                <div class="wallet-chart-header">
+                    <span class="wallet-chart-title">🤖 AI tavsiyalari</span>
+                </div>
+                <div id="aiRecommendationsList" style="padding: 12px 0;">
+                    <!-- Loaded via JavaScript -->
+                </div>
+            </div>
+        </div>
+
         <!-- Info Card -->
         <div class="wallet-info-card" onclick="navigateTo('services')">
             <div class="wallet-info-icon">
@@ -491,6 +554,123 @@
             <div class="analytics-content">
                 <div id="monthlyBreakdownContent" class="monthly-breakdown-grid">
                     <!-- Loaded via JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- BUSINESS ANALYTICS (Business tariff only) -->
+        <div id="businessAnalyticsSection" style="display: none;">
+            <div class="wallet-section" style="margin-top: 16px;">
+                <div class="wallet-section-header">
+                    <h2 class="wallet-section-title">💼 Biznes tahlillari</h2>
+                </div>
+            </div>
+
+            <!-- Business Stats Overview -->
+            <div class="wallet-stats-overview">
+                <div class="wallet-stat-card">
+                    <div class="wallet-stat-value" id="bizStatWarehouse">0</div>
+                    <div class="wallet-stat-label">Ombor qiymati</div>
+                </div>
+                <div class="wallet-stat-card">
+                    <div class="wallet-stat-value" id="bizStatEmployees">0</div>
+                    <div class="wallet-stat-label">Faol xodimlar</div>
+                </div>
+                <div class="wallet-stat-card">
+                    <div class="wallet-stat-value" id="bizStatTasks">0</div>
+                    <div class="wallet-stat-label">Bajarilayotgan vazifalar</div>
+                </div>
+                <div class="wallet-stat-card">
+                    <div class="wallet-stat-value" id="bizStatLowStock">0</div>
+                    <div class="wallet-stat-label">Kam qolgan tovarlar</div>
+                </div>
+            </div>
+
+            <!-- Warehouse Performance -->
+            <div class="wallet-chart-card">
+                <div class="wallet-chart-header">
+                    <span class="wallet-chart-title">Ombor samaradorligi</span>
+                </div>
+                <div class="insights-grid">
+                    <div class="insight-card">
+                        <div class="insight-icon purple">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                            </svg>
+                        </div>
+                        <div class="insight-content">
+                            <div class="insight-value" id="bizWarehouseProducts">0</div>
+                            <div class="insight-label">Jami mahsulotlar</div>
+                        </div>
+                    </div>
+                    <div class="insight-card">
+                        <div class="insight-icon green">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+                                <polyline points="16 7 22 7 22 13"/>
+                            </svg>
+                        </div>
+                        <div class="insight-content">
+                            <div class="insight-value" id="bizBestSeller">-</div>
+                            <div class="insight-label">Eng ko'p sotilgan</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Employee Performance -->
+            <div class="wallet-chart-card">
+                <div class="wallet-chart-header">
+                    <span class="wallet-chart-title">Xodimlar ko'rsatkichlari</span>
+                </div>
+                <div class="insights-grid">
+                    <div class="insight-card">
+                        <div class="insight-icon blue">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                            </svg>
+                        </div>
+                        <div class="insight-content">
+                            <div class="insight-value" id="bizTotalEmployees">0</div>
+                            <div class="insight-label">Jami xodimlar</div>
+                        </div>
+                    </div>
+                    <div class="insight-card">
+                        <div class="insight-icon orange">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 6v6l4 2"/>
+                            </svg>
+                        </div>
+                        <div class="insight-content">
+                            <div class="insight-value" id="bizTasksProgress">0%</div>
+                            <div class="insight-label">Vazifalar bajarilishi</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Access to Business Features -->
+            <div class="wallet-chart-card">
+                <div class="wallet-chart-header">
+                    <span class="wallet-chart-title">Tez kirish</span>
+                </div>
+                <div style="padding: 12px 0;">
+                    <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;">
+                        <button class="wallet-section-action" onclick="window.location.href='/business?page=warehouse'" style="width: 100%; text-align: center; padding: 12px;">
+                            📦 Ombor
+                        </button>
+                        <button class="wallet-section-action" onclick="window.location.href='/business?page=employees'" style="width: 100%; text-align: center; padding: 12px;">
+                            👥 Xodimlar
+                        </button>
+                        <button class="wallet-section-action" onclick="window.location.href='/business?page=tasks'" style="width: 100%; text-align: center; padding: 12px;">
+                            ✅ Vazifalar
+                        </button>
+                        <button class="wallet-section-action" onclick="window.location.href='/business'" style="width: 100%; text-align: center; padding: 12px;">
+                            💼 Barchasi
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
