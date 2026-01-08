@@ -280,7 +280,7 @@ def get_user(user_id):
             cursor.execute("SELECT * FROM users WHERE user_id = %s", (user_id,))
             user = cursor.fetchone()
             if user:
-                print(f"[DEBUG] User {user_id} tariff: {user.get('tariff', 'KEY YO\'Q')}")
+                print(f"[DEBUG] User {user_id} tariff: {user.get('tariff', 'KEY YOQ')}")
             else:
                 print(f"[DEBUG] User {user_id} topilmadi")
             return user
@@ -2385,5 +2385,153 @@ def get_task_statistics(user_id):
                 WHERE user_id = %s
             """, (user_id,))
             return cursor.fetchone()
+    finally:
+        connection.close()
+
+
+# AI TAVSIYALAR FUNKSIYALARI
+
+def get_ai_recommendations(user_id):
+    """AI tavsiyalar - kam qolgan tovarlar, ko'p sotilganlar"""
+    connection = get_db_connection()
+    recommendations = []
+
+    try:
+        with connection.cursor() as cursor:
+            # 1. Kam qolgan tovarlar (quantity < min_stock)
+            cursor.execute("""
+                SELECT id, product_name, quantity, min_stock, unit
+                FROM warehouse
+                WHERE user_id = %s AND quantity < min_stock AND quantity >= 0
+                ORDER BY (quantity / NULLIF(min_stock, 0)) ASC
+                LIMIT 5
+            """, (user_id,))
+            low_stock_items = cursor.fetchall()
+
+            for item in low_stock_items:
+                percentage = (item['quantity'] / item['min_stock'] * 100) if item['min_stock'] > 0 else 0
+                recommendations.append({
+                    'type': 'low_stock',
+                    'priority': 'high' if percentage < 20 else 'medium',
+                    'title': f"Kam qoldi: {item['product_name']}",
+                    'description': f"Faqat {item['quantity']} {item['unit']} qoldi (minimal: {item['min_stock']} {item['unit']})",
+                    'action': 'Ombor to\'ldirish kerak',
+                    'item_id': item['id']
+                })
+
+            # 2. Ko'p sotilayotgan mahsulotlar (oxirgi 30 kunlik harakatlar bo'yicha)
+            cursor.execute("""
+                SELECT
+                    w.id,
+                    w.product_name,
+                    w.quantity,
+                    COUNT(wm.id) as sale_count,
+                    SUM(wm.quantity) as total_sold
+                FROM warehouse w
+                LEFT JOIN warehouse_movements wm ON w.id = wm.warehouse_id
+                    AND wm.movement_type = 'out'
+                    AND wm.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+                WHERE w.user_id = %s
+                GROUP BY w.id, w.product_name, w.quantity
+                HAVING total_sold > 0
+                ORDER BY total_sold DESC
+                LIMIT 3
+            """, (user_id,))
+            best_sellers = cursor.fetchall()
+
+            for item in best_sellers:
+                recommendations.append({
+                    'type': 'best_seller',
+                    'priority': 'info',
+                    'title': f"Ko'p sotilayapti: {item['product_name']}",
+                    'description': f"30 kunda {item['total_sold']} dona sotildi",
+                    'action': 'Zaxirani ko\'paytirish tavsiya etiladi',
+                    'item_id': item['id']
+                })
+
+            # 3. Harakatga keltirilmagan mahsulotlar (60 kundan ortiq harakatlanmagan)
+            cursor.execute("""
+                SELECT
+                    w.id,
+                    w.product_name,
+                    w.quantity,
+                    MAX(wm.created_at) as last_movement
+                FROM warehouse w
+                LEFT JOIN warehouse_movements wm ON w.id = wm.warehouse_id
+                WHERE w.user_id = %s AND w.quantity > 0
+                GROUP BY w.id, w.product_name, w.quantity
+                HAVING last_movement IS NULL OR last_movement < DATE_SUB(NOW(), INTERVAL 60 DAY)
+                LIMIT 3
+            """, (user_id,))
+            stagnant_items = cursor.fetchall()
+
+            for item in stagnant_items:
+                recommendations.append({
+                    'type': 'stagnant',
+                    'priority': 'low',
+                    'title': f"Harakatsiz: {item['product_name']}",
+                    'description': f"60 kundan ortiq harakatlanmadi",
+                    'action': 'Chegirma yoki reklama qilish tavsiya etiladi',
+                    'item_id': item['id']
+                })
+
+            # 4. Muddati tugash arafasida bo'lgan vazifalar
+            cursor.execute("""
+                SELECT id, title, due_date, assigned_to
+                FROM tasks
+                WHERE user_id = %s
+                    AND status != 'completed'
+                    AND due_date IS NOT NULL
+                    AND due_date BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 3 DAY)
+                ORDER BY due_date ASC
+                LIMIT 3
+            """, (user_id,))
+            urgent_tasks = cursor.fetchall()
+
+            for task in urgent_tasks:
+                days_left = (task['due_date'] - datetime.now()).days
+                recommendations.append({
+                    'type': 'urgent_task',
+                    'priority': 'high' if days_left <= 1 else 'medium',
+                    'title': f"Vazifa muddati tugayapti: {task['title']}",
+                    'description': f"{days_left} kun qoldi",
+                    'action': 'Tez bajarish kerak',
+                    'task_id': task['id']
+                })
+
+            return recommendations
+
+    except Exception as e:
+        print(f"❌ AI tavsiyalar olishda xatolik: {e}")
+        return []
+    finally:
+        connection.close()
+
+
+def get_business_quick_stats(user_id):
+    """Biznes tarifi uchun tez statistika (asosiy sahifa uchun)"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Mahsulotlar soni
+            cursor.execute("SELECT COUNT(*) as count FROM warehouse WHERE user_id = %s", (user_id,))
+            products_count = cursor.fetchone()['count']
+
+            # Xodimlar soni
+            cursor.execute("SELECT COUNT(*) as count FROM employees WHERE user_id = %s AND status = 'active'", (user_id,))
+            employees_count = cursor.fetchone()['count']
+
+            # Vazifalar soni
+            cursor.execute("SELECT COUNT(*) as count FROM tasks WHERE user_id = %s AND status != 'completed'", (user_id,))
+            tasks_count = cursor.fetchone()['count']
+
+            return {
+                'products': products_count,
+                'employees': employees_count,
+                'tasks': tasks_count
+            }
+    except Exception as e:
+        print(f"❌ Biznes tez statistika olishda xatolik: {e}")
+        return {'products': 0, 'employees': 0, 'tasks': 0}
     finally:
         connection.close()
