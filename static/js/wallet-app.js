@@ -280,6 +280,28 @@ async function loadPageData(pageName) {
                 await loadTopExpensesPage();
                 dataCache.setPageLoaded(pageName);
                 break;
+            case 'warehouse':
+                if (typeof loadWarehousePage === 'function') {
+                    await loadWarehousePage();
+                }
+                dataCache.setPageLoaded(pageName);
+                break;
+            case 'employees':
+                if (typeof loadEmployeesPage === 'function') {
+                    await loadEmployeesPage();
+                }
+                dataCache.setPageLoaded(pageName);
+                break;
+            case 'tasks':
+                if (typeof loadTasksPage === 'function') {
+                    await loadTasksPage();
+                }
+                dataCache.setPageLoaded(pageName);
+                break;
+            case 'businessStats':
+                // Business stats page - coming soon
+                dataCache.setPageLoaded(pageName);
+                break;
         }
     } catch (error) {
         console.error(`Error loading ${pageName}:`, error);

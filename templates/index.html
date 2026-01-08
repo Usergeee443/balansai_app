@@ -83,14 +83,14 @@
                     <path class="tg-gauge-bg" d="M 25 155 A 125 125 0 0 1 275 155" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="20" stroke-linecap="round"/>
                     <!-- Progress arc (blue gradient) - semicircle -->
                     <path class="tg-gauge-fill" id="balanceGaugeFill" d="M 25 155 A 125 125 0 0 1 275 155" fill="none" stroke="url(#gaugeGradient)" stroke-width="20" stroke-linecap="round" stroke-dasharray="393" stroke-dashoffset="196.5" filter="url(#glow)"/>
-                </svg>
+            </svg>
 
                 <!-- Balance Info Inside Gauge -->
                 <div class="tg-balance-info">
                     <div class="tg-balance-label" id="balanceLabel">Balans</div>
                     <div class="tg-balance-amount" id="totalBalance">0 so'm</div>
                 </div>
-            </div>
+        </div>
 
             <!-- CTA Button -->
             <button class="tg-balance-cta" onclick="showAddTransactionModal()">
@@ -107,8 +107,8 @@
                 <div class="wallet-action-icon green">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 19V5M5 12l7-7 7 7"/>
-                    </svg>
-                </div>
+                </svg>
+            </div>
                 <span class="wallet-action-label">Kirim</span>
             </div>
             <div class="wallet-action-item" onclick="showAddTransactionModal('expense')">
@@ -148,10 +148,10 @@
                     <div class="wallet-action-icon purple">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                        </svg>
-                    </div>
+                </svg>
+            </div>
                     <span class="wallet-action-label">Ombor</span>
-                </div>
+            </div>
                 <div class="wallet-action-item" onclick="window.location.href='/business?page=employees'">
                     <div class="wallet-action-icon green">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -172,7 +172,7 @@
                     </div>
                     <span class="wallet-action-label">Vazifalar</span>
                 </div>
-            </div>
+    </div>
 
             <!-- Business Statistics Preview -->
             <div class="wallet-stats-overview" style="margin-top: 12px;">
@@ -278,7 +278,7 @@
         <div class="wallet-page-header">
             <h1 class="wallet-page-title">Statistika</h1>
         </div>
-
+        
         <!-- Period Selector -->
         <div class="wallet-segment" style="margin: 0 16px 16px;">
             <button class="wallet-segment-btn active" data-period="week" onclick="loadStatistics('week', this)">Hafta</button>
@@ -300,8 +300,8 @@
             <div class="wallet-stat-card">
                 <div class="wallet-stat-value" id="statNet">0</div>
                 <div class="wallet-stat-label">Sof foyda</div>
-            </div>
         </div>
+    </div>
 
         <!-- Balance Trend Chart -->
         <div class="wallet-chart-card">
@@ -951,7 +951,7 @@
         <div class="services-section" id="businessServicesSection" style="display: none;">
             <div class="services-section-title">Biznes boshqaruvi 💼</div>
             <div class="services-grid">
-                <div class="service-card" onclick="window.location.href='/business'">
+                <div class="service-card" onclick="navigateTo('warehouse')">
                     <div class="service-card-icon purple">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
@@ -962,7 +962,7 @@
                         <span class="service-card-desc">Mahsulotlar boshqaruvi</span>
                     </div>
                 </div>
-                <div class="service-card" onclick="window.location.href='/business'">
+                <div class="service-card" onclick="navigateTo('employees')">
                     <div class="service-card-icon green">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -976,7 +976,7 @@
                         <span class="service-card-desc">Xodimlar boshqaruvi</span>
                     </div>
                 </div>
-                <div class="service-card" onclick="window.location.href='/business'">
+                <div class="service-card" onclick="navigateTo('tasks')">
                     <div class="service-card-icon blue">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M9 11l3 3L22 4"/>
@@ -988,7 +988,7 @@
                         <span class="service-card-desc">Vazifalar boshqaruvi</span>
                     </div>
                 </div>
-                <div class="service-card" onclick="window.location.href='/business'">
+                <div class="service-card" onclick="navigateTo('businessStats')">
                     <div class="service-card-icon orange">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M18 20V10M12 20V4M6 20v-6"/>
@@ -1192,13 +1192,13 @@
             <h1 class="wallet-page-title">Eslatmalar</h1>
             <div class="wallet-page-actions">
                 <button class="wallet-icon-btn" onclick="showAddReminderModal()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 5v14M5 12h14"/>
-                    </svg>
-                </button>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+            </button>
             </div>
         </div>
-
+        
         <!-- Skeleton Loading -->
         <div id="remindersSkeleton" class="skeleton-list" style="padding: 0 16px;">
             <div class="skeleton-item"></div>
@@ -1210,7 +1210,7 @@
             <!-- Loaded via JavaScript -->
         </div>
     </div>
-
+    
     <!-- ============================================
          DEBTS PAGE
          ============================================ -->
@@ -1223,25 +1223,187 @@
                         <path d="M12 5v14M5 12h14"/>
                     </svg>
                 </button>
-            </div>
-        </div>
+                </div>
+                </div>
 
         <!-- Filter Pills -->
         <div class="wallet-filters">
             <button class="wallet-filter-btn active" data-filter="all" onclick="setDebtFilter('all', this)">Barchasi</button>
             <button class="wallet-filter-btn" data-filter="given" onclick="setDebtFilter('given', this)">Berdim</button>
             <button class="wallet-filter-btn" data-filter="taken" onclick="setDebtFilter('taken', this)">Oldim</button>
-        </div>
+                </div>
 
         <!-- Skeleton Loading -->
         <div id="debtsSkeleton" class="skeleton-list" style="padding: 0 16px;">
             <div class="skeleton-item"></div>
             <div class="skeleton-item"></div>
             <div class="skeleton-item"></div>
-        </div>
+                </div>
 
         <div id="debtsList" style="padding: 0 16px; display: none;">
             <!-- Loaded via JavaScript -->
+                </div>
+                </div>
+
+    <!-- ============================================
+         WAREHOUSE PAGE
+         ============================================ -->
+    <div id="pageWarehouse" class="page">
+        <div class="wallet-page-header">
+            <button class="wallet-icon-btn" onclick="navigateTo('home')" style="margin-right: 12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h1 class="wallet-page-title">Ombor</h1>
+            <button class="wallet-icon-btn" onclick="showAddWarehouseModal()" style="margin-left: auto;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+            </button>
+        </div>
+
+        <div style="padding: 16px;">
+            <!-- Ombor statistikasi -->
+            <div class="wallet-card" style="margin-bottom: 16px;">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: center;">
+                    <div>
+                        <div style="font-size: 24px; font-weight: 600; color: var(--tg-theme-text-color);" id="warehouseTotalProducts">0</div>
+                        <div style="font-size: 13px; color: var(--tg-theme-hint-color); margin-top: 4px;">Mahsulotlar</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: 600; color: var(--tg-theme-text-color);" id="warehouseTotalValue">0</div>
+                        <div style="font-size: 13px; color: var(--tg-theme-hint-color); margin-top: 4px;">Umumiy qiymat</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: 600; color: #FF453A;" id="warehouseLowStock">0</div>
+                        <div style="font-size: 13px; color: var(--tg-theme-hint-color); margin-top: 4px;">Kam qolgan</div>
+                    </div>
+        </div>
+    </div>
+
+            <!-- Mahsulotlar ro'yxati -->
+            <div id="warehouseList" class="wallet-transactions-list">
+                <!-- JavaScript orqali to'ldiriladi -->
+            </div>
+        </div>
+        </div>
+        
+    <!-- ============================================
+         EMPLOYEES PAGE
+         ============================================ -->
+    <div id="pageEmployees" class="page">
+        <div class="wallet-page-header">
+            <button class="wallet-icon-btn" onclick="navigateTo('home')" style="margin-right: 12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h1 class="wallet-page-title">Xodimlar</h1>
+            <button class="wallet-icon-btn" onclick="showAddEmployeeModal()" style="margin-left: auto;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div style="padding: 16px;">
+            <!-- Xodimlar statistikasi -->
+            <div class="wallet-card" style="margin-bottom: 16px;">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: center;">
+                    <div>
+                        <div style="font-size: 24px; font-weight: 600; color: var(--tg-theme-text-color);" id="employeesTotal">0</div>
+                        <div style="font-size: 13px; color: var(--tg-theme-hint-color); margin-top: 4px;">Jami</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: 600; color: #34C759;" id="employeesActive">0</div>
+                        <div style="font-size: 13px; color: var(--tg-theme-hint-color); margin-top: 4px;">Faol</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: 600; color: var(--tg-theme-text-color);" id="employeesSalary">0</div>
+                        <div style="font-size: 13px; color: var(--tg-theme-hint-color); margin-top: 4px;">Ish haqi</div>
+                    </div>
+        </div>
+    </div>
+
+            <!-- Xodimlar ro'yxati -->
+            <div id="employeesList" class="wallet-transactions-list">
+                <!-- JavaScript orqali to'ldiriladi -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         TASKS PAGE
+         ============================================ -->
+    <div id="pageTasks" class="page">
+        <div class="wallet-page-header">
+            <button class="wallet-icon-btn" onclick="navigateTo('home')" style="margin-right: 12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            </button>
+            <h1 class="wallet-page-title">Vazifalar</h1>
+            <button class="wallet-icon-btn" onclick="showAddTaskModal()" style="margin-left: auto;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+            </button>
+        </div>
+
+        <div style="padding: 16px;">
+            <!-- Vazifalar statistikasi -->
+            <div class="wallet-card" style="margin-bottom: 16px;">
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; text-align: center;">
+                    <div>
+                        <div style="font-size: 20px; font-weight: 600; color: var(--tg-theme-text-color);" id="tasksTotal">0</div>
+                        <div style="font-size: 12px; color: var(--tg-theme-hint-color); margin-top: 4px;">Jami</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 20px; font-weight: 600; color: #FF9500;" id="tasksPending">0</div>
+                        <div style="font-size: 12px; color: var(--tg-theme-hint-color); margin-top: 4px;">Kutilmoqda</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 20px; font-weight: 600; color: #0A84FF;" id="tasksInProgress">0</div>
+                        <div style="font-size: 12px; color: var(--tg-theme-hint-color); margin-top: 4px;">Jarayonda</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 20px; font-weight: 600; color: #34C759;" id="tasksCompleted">0</div>
+                        <div style="font-size: 12px; color: var(--tg-theme-hint-color); margin-top: 4px;">Bajarildi</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vazifalar ro'yxati -->
+            <div id="tasksList" class="wallet-transactions-list">
+                <!-- JavaScript orqali to'ldiriladi -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         BUSINESS STATS PAGE
+         ============================================ -->
+    <div id="pageBusinessStats" class="page">
+        <div class="wallet-page-header">
+            <button class="wallet-icon-btn" onclick="navigateTo('home')" style="margin-right: 12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            </button>
+            <h1 class="wallet-page-title">Biznes statistika</h1>
+        </div>
+
+        <div style="padding: 16px;">
+            <div class="wallet-empty">
+                <div class="wallet-empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M18 20V10M12 20V4M6 20v-6"/>
+            </svg>
+        </div>
+                <div class="wallet-empty-title">Tez orada...</div>
+                <div class="wallet-empty-text">Biznes statistikasi tez orada qo'shiladi</div>
+            </div>
         </div>
     </div>
 
@@ -1255,9 +1417,9 @@
                 <button class="wallet-icon-btn" onclick="showAddGoalModal()">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <path d="M12 5v14M5 12h14"/>
-                    </svg>
+            </svg>
                 </button>
-            </div>
+        </div>
         </div>
 
         <div class="wallet-empty">
@@ -1266,8 +1428,8 @@
                     <circle cx="12" cy="12" r="10"/>
                     <circle cx="12" cy="12" r="6"/>
                     <circle cx="12" cy="12" r="2"/>
-                </svg>
-            </div>
+            </svg>
+        </div>
             <div class="wallet-empty-title">Maqsadlar yo'q</div>
             <div class="wallet-empty-text">Pul yig'ish maqsadlarini qo'shing va ularni kuzating</div>
             <button class="wallet-cta-btn" onclick="showAddGoalModal()">Maqsad qo'shish</button>
@@ -1448,7 +1610,7 @@
                         <path d="M18 6L6 18M6 6l12 12"/>
                     </svg>
                 </button>
-            </div>
+        </div>
             <form id="addDebtForm" onsubmit="handleAddDebt(event)">
                 <div class="wallet-form-group">
                     <label class="wallet-form-label">Qarz turi</label>
@@ -1456,7 +1618,7 @@
                         <option value="given">Berdim (Menga qaytarishadi)</option>
                         <option value="taken">Oldim (Men qaytaraman)</option>
                     </select>
-                </div>
+        </div>
                 <div class="wallet-form-group">
                     <label class="wallet-form-label">Kimga/Kimdan</label>
                     <input type="text" class="wallet-form-input" id="debtPersonName" placeholder="Ism" required>
@@ -1489,21 +1651,21 @@
                         <path d="M18 6L6 18M6 6l12 12"/>
             </svg>
                 </button>
-            </div>
+        </div>
             <form id="setLimitForm" onsubmit="handleSetLimit(event)">
                 <div class="wallet-form-group">
                     <label class="wallet-form-label">Oylik xarajat limiti (so'm)</label>
                     <input type="number" class="wallet-form-input" id="limitAmount" placeholder="Masalan: 5000000" required>
                     <div style="margin-top: 8px; font-size: 12px; color: var(--wallet-text-secondary);">
                         Agar limit oshsa, ogohlantirish olasiz
-                    </div>
-                </div>
+        </div>
+        </div>
                 <div class="wallet-limit-presets">
                     <button type="button" class="wallet-limit-preset" onclick="setLimitPreset(1000000)">1 mln</button>
                     <button type="button" class="wallet-limit-preset" onclick="setLimitPreset(2000000)">2 mln</button>
                     <button type="button" class="wallet-limit-preset" onclick="setLimitPreset(5000000)">5 mln</button>
                     <button type="button" class="wallet-limit-preset" onclick="setLimitPreset(10000000)">10 mln</button>
-                </div>
+        </div>
                 <button type="submit" class="wallet-form-btn">Saqlash</button>
                 <button type="button" class="wallet-form-btn secondary" style="margin-top: 8px;" onclick="removeLimit()">Limitni o'chirish</button>
             </form>
@@ -1532,5 +1694,6 @@
 
     <!-- Scripts -->
     <script src="/static/js/wallet-app.js"></script>
+    <script src="/static/js/business.js"></script>
 </body>
 </html>
