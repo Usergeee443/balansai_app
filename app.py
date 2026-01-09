@@ -1773,6 +1773,46 @@ def api_low_stock_alerts():
     return jsonify(alerts)
 
 
+# SAVDO & OMBOR MODULI
+
+@app.route('/api/business/sales-warehouse/stats', methods=['GET'])
+def api_sales_warehouse_stats():
+    """Savdo & Ombor - Sticky statistics"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    try:
+        # Umumiy statistikalarni yig'ish
+        warehouse_stats = database.get_warehouse_statistics(user_id)
+
+        # Sotuvlar (oxirgi 30 kun)
+        sales_count = 0  # TODO: Implement sales tracking
+
+        # Mijozlar soni
+        clients_count = 0  # TODO: Implement clients management
+
+        # Fakturalar
+        invoices_count = 0  # TODO: Implement invoices
+
+        # Nasiya
+        credit_count = 0  # TODO: Implement credit tracking
+
+        # Daromad (oxirgi 30 kun)
+        revenue = 0  # TODO: Calculate from sales
+
+        return jsonify({
+            'total_sales': sales_count,
+            'total_products': warehouse_stats.get('total_products', 0),
+            'total_clients': clients_count,
+            'total_invoices': invoices_count,
+            'total_credit': credit_count,
+            'total_revenue': revenue
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # TELEGRAM BOT ESLATMALARI
 
 @app.route('/api/business/send-task-notification', methods=['POST'])

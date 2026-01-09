@@ -1328,6 +1328,9 @@ window.navigateTo = function(pageName) {
     } else if (pageName === 'tasks') {
         originalNavigateTo(pageName);
         loadTasksPage();
+    } else if (pageName === 'salesWarehouse') {
+        originalNavigateTo(pageName);
+        loadSalesWarehouseData();
     } else {
         // Oddiy sahifalar uchun asl funksiyani chaqirish
         originalNavigateTo(pageName);
@@ -1349,3 +1352,322 @@ document.addEventListener('DOMContentLoaded', function() {
         loadTasksPage();
     }
 });
+
+// ==================== SAVDO & OMBOR MODULI ====================
+
+// Current tab tracker
+let currentSalesTab = 'overview';
+
+// Sahifaga o'tish
+function openSalesWarehouse() {
+    window.navigateTo('salesWarehouse');
+    loadSalesWarehouseData();
+}
+
+// Savdo & Ombor ma'lumotlarini yuklash
+async function loadSalesWarehouseData() {
+    try {
+        // Sticky statistics yuklash
+        const stats = await fetch('/api/business/sales-warehouse/stats');
+        const statsData = await stats.json();
+        
+        updateStickyStats(statsData);
+        
+        // Hozirgi tab'ni yuklash
+        loadSalesTabContent(currentSalesTab);
+    } catch (error) {
+        console.error('Savdo & Ombor ma\'lumotlarini yuklashda xato:', error);
+        showToast('Ma\'lumotlarni yuklashda xatolik', 'error');
+    }
+}
+
+// Sticky statistikalarni yangilash
+function updateStickyStats(data) {
+    document.getElementById('stickyStatSales').textContent = data.total_sales || 0;
+    document.getElementById('stickyStatProducts').textContent = data.total_products || 0;
+    document.getElementById('stickyStatClients').textContent = data.total_clients || 0;
+    document.getElementById('stickyStatInvoices').textContent = data.total_invoices || 0;
+    document.getElementById('stickyStatCredit').textContent = data.total_credit || 0;
+    document.getElementById('stickyStatRevenue').textContent = formatCurrency(data.total_revenue || 0);
+}
+
+// Tab o'zgartirish
+function switchSalesTab(tabName, element) {
+    // Remove active from all tabs
+    document.querySelectorAll('.sales-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+    
+    // Add active to clicked tab
+    element.classList.add('active');
+    
+    // Update current tab
+    currentSalesTab = tabName;
+    
+    // Load tab content
+    loadSalesTabContent(tabName);
+}
+
+// Tab tarkibini yuklash
+async function loadSalesTabContent(tabName) {
+    const container = document.getElementById('salesTabContent');
+    
+    switch (tabName) {
+        case 'overview':
+            container.innerHTML = await getOverviewTabContent();
+            break;
+        case 'sales':
+            container.innerHTML = await getSalesTabContent();
+            break;
+        case 'warehouse':
+            container.innerHTML = await getWarehouseTabContent();
+            break;
+        case 'clients':
+            container.innerHTML = await getClientsTabContent();
+            break;
+        case 'invoices':
+            container.innerHTML = await getInvoicesTabContent();
+            break;
+        case 'credit':
+            container.innerHTML = await getCreditTabContent();
+            break;
+    }
+}
+
+// Umumiy tab tarkibi
+async function getOverviewTabContent() {
+    return `
+        <div class="sales-overview-grid">
+            <div class="sales-overview-card">
+                <div class="sales-overview-card-title">Bugungi sotuvlar</div>
+                <div class="sales-overview-card-value">0</div>
+                <div class="sales-overview-card-change positive">↑ 12%</div>
+            </div>
+            <div class="sales-overview-card">
+                <div class="sales-overview-card-title">Bugungi daromad</div>
+                <div class="sales-overview-card-value">0 so'm</div>
+                <div class="sales-overview-card-change positive">↑ 8%</div>
+            </div>
+            <div class="sales-overview-card">
+                <div class="sales-overview-card-title">Kutilayotgan to'lovlar</div>
+                <div class="sales-overview-card-value">0 so'm</div>
+                <div class="sales-overview-card-change negative">↓ 3%</div>
+            </div>
+            <div class="sales-overview-card">
+                <div class="sales-overview-card-title">Kam qolgan tovarlar</div>
+                <div class="sales-overview-card-value">0</div>
+                <div class="sales-overview-card-change">—</div>
+            </div>
+        </div>
+        <div class="wallet-chart-card">
+            <div class="wallet-chart-header">
+                <span class="wallet-chart-title">Haftalik savdo trendi</span>
+            </div>
+            <canvas id="salesTrendChart" class="wallet-chart-canvas"></canvas>
+        </div>
+        <div class="wallet-section" style="margin-top: 20px;">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">Top mahsulotlar</h2>
+            </div>
+            <div id="topProductsList">
+                <div style="text-align: center; padding: 20px; color: var(--wallet-text-secondary);">
+                    Ma'lumot yuklanmoqda...
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Sotuvlar tab tarkibi
+async function getSalesTabContent() {
+    return `
+        <div class="wallet-stats-overview" style="margin-bottom: 20px;">
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value">0</div>
+                <div class="wallet-stat-label">Jami sotuvlar</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value">0 so'm</div>
+                <div class="wallet-stat-label">Jami summa</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value">0 so'm</div>
+                <div class="wallet-stat-label">O'rtacha chek</div>
+            </div>
+        </div>
+        <div class="wallet-section">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">So'nggi sotuvlar</h2>
+            </div>
+            <div id="recentSalesList">
+                <div style="text-align: center; padding: 20px; color: var(--wallet-text-secondary);">
+                    Sotuvlar mavjud emas
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Ombor tab tarkibi
+async function getWarehouseTabContent() {
+    return `
+        <div class="wallet-stats-overview" style="margin-bottom: 20px;">
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value">0</div>
+                <div class="wallet-stat-label">Jami mahsulotlar</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value">0</div>
+                <div class="wallet-stat-label">Kam qolgan</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value">0</div>
+                <div class="wallet-stat-label">Kategoriyalar</div>
+            </div>
+        </div>
+        <div class="wallet-section">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">Mahsulotlar ro'yxati</h2>
+                <button class="wallet-icon-btn" onclick="navigateTo('warehouse')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                </button>
+            </div>
+            <div style="text-align: center; padding: 20px; color: var(--wallet-text-secondary);">
+                To'liq ma'lumot uchun "Ombor" sahifasiga o'ting
+            </div>
+        </div>
+    `;
+}
+
+// Mijozlar tab tarkibi
+async function getClientsTabContent() {
+    return `
+        <div class="wallet-stats-overview" style="margin-bottom: 20px;">
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value">0</div>
+                <div class="wallet-stat-label">Jami mijozlar</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value">0</div>
+                <div class="wallet-stat-label">Yetkazuvchilar</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value">0</div>
+                <div class="wallet-stat-label">Aktiv</div>
+            </div>
+        </div>
+        <div class="wallet-section">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">Mijozlar ro'yxati</h2>
+            </div>
+            <div style="text-align: center; padding: 20px; color: var(--wallet-text-secondary);">
+                Mijozlar ma'lumotlari tez orada qo'shiladi
+            </div>
+        </div>
+    `;
+}
+
+// Faktura tab tarkibi
+async function getInvoicesTabContent() {
+    return `
+        <div class="wallet-stats-overview" style="margin-bottom: 20px;">
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value">0</div>
+                <div class="wallet-stat-label">Jami fakturalar</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value">0</div>
+                <div class="wallet-stat-label">Kutilmoqda</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value">0</div>
+                <div class="wallet-stat-label">To'langan</div>
+            </div>
+        </div>
+        <div class="wallet-section">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">Fakturalar ro'yxati</h2>
+            </div>
+            <div style="text-align: center; padding: 20px; color: var(--wallet-text-secondary);">
+                Fakturalar ma'lumotlari tez orada qo'shiladi
+            </div>
+        </div>
+    `;
+}
+
+// Nasiya tab tarkibi
+async function getCreditTabContent() {
+    return `
+        <div class="wallet-stats-overview" style="margin-bottom: 20px;">
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value">0</div>
+                <div class="wallet-stat-label">Jami nasiya</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value">0 so'm</div>
+                <div class="wallet-stat-label">Qarz summasi</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div class="wallet-stat-value">0</div>
+                <div class="wallet-stat-label">Muddati o'tgan</div>
+            </div>
+        </div>
+        <div class="wallet-section">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">Nasiya ro'yxati</h2>
+            </div>
+            <div style="text-align: center; padding: 20px; color: var(--wallet-text-secondary);">
+                Nasiya ma'lumotlari tez orada qo'shiladi
+            </div>
+        </div>
+    `;
+}
+
+// Bottom Sheet - Statistika tafsilotlari
+function showStatsBottomSheet(statType) {
+    const bottomSheet = document.getElementById('statsBottomSheet');
+    const title = document.getElementById('bottomSheetTitle');
+    const content = document.getElementById('bottomSheetContent');
+    
+    // Set title based on stat type
+    const titles = {
+        'sales': 'Sotuvlar statistikasi',
+        'products': 'Mahsulotlar statistikasi',
+        'clients': 'Mijozlar statistikasi',
+        'invoices': 'Fakturalar statistikasi',
+        'credit': 'Nasiya statistikasi',
+        'revenue': 'Daromad statistikasi'
+    };
+    
+    title.textContent = titles[statType] || 'Statistika';
+    
+    // Set content based on stat type
+    content.innerHTML = `
+        <div style="text-align: center; padding: 40px 20px;">
+            <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+            <h3 style="margin: 0 0 8px 0;">Batafsil statistika</h3>
+            <p style="color: var(--wallet-text-secondary); margin: 0;">
+                Kunlik, haftalik va oylik ma'lumotlar
+            </p>
+            <div style="margin-top: 24px; padding: 20px; background: var(--wallet-bg-secondary); border-radius: 12px;">
+                <div style="font-size: 32px; font-weight: 700; margin-bottom: 4px;">0</div>
+                <div style="font-size: 14px; color: var(--wallet-text-secondary);">Bu oy</div>
+            </div>
+        </div>
+    `;
+    
+    bottomSheet.classList.add('active');
+}
+
+// Bottom Sheet yopish
+function closeStatsBottomSheet() {
+    document.getElementById('statsBottomSheet').classList.remove('active');
+}
+
+// Global scope'ga export
+window.openSalesWarehouse = openSalesWarehouse;
+window.switchSalesTab = switchSalesTab;
+window.showStatsBottomSheet = showStatsBottomSheet;
+window.closeStatsBottomSheet = closeStatsBottomSheet;
