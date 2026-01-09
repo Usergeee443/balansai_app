@@ -154,9 +154,10 @@ function showLoading(show) {
 // ============================================
 
 function getInitData() {
-    if (tg?.initData) return tg.initData;
-    const params = new URLSearchParams(window.location.search);
-    return params.get('test_user_id') ? '' : '';
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+        return window.Telegram.WebApp.initData;
+    }
+    return '';
 }
 
 async function apiRequest(endpoint, options = {}) {
@@ -2791,9 +2792,8 @@ function showRemindersSkeleton() {
 
 async function loadTheme() {
     try {
-        const response = await fetch('/api/user/theme');
-        const data = await response.json();
-        applyTheme(data.theme_mode || 'dark');
+        const response = await apiRequest('/api/user/theme');
+        applyTheme(response.theme_mode || 'dark');
     } catch (error) {
         console.error('Theme yuklashda xato:', error);
         applyTheme('dark'); // Default
@@ -2836,9 +2836,8 @@ async function toggleTheme() {
 
     // Save to backend
     try {
-        await fetch('/api/user/theme', {
+        await apiRequest('/api/user/theme', {
             method: 'POST',
-            headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({ theme_mode: newTheme })
         });
     } catch (error) {
@@ -2855,12 +2854,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadTariffInfo() {
     try {
-        const response = await fetch('/api/user', {
-            headers: {
-                'X-Telegram-Init-Data': getInitData()
-            }
-        });
-        const user = await response.json();
+        const user = await apiRequest('/api/user');
 
         console.log('[DEBUG] loadTariffInfo - User:', user.user_id, 'Tariff:', user.tariff);
 
@@ -2999,14 +2993,6 @@ async function changeTariff() {
         console.error('Tarifni o\'zgartirishda xato:', error);
         alert('Xatolik yuz berdi!');
     }
-}
-
-// Helper function
-function getInitData() {
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
-        return window.Telegram.WebApp.initData;
-    }
-    return '';
 }
 
 // Load tariff info on profile page load
