@@ -2535,3 +2535,228 @@ def get_business_quick_stats(user_id):
         return {'products': 0, 'employees': 0, 'tasks': 0}
     finally:
         connection.close()
+
+# ==================== MOLIYAVIY TAHLILLAR ====================
+
+def get_profit_loss_analysis(user_id, days=30):
+    """Foyda-Zarar tahlili"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # So'nggi N kun uchun
+            cursor.execute("""
+                SELECT 
+                    SUM(CASE WHEN transaction_type = 'income' THEN amount_uzs ELSE 0 END) as total_income,
+                    SUM(CASE WHEN transaction_type = 'expense' THEN amount_uzs ELSE 0 END) as total_expense,
+                    COUNT(CASE WHEN transaction_type = 'income' THEN 1 END) as income_count,
+                    COUNT(CASE WHEN transaction_type = 'expense' THEN 1 END) as expense_count
+                FROM transactions
+                WHERE user_id = %s AND created_at >= DATE_SUB(NOW(), INTERVAL %s DAY)
+            """, (user_id, days))
+            
+            result = cursor.fetchone()
+            
+            total_income = float(result['total_income'] or 0)
+            total_expense = float(result['total_expense'] or 0)
+            profit = total_income - total_expense
+            profit_margin = (profit / total_income * 100) if total_income > 0 else 0
+            
+            # Haftalik taqqoslash
+            cursor.execute("""
+                SELECT 
+                    WEEK(created_at) as week_num,
+                    SUM(CASE WHEN transaction_type = 'income' THEN amount_uzs ELSE 0 END) as income,
+                    SUM(CASE WHEN transaction_type = 'expense' THEN amount_uzs ELSE 0 END) as expense
+                FROM transactions
+                WHERE user_id = %s AND created_at >= DATE_SUB(NOW(), INTERVAL 8 WEEK)
+                GROUP BY WEEK(created_at)
+                ORDER BY week_num DESC
+                LIMIT 8
+            """, (user_id,))
+            
+            weekly_data = []
+            for row in cursor.fetchall():
+                weekly_data.append({
+                    'week': row['week_num'],
+                    'income': float(row['income'] or 0),
+                    'expense': float(row['expense'] or 0),
+                    'profit': float((row['income'] or 0) - (row['expense'] or 0))
+                })
+            
+            return {
+                'total_income': total_income,
+                'total_expense': total_expense,
+                'profit': profit,
+                'profit_margin': round(profit_margin, 2),
+                'income_count': result['income_count'] or 0,
+                'expense_count': result['expense_count'] or 0,
+                'weekly_data': list(reversed(weekly_data))
+            }
+    finally:
+        connection.close()
+
+
+def get_roi_analysis(user_id):
+    """ROI (Return on Investment) tahlili - Biznes tarifi uchun"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Ombordagi investitsiya
+            cursor.execute("""
+                SELECT 
+                    SUM(quantity * buy_price) as total_investment,
+                    SUM(quantity * sell_price) as potential_revenue,
+                    COUNT(*) as total_products
+                FROM warehouse
+                WHERE user_id = %s AND buy_price IS NOT NULL AND sell_price IS NOT NULL
+            """, (user_id,))
+            
+            warehouse_result = cursor.fetchone()
+            total_investment = float(warehouse_result['total_investment'] or 0)
+            potential_revenue = float(warehouse_result['potential_revenue'] or 0)
+            potential_profit = potential_revenue - total_investment
+            roi_percentage = (potential_profit / total_investment * 100) if total_investment > 0 else 0
+            
+            # Real sotuvlar (oxirgi 30 kun)
+            cursor.execute("""
+                SELECT 
+                    SUM(amount_uzs) as total_sales
+                FROM transactions
+                WHERE user_id = %s 
+                AND transaction_type = 'income' 
+                AND category = 'Sotuvlar'
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
+            """, (user_id,))
+            
+            sales_result = cursor.fetchone()
+            actual_sales = float(sales_result['total_sales'] or 0)
+            
+            return {
+                'total_investment': total_investment,
+                'potential_revenue': potential_revenue,
+                'potential_profit': potential_profit,
+                'roi_percentage': round(roi_percentage, 2),
+                'actual_sales_30d': actual_sales,
+                'total_products': warehouse_result['total_products'] or 0
+            }
+    finally:
+        connection.close()
+
+
+def get_inventory_turnover_analysis(user_id, days=30):
+    """Tovar aylanishi tahlili"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Ombordagi o'rtacha zaxira
+            cursor.execute("""
+                SELECT 
+                    AVG(quantity * buy_price) as avg_inventory_value,
+                    SUM(quantity) as total_quantity
+                FROM warehouse
+                WHERE user_id = %s AND buy_price IS NOT NULL
+            """, (user_id,))
+            
+            inventory_result = cursor.fetchone()
+            avg_inventory_value = float(inventory_result['avg_inventory_value'] or 0)
+            total_quantity = float(inventory_result['total_quantity'] or 0)
+            
+            # Sotilgan mahsulotlar qiymati (COGS - Cost of Goods Sold)
+            cursor.execute("""
+                SELECT 
+                    SUM(amount_uzs) as cogs
+                FROM transactions
+                WHERE user_id = %s 
+                AND transaction_type = 'expense'
+                AND category IN ('Xarid', 'Tovar sotib olish')
+                AND created_at >= DATE_SUB(NOW(), INTERVAL %s DAY)
+            """, (user_id, days))
+            
+            cogs_result = cursor.fetchone()
+            cogs = float(cogs_result['cogs'] or 0)
+            
+            # Turnover ratio hisoblash
+            turnover_ratio = (cogs / avg_inventory_value) if avg_inventory_value > 0 else 0
+            days_in_inventory = (365 / turnover_ratio) if turnover_ratio > 0 else 0
+            
+            # Eng ko'p sotilgan mahsulotlar
+            cursor.execute("""
+                SELECT 
+                    product_name,
+                    category,
+                    quantity,
+                    sell_price,
+                    (quantity * sell_price) as total_value
+                FROM warehouse
+                WHERE user_id = %s 
+                ORDER BY quantity DESC
+                LIMIT 10
+            """, (user_id,))
+            
+            top_products = []
+            for row in cursor.fetchall():
+                top_products.append({
+                    'product_name': row['product_name'],
+                    'category': row['category'],
+                    'quantity': row['quantity'],
+                    'sell_price': float(row['sell_price'] or 0),
+                    'total_value': float(row['total_value'] or 0)
+                })
+            
+            return {
+                'avg_inventory_value': avg_inventory_value,
+                'total_quantity': total_quantity,
+                'cogs': cogs,
+                'turnover_ratio': round(turnover_ratio, 2),
+                'days_in_inventory': round(days_in_inventory, 2),
+                'top_products': top_products
+            }
+    finally:
+        connection.close()
+
+
+def get_low_stock_alerts(user_id):
+    """Kam qolgan mahsulotlar haqida ogohlantirish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT 
+                    id,
+                    product_name,
+                    category,
+                    quantity,
+                    unit,
+                    min_stock,
+                    sell_price
+                FROM warehouse
+                WHERE user_id = %s 
+                AND min_stock > 0 
+                AND quantity <= min_stock
+                ORDER BY (min_stock - quantity) DESC
+                LIMIT 20
+            """, (user_id,))
+            
+            alerts = []
+            for row in cursor.fetchall():
+                shortage = row['min_stock'] - row['quantity']
+                alerts.append({
+                    'id': row['id'],
+                    'product_name': row['product_name'],
+                    'category': row['category'],
+                    'quantity': row['quantity'],
+                    'unit': row['unit'],
+                    'min_stock': row['min_stock'],
+                    'shortage': shortage,
+                    'sell_price': float(row['sell_price'] or 0),
+                    'urgency': 'critical' if shortage >= row['min_stock'] * 0.5 else 'warning'
+                })
+            
+            return {
+                'alerts': alerts,
+                'total_alerts': len(alerts),
+                'critical_count': len([a for a in alerts if a['urgency'] == 'critical'])
+            }
+    finally:
+        connection.close()
+

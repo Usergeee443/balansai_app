@@ -1725,6 +1725,54 @@ def api_business_quick_stats():
     return jsonify(stats)
 
 
+# MOLIYAVIY TAHLILLAR
+
+@app.route('/api/business/analysis/profit-loss', methods=['GET'])
+def api_profit_loss_analysis():
+    """Foyda-Zarar tahlili"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    days = request.args.get('days', 30, type=int)
+    analysis = database.get_profit_loss_analysis(user_id, days)
+    return jsonify(analysis)
+
+
+@app.route('/api/business/analysis/roi', methods=['GET'])
+def api_roi_analysis():
+    """ROI (Return on Investment) tahlili"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    analysis = database.get_roi_analysis(user_id)
+    return jsonify(analysis)
+
+
+@app.route('/api/business/analysis/inventory-turnover', methods=['GET'])
+def api_inventory_turnover():
+    """Tovar aylanishi tahlili"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    days = request.args.get('days', 30, type=int)
+    analysis = database.get_inventory_turnover_analysis(user_id, days)
+    return jsonify(analysis)
+
+
+@app.route('/api/business/alerts/low-stock', methods=['GET'])
+def api_low_stock_alerts():
+    """Kam qolgan mahsulotlar haqida ogohlantirishlar"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    alerts = database.get_low_stock_alerts(user_id)
+    return jsonify(alerts)
+
+
 # TELEGRAM BOT ESLATMALARI
 
 @app.route('/api/business/send-task-notification', methods=['POST'])
