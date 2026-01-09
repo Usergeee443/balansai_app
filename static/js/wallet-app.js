@@ -3017,3 +3017,16 @@ document.addEventListener('DOMContentLoaded', function() {
         setTimeout(() => loadTariffInfo(), 100);
     }
 });
+
+// Open Business App with initData
+function openBusinessApp() {
+    const initData = getInitData();
+    if (initData) {
+        window.location.href = `/business?initData=${encodeURIComponent(initData)}`;
+    } else {
+        window.location.href = '/business';
+    }
+}
+
+// Make it globally accessible
+window.openBusinessApp = openBusinessApp;
