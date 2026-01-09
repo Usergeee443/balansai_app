@@ -246,17 +246,32 @@ def parse_user_id_from_init_data(init_data):
             if '=' in pair:
                 key, value = pair.split('=', 1)
                 pairs[key] = value
-        
+
         if 'user' in pairs:
             # URL decode qilish
             user_str = unquote(pairs['user'])
-            user_data = json.loads(user_str)
-            user_id = user_data.get('id')
-            if user_id:
-                print(f"[DEBUG] User ID parse qilindi (validatsiyasiz): {user_id}")
-                return user_id
+            print(f"[DEBUG] User string: {user_str[:150]}...")
+
+            # Try JSON parse first
+            try:
+                user_data = json.loads(user_str)
+                user_id = user_data.get('id')
+                if user_id:
+                    print(f"[DEBUG] User ID parse qilindi (JSON): {user_id}")
+                    return user_id
+            except json.JSONDecodeError as je:
+                print(f"[DEBUG] JSON decode xatosi: {je}")
+                # Fallback: regex orqali user_id ni topish
+                import re
+                match = re.search(r'"id":(\d+)', user_str)
+                if match:
+                    user_id = int(match.group(1))
+                    print(f"[DEBUG] User ID regex orqali topildi: {user_id}")
+                    return user_id
     except Exception as e:
         print(f"[DEBUG] Parse xatosi: {e}")
+        import traceback
+        traceback.print_exc()
     return None
 
 def get_user_id_from_request():
@@ -279,12 +294,17 @@ def get_user_id_from_request():
     
     # Validatsiya qilish
     user_id = validate_telegram_webapp(init_data)
-    
+
     # Agar validatsiya muvaffaqiyatsiz bo'lsa va DEBUG mode bo'lsa, parse qilib olish
     if not user_id and Config.DEBUG:
         print(f"[DEBUG] Validatsiya muvaffaqiyatsiz, parse qilib olinmoqda...")
         user_id = parse_user_id_from_init_data(init_data)
-    
+
+        # Agar parse ham muvaffaqiyatsiz bo'lsa, default user_id
+        if not user_id:
+            print(f"[DEBUG] Parse ham muvaffaqiyatsiz, default user_id ishlatilmoqda")
+            return 123456789
+
     return user_id
 
 @app.route('/api/user', methods=['GET'])
