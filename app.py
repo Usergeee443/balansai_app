@@ -1964,6 +1964,25 @@ def change_tariff():
 def business_app():
     """Biznes tarifi uchun asosiy ilova"""
     user_id = get_user_id_from_request()
+
+    # Agar header dan topilmasa, query param dan olish
+    if not user_id or user_id == 123456789:
+        init_data = request.args.get('initData')
+        if init_data:
+            try:
+                # initData dan user_id ni parse qilish
+                pairs = init_data.split('&')
+                for pair in pairs:
+                    if pair.startswith('user='):
+                        import urllib.parse
+                        user_json = urllib.parse.unquote(pair.split('=', 1)[1])
+                        import json
+                        user_data = json.loads(user_json)
+                        user_id = user_data.get('id')
+                        break
+            except Exception as e:
+                print(f"[DEBUG] Query param dan user_id parse qilishda xato: {e}")
+
     if not user_id:
         return redirect('/')
 
