@@ -1,22 +1,76 @@
 // ==================== BIZNES ILOVA FUNKSIYALARI ====================
 // Ombor, Xodimlar, Vazifalar va boshqa biznes funksiyalari
 
+// ==================== CACHING MEXANIZMI ====================
+// Ma'lumotlarni cache'lash uchun global o'zgaruvchilar
+const businessCache = {
+    warehouse: { stats: null, items: null, timestamp: null },
+    employees: { stats: null, items: null, timestamp: null },
+    tasks: { stats: null, items: null, timestamp: null }
+};
+
+// Cache'ni tozalash (5 daqiqa)
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+function isCacheValid(cacheKey) {
+    const cache = businessCache[cacheKey];
+    if (!cache || !cache.timestamp) return false;
+    return (Date.now() - cache.timestamp) < CACHE_DURATION;
+}
+
+function setCache(cacheKey, data) {
+    businessCache[cacheKey] = {
+        ...data,
+        timestamp: Date.now()
+    };
+}
+
+function clearCache(cacheKey) {
+    if (cacheKey) {
+        businessCache[cacheKey] = { stats: null, items: null, timestamp: null };
+    } else {
+        // Barcha cache'ni tozalash
+        Object.keys(businessCache).forEach(key => {
+            businessCache[key] = { stats: null, items: null, timestamp: null };
+        });
+    }
+}
+
 // ==================== OMBOR (WAREHOUSE) FUNKSIYALARI ====================
 
-// Ombor sahifasini yuklash
-async function loadWarehousePage() {
+// Ombor sahifasini yuklash (caching bilan)
+async function loadWarehousePage(forceRefresh = false) {
     try {
-        // Statistikani yuklash
-        const statsResponse = await fetch('/api/business/statistics/warehouse');
+        // Agar cache valid bo'lsa va force refresh bo'lmasa, cache'dan ol
+        if (!forceRefresh && isCacheValid('warehouse')) {
+            console.log('✅ Ombor ma\'lumotlari cache\'dan olinmoqda...');
+            const cache = businessCache.warehouse;
+
+            document.getElementById('warehouseTotalProducts').textContent = cache.stats.total_products || 0;
+            document.getElementById('warehouseTotalValue').textContent = formatCurrency(cache.stats.total_value || 0);
+            document.getElementById('warehouseLowStock').textContent = cache.stats.low_stock_count || 0;
+
+            displayWarehouseItems(cache.items);
+            return;
+        }
+
+        console.log('🔄 Ombor ma\'lumotlari API dan yuklanmoqda...');
+
+        // Parallel yuklanish - tezroq
+        const [statsResponse, itemsResponse] = await Promise.all([
+            fetch('/api/business/statistics/warehouse'),
+            fetch('/api/business/warehouse?limit=100')
+        ]);
+
         const stats = await statsResponse.json();
+        const items = await itemsResponse.json();
+
+        // Cache'ga saqlash
+        setCache('warehouse', { stats, items });
 
         document.getElementById('warehouseTotalProducts').textContent = stats.total_products || 0;
         document.getElementById('warehouseTotalValue').textContent = formatCurrency(stats.total_value || 0);
         document.getElementById('warehouseLowStock').textContent = stats.low_stock_count || 0;
-
-        // Mahsulotlar ro'yxatini yuklash
-        const itemsResponse = await fetch('/api/business/warehouse?limit=100');
-        const items = await itemsResponse.json();
 
         displayWarehouseItems(items);
     } catch (error) {
@@ -73,32 +127,336 @@ function displayWarehouseItems(items) {
 }
 
 // Mahsulot qo'shish modali
-function showAddWarehouseModal() {
-    // Bu funksiya modal yaratadi
-    showToast('Mahsulot qo\'shish tez orada qo\'shiladi', 'info');
+async function showAddWarehouseModal() {
+    const modal = createModal({
+        title: 'Yangi mahsulot qo\'shish',
+        content: `
+            <div class="form-group">
+                <label>Mahsulot nomi *</label>
+                <input type="text" id="warehouseProductName" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label>Mahsulot kodi</label>
+                <input type="text" id="warehouseProductCode" class="form-input">
+            </div>
+            <div class="form-group">
+                <label>Kategoriya</label>
+                <input type="text" id="warehouseCategory" class="form-input">
+            </div>
+            <div class="form-group">
+                <label>Miqdor *</label>
+                <input type="number" id="warehouseQuantity" class="form-input" value="0" required>
+            </div>
+            <div class="form-group">
+                <label>Birlik</label>
+                <select id="warehouseUnit" class="form-input">
+                    <option value="dona">Dona</option>
+                    <option value="kg">Kilogram (kg)</option>
+                    <option value="litr">Litr</option>
+                    <option value="metr">Metr</option>
+                    <option value="paket">Paket</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Sotib olish narxi</label>
+                <input type="number" id="warehouseBuyPrice" class="form-input" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Sotish narxi</label>
+                <input type="number" id="warehouseSellPrice" class="form-input" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Minimal zaxira</label>
+                <input type="number" id="warehouseMinStock" class="form-input" value="0">
+            </div>
+            <div class="form-group">
+                <label>Izoh</label>
+                <textarea id="warehouseDescription" class="form-input" rows="3"></textarea>
+            </div>
+        `,
+        buttons: [
+            {
+                text: 'Bekor qilish',
+                class: 'btn-secondary',
+                onClick: () => modal.close()
+            },
+            {
+                text: 'Qo\'shish',
+                class: 'btn-primary',
+                onClick: async () => {
+                    const data = {
+                        product_name: document.getElementById('warehouseProductName').value,
+                        product_code: document.getElementById('warehouseProductCode').value,
+                        category: document.getElementById('warehouseCategory').value,
+                        quantity: parseFloat(document.getElementById('warehouseQuantity').value),
+                        unit: document.getElementById('warehouseUnit').value,
+                        buy_price: parseFloat(document.getElementById('warehouseBuyPrice').value) || null,
+                        sell_price: parseFloat(document.getElementById('warehouseSellPrice').value) || null,
+                        min_stock: parseFloat(document.getElementById('warehouseMinStock').value) || 0,
+                        description: document.getElementById('warehouseDescription').value
+                    };
+
+                    if (!data.product_name) {
+                        showToast('Mahsulot nomini kiriting', 'error');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('/api/business/warehouse', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                            showToast('Mahsulot qo\'shildi', 'success');
+                            clearCache('warehouse');
+                            loadWarehousePage(true);
+                            modal.close();
+                        } else {
+                            showToast('Xatolik yuz berdi', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Xato:', error);
+                        showToast('Xatolik yuz berdi', 'error');
+                    }
+                }
+            }
+        ]
+    });
 }
 
-// Mahsulot tafsilotlari
-function showWarehouseItemDetails(itemId) {
-    showToast('Mahsulot tafsilotlari tez orada qo\'shiladi', 'info');
+// Mahsulot tafsilotlari va tahrirlash
+async function showWarehouseItemDetails(itemId) {
+    try {
+        const response = await fetch(`/api/business/warehouse/${itemId}`);
+        const item = await response.json();
+
+        if (!item || item.error) {
+            showToast('Mahsulot topilmadi', 'error');
+            return;
+        }
+
+        const modal = createModal({
+            title: item.product_name,
+            content: `
+                <div class="details-section">
+                    <div class="detail-row">
+                        <span class="detail-label">Mahsulot kodi:</span>
+                        <span class="detail-value">${item.product_code || '-'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Kategoriya:</span>
+                        <span class="detail-value">${item.category || '-'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Miqdor:</span>
+                        <span class="detail-value">${item.quantity} ${item.unit}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Sotib olish narxi:</span>
+                        <span class="detail-value">${item.buy_price ? formatCurrency(item.buy_price) : '-'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Sotish narxi:</span>
+                        <span class="detail-value">${item.sell_price ? formatCurrency(item.sell_price) : '-'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Minimal zaxira:</span>
+                        <span class="detail-value">${item.min_stock}</span>
+                    </div>
+                    ${item.description ? `
+                        <div class="detail-row">
+                            <span class="detail-label">Izoh:</span>
+                            <span class="detail-value">${item.description}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `,
+            buttons: [
+                {
+                    text: 'O\'chirish',
+                    class: 'btn-danger',
+                    onClick: async () => {
+                        if (confirm('Rostdan ham o\'chirmoqchimisiz?')) {
+                            try {
+                                const response = await fetch(`/api/business/warehouse/${itemId}`, {
+                                    method: 'DELETE'
+                                });
+                                const result = await response.json();
+                                if (result.success) {
+                                    showToast('Mahsulot o\'chirildi', 'success');
+                                    clearCache('warehouse');
+                                    loadWarehousePage(true);
+                                    modal.close();
+                                } else {
+                                    showToast('Xatolik yuz berdi', 'error');
+                                }
+                            } catch (error) {
+                                console.error('Xato:', error);
+                                showToast('Xatolik yuz berdi', 'error');
+                            }
+                        }
+                    }
+                },
+                {
+                    text: 'Tahrirlash',
+                    class: 'btn-primary',
+                    onClick: () => {
+                        modal.close();
+                        showEditWarehouseModal(item);
+                    }
+                },
+                {
+                    text: 'Yopish',
+                    class: 'btn-secondary',
+                    onClick: () => modal.close()
+                }
+            ]
+        });
+    } catch (error) {
+        console.error('Xato:', error);
+        showToast('Xatolik yuz berdi', 'error');
+    }
+}
+
+// Mahsulotni tahrirlash modali
+async function showEditWarehouseModal(item) {
+    const modal = createModal({
+        title: 'Mahsulotni tahrirlash',
+        content: `
+            <div class="form-group">
+                <label>Mahsulot nomi *</label>
+                <input type="text" id="editWarehouseProductName" class="form-input" value="${item.product_name}" required>
+            </div>
+            <div class="form-group">
+                <label>Mahsulot kodi</label>
+                <input type="text" id="editWarehouseProductCode" class="form-input" value="${item.product_code || ''}">
+            </div>
+            <div class="form-group">
+                <label>Kategoriya</label>
+                <input type="text" id="editWarehouseCategory" class="form-input" value="${item.category || ''}">
+            </div>
+            <div class="form-group">
+                <label>Miqdor *</label>
+                <input type="number" id="editWarehouseQuantity" class="form-input" value="${item.quantity}" required>
+            </div>
+            <div class="form-group">
+                <label>Birlik</label>
+                <select id="editWarehouseUnit" class="form-input">
+                    <option value="dona" ${item.unit === 'dona' ? 'selected' : ''}>Dona</option>
+                    <option value="kg" ${item.unit === 'kg' ? 'selected' : ''}>Kilogram (kg)</option>
+                    <option value="litr" ${item.unit === 'litr' ? 'selected' : ''}>Litr</option>
+                    <option value="metr" ${item.unit === 'metr' ? 'selected' : ''}>Metr</option>
+                    <option value="paket" ${item.unit === 'paket' ? 'selected' : ''}>Paket</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Sotib olish narxi</label>
+                <input type="number" id="editWarehouseBuyPrice" class="form-input" value="${item.buy_price || ''}" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Sotish narxi</label>
+                <input type="number" id="editWarehouseSellPrice" class="form-input" value="${item.sell_price || ''}" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Minimal zaxira</label>
+                <input type="number" id="editWarehouseMinStock" class="form-input" value="${item.min_stock || 0}">
+            </div>
+            <div class="form-group">
+                <label>Izoh</label>
+                <textarea id="editWarehouseDescription" class="form-input" rows="3">${item.description || ''}</textarea>
+            </div>
+        `,
+        buttons: [
+            {
+                text: 'Bekor qilish',
+                class: 'btn-secondary',
+                onClick: () => modal.close()
+            },
+            {
+                text: 'Saqlash',
+                class: 'btn-primary',
+                onClick: async () => {
+                    const data = {
+                        product_name: document.getElementById('editWarehouseProductName').value,
+                        product_code: document.getElementById('editWarehouseProductCode').value,
+                        category: document.getElementById('editWarehouseCategory').value,
+                        quantity: parseFloat(document.getElementById('editWarehouseQuantity').value),
+                        unit: document.getElementById('editWarehouseUnit').value,
+                        buy_price: parseFloat(document.getElementById('editWarehouseBuyPrice').value) || null,
+                        sell_price: parseFloat(document.getElementById('editWarehouseSellPrice').value) || null,
+                        min_stock: parseFloat(document.getElementById('editWarehouseMinStock').value) || 0,
+                        description: document.getElementById('editWarehouseDescription').value
+                    };
+
+                    if (!data.product_name) {
+                        showToast('Mahsulot nomini kiriting', 'error');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/business/warehouse/${item.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                            showToast('Mahsulot yangilandi', 'success');
+                            clearCache('warehouse');
+                            loadWarehousePage(true);
+                            modal.close();
+                        } else {
+                            showToast('Xatolik yuz berdi', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Xato:', error);
+                        showToast('Xatolik yuz berdi', 'error');
+                    }
+                }
+            }
+        ]
+    });
 }
 
 // ==================== XODIMLAR (EMPLOYEES) FUNKSIYALARI ====================
 
-// Xodimlar sahifasini yuklash
-async function loadEmployeesPage() {
+// Xodimlar sahifasini yuklash (caching bilan)
+async function loadEmployeesPage(forceRefresh = false) {
     try {
-        // Statistikani yuklash
-        const statsResponse = await fetch('/api/business/statistics/employees');
+        // Agar cache valid bo'lsa va force refresh bo'lmasa, cache'dan ol
+        if (!forceRefresh && isCacheValid('employees')) {
+            console.log('✅ Xodimlar ma\'lumotlari cache\'dan olinmoqda...');
+            const cache = businessCache.employees;
+
+            document.getElementById('employeesTotal').textContent = cache.stats.total_employees || 0;
+            document.getElementById('employeesActive').textContent = cache.stats.active_employees || 0;
+            document.getElementById('employeesSalary').textContent = formatCurrency(cache.stats.total_salary || 0);
+
+            displayEmployees(cache.items);
+            return;
+        }
+
+        console.log('🔄 Xodimlar ma\'lumotlari API dan yuklanmoqda...');
+
+        // Parallel yuklanish - tezroq
+        const [statsResponse, employeesResponse] = await Promise.all([
+            fetch('/api/business/statistics/employees'),
+            fetch('/api/business/employees?limit=100')
+        ]);
+
         const stats = await statsResponse.json();
+        const employees = await employeesResponse.json();
+
+        // Cache'ga saqlash
+        setCache('employees', { stats, items: employees });
 
         document.getElementById('employeesTotal').textContent = stats.total_employees || 0;
         document.getElementById('employeesActive').textContent = stats.active_employees || 0;
         document.getElementById('employeesSalary').textContent = formatCurrency(stats.total_salary || 0);
-
-        // Xodimlar ro'yxatini yuklash
-        const employeesResponse = await fetch('/api/business/employees?limit=100');
-        const employees = await employeesResponse.json();
 
         displayEmployees(employees);
     } catch (error) {
@@ -159,32 +517,329 @@ function displayEmployees(employees) {
 }
 
 // Xodim qo'shish modali
-function showAddEmployeeModal() {
-    showToast('Xodim qo\'shish tez orada qo\'shiladi', 'info');
+async function showAddEmployeeModal() {
+    const modal = createModal({
+        title: 'Yangi xodim qo\'shish',
+        content: `
+            <div class="form-group">
+                <label>F.I.O *</label>
+                <input type="text" id="employeeFullName" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label>Lavozim</label>
+                <input type="text" id="employeePosition" class="form-input">
+            </div>
+            <div class="form-group">
+                <label>Telefon</label>
+                <input type="tel" id="employeePhone" class="form-input">
+            </div>
+            <div class="form-group">
+                <label>Ish haqi</label>
+                <input type="number" id="employeeSalary" class="form-input" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Valyuta</label>
+                <select id="employeeCurrency" class="form-input">
+                    <option value="UZS">UZS</option>
+                    <option value="USD">USD</option>
+                    <option value="EUR">EUR</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Ishga kirgan sana</label>
+                <input type="date" id="employeeHireDate" class="form-input">
+            </div>
+            <div class="form-group">
+                <label>Manzil</label>
+                <textarea id="employeeAddress" class="form-input" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Izoh</label>
+                <textarea id="employeeNotes" class="form-input" rows="2"></textarea>
+            </div>
+        `,
+        buttons: [
+            {
+                text: 'Bekor qilish',
+                class: 'btn-secondary',
+                onClick: () => modal.close()
+            },
+            {
+                text: 'Qo\'shish',
+                class: 'btn-primary',
+                onClick: async () => {
+                    const data = {
+                        full_name: document.getElementById('employeeFullName').value,
+                        position: document.getElementById('employeePosition').value,
+                        phone: document.getElementById('employeePhone').value,
+                        salary: parseFloat(document.getElementById('employeeSalary').value) || null,
+                        currency: document.getElementById('employeeCurrency').value,
+                        hire_date: document.getElementById('employeeHireDate').value || null,
+                        address: document.getElementById('employeeAddress').value,
+                        notes: document.getElementById('employeeNotes').value
+                    };
+
+                    if (!data.full_name) {
+                        showToast('F.I.O ni kiriting', 'error');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('/api/business/employees', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                            showToast('Xodim qo\'shildi', 'success');
+                            clearCache('employees');
+                            loadEmployeesPage(true);
+                            modal.close();
+                        } else {
+                            showToast('Xatolik yuz berdi', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Xato:', error);
+                        showToast('Xatolik yuz berdi', 'error');
+                    }
+                }
+            }
+        ]
+    });
 }
 
 // Xodim tafsilotlari
-function showEmployeeDetails(employeeId) {
-    showToast('Xodim tafsilotlari tez orada qo\'shiladi', 'info');
+async function showEmployeeDetails(employeeId) {
+    try {
+        const response = await fetch(`/api/business/employees/${employeeId}`);
+        const employee = await response.json();
+
+        if (!employee || employee.error) {
+            showToast('Xodim topilmadi', 'error');
+            return;
+        }
+
+        const modal = createModal({
+            title: employee.full_name,
+            content: `
+                <div class="details-section">
+                    <div class="detail-row">
+                        <span class="detail-label">Lavozim:</span>
+                        <span class="detail-value">${employee.position || '-'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Telefon:</span>
+                        <span class="detail-value">${employee.phone || '-'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Ish haqi:</span>
+                        <span class="detail-value">${employee.salary ? formatCurrency(employee.salary, employee.currency) : '-'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Holat:</span>
+                        <span class="detail-value">${employee.status === 'active' ? 'Faol' : 'Nofaol'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Ishga kirgan:</span>
+                        <span class="detail-value">${employee.hire_date ? new Date(employee.hire_date).toLocaleDateString('uz-UZ') : '-'}</span>
+                    </div>
+                    ${employee.address ? `
+                        <div class="detail-row">
+                            <span class="detail-label">Manzil:</span>
+                            <span class="detail-value">${employee.address}</span>
+                        </div>
+                    ` : ''}
+                    ${employee.notes ? `
+                        <div class="detail-row">
+                            <span class="detail-label">Izoh:</span>
+                            <span class="detail-value">${employee.notes}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `,
+            buttons: [
+                {
+                    text: 'O\'chirish',
+                    class: 'btn-danger',
+                    onClick: async () => {
+                        if (confirm('Rostdan ham o\'chirmoqchimisiz?')) {
+                            try {
+                                const response = await fetch(`/api/business/employees/${employeeId}`, {
+                                    method: 'DELETE'
+                                });
+                                const result = await response.json();
+                                if (result.success) {
+                                    showToast('Xodim o\'chirildi', 'success');
+                                    clearCache('employees');
+                                    loadEmployeesPage(true);
+                                    modal.close();
+                                } else {
+                                    showToast('Xatolik yuz berdi', 'error');
+                                }
+                            } catch (error) {
+                                console.error('Xato:', error);
+                                showToast('Xatolik yuz berdi', 'error');
+                            }
+                        }
+                    }
+                },
+                {
+                    text: 'Tahrirlash',
+                    class: 'btn-primary',
+                    onClick: () => {
+                        modal.close();
+                        showEditEmployeeModal(employee);
+                    }
+                },
+                {
+                    text: 'Yopish',
+                    class: 'btn-secondary',
+                    onClick: () => modal.close()
+                }
+            ]
+        });
+    } catch (error) {
+        console.error('Xato:', error);
+        showToast('Xatolik yuz berdi', 'error');
+    }
+}
+
+// Xodimni tahrirlash
+async function showEditEmployeeModal(employee) {
+    const modal = createModal({
+        title: 'Xodimni tahrirlash',
+        content: `
+            <div class="form-group">
+                <label>F.I.O *</label>
+                <input type="text" id="editEmployeeFullName" class="form-input" value="${employee.full_name}" required>
+            </div>
+            <div class="form-group">
+                <label>Lavozim</label>
+                <input type="text" id="editEmployeePosition" class="form-input" value="${employee.position || ''}">
+            </div>
+            <div class="form-group">
+                <label>Telefon</label>
+                <input type="tel" id="editEmployeePhone" class="form-input" value="${employee.phone || ''}">
+            </div>
+            <div class="form-group">
+                <label>Ish haqi</label>
+                <input type="number" id="editEmployeeSalary" class="form-input" value="${employee.salary || ''}" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Valyuta</label>
+                <select id="editEmployeeCurrency" class="form-input">
+                    <option value="UZS" ${employee.currency === 'UZS' ? 'selected' : ''}>UZS</option>
+                    <option value="USD" ${employee.currency === 'USD' ? 'selected' : ''}>USD</option>
+                    <option value="EUR" ${employee.currency === 'EUR' ? 'selected' : ''}>EUR</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Holat</label>
+                <select id="editEmployeeStatus" class="form-input">
+                    <option value="active" ${employee.status === 'active' ? 'selected' : ''}>Faol</option>
+                    <option value="inactive" ${employee.status === 'inactive' ? 'selected' : ''}>Nofaol</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Manzil</label>
+                <textarea id="editEmployeeAddress" class="form-input" rows="2">${employee.address || ''}</textarea>
+            </div>
+            <div class="form-group">
+                <label>Izoh</label>
+                <textarea id="editEmployeeNotes" class="form-input" rows="2">${employee.notes || ''}</textarea>
+            </div>
+        `,
+        buttons: [
+            {
+                text: 'Bekor qilish',
+                class: 'btn-secondary',
+                onClick: () => modal.close()
+            },
+            {
+                text: 'Saqlash',
+                class: 'btn-primary',
+                onClick: async () => {
+                    const data = {
+                        full_name: document.getElementById('editEmployeeFullName').value,
+                        position: document.getElementById('editEmployeePosition').value,
+                        phone: document.getElementById('editEmployeePhone').value,
+                        salary: parseFloat(document.getElementById('editEmployeeSalary').value) || null,
+                        currency: document.getElementById('editEmployeeCurrency').value,
+                        status: document.getElementById('editEmployeeStatus').value,
+                        address: document.getElementById('editEmployeeAddress').value,
+                        notes: document.getElementById('editEmployeeNotes').value
+                    };
+
+                    if (!data.full_name) {
+                        showToast('F.I.O ni kiriting', 'error');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/business/employees/${employee.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                            showToast('Xodim yangilandi', 'success');
+                            clearCache('employees');
+                            loadEmployeesPage(true);
+                            modal.close();
+                        } else {
+                            showToast('Xatolik yuz berdi', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Xato:', error);
+                        showToast('Xatolik yuz berdi', 'error');
+                    }
+                }
+            }
+        ]
+    });
 }
 
 // ==================== VAZIFALAR (TASKS) FUNKSIYALARI ====================
 
-// Vazifalar sahifasini yuklash
-async function loadTasksPage() {
+// Vazifalar sahifasini yuklash (caching bilan)
+async function loadTasksPage(forceRefresh = false) {
     try {
-        // Statistikani yuklash
-        const statsResponse = await fetch('/api/business/statistics/tasks');
+        // Agar cache valid bo'lsa va force refresh bo'lmasa, cache'dan ol
+        if (!forceRefresh && isCacheValid('tasks')) {
+            console.log('✅ Vazifalar ma\'lumotlari cache\'dan olinmoqda...');
+            const cache = businessCache.tasks;
+
+            document.getElementById('tasksTotal').textContent = cache.stats.total_tasks || 0;
+            document.getElementById('tasksPending').textContent = cache.stats.pending_tasks || 0;
+            document.getElementById('tasksInProgress').textContent = cache.stats.in_progress_tasks || 0;
+            document.getElementById('tasksCompleted').textContent = cache.stats.completed_tasks || 0;
+
+            displayTasks(cache.items);
+            return;
+        }
+
+        console.log('🔄 Vazifalar ma\'lumotlari API dan yuklanmoqda...');
+
+        // Parallel yuklanish - tezroq
+        const [statsResponse, tasksResponse] = await Promise.all([
+            fetch('/api/business/statistics/tasks'),
+            fetch('/api/business/tasks?limit=100')
+        ]);
+
         const stats = await statsResponse.json();
+        const tasks = await tasksResponse.json();
+
+        // Cache'ga saqlash
+        setCache('tasks', { stats, items: tasks });
 
         document.getElementById('tasksTotal').textContent = stats.total_tasks || 0;
         document.getElementById('tasksPending').textContent = stats.pending_tasks || 0;
         document.getElementById('tasksInProgress').textContent = stats.in_progress_tasks || 0;
         document.getElementById('tasksCompleted').textContent = stats.completed_tasks || 0;
-
-        // Vazifalar ro'yxatini yuklash
-        const tasksResponse = await fetch('/api/business/tasks?limit=100');
-        const tasks = await tasksResponse.json();
 
         displayTasks(tasks);
     } catch (error) {
@@ -266,13 +921,303 @@ function displayTasks(tasks) {
 }
 
 // Vazifa qo'shish modali
-function showAddTaskModal() {
-    showToast('Vazifa qo\'shish tez orada qo\'shiladi', 'info');
+async function showAddTaskModal() {
+    // Xodimlarni yuklash
+    let employees = [];
+    try {
+        const response = await fetch('/api/business/employees?limit=100');
+        employees = await response.json();
+    } catch (error) {
+        console.error('Xodimlarni yuklashda xato:', error);
+    }
+
+    const employeesOptions = employees.map(emp =>
+        `<option value="${emp.id}">${emp.full_name} - ${emp.position || 'Lavozim ko\'rsatilmagan'}</option>`
+    ).join('');
+
+    const modal = createModal({
+        title: 'Yangi vazifa qo\'shish',
+        content: `
+            <div class="form-group">
+                <label>Vazifa nomi *</label>
+                <input type="text" id="taskTitle" class="form-input" required>
+            </div>
+            <div class="form-group">
+                <label>Tavsif</label>
+                <textarea id="taskDescription" class="form-input" rows="3"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Xodim biriktirish</label>
+                <select id="taskAssignedTo" class="form-input">
+                    <option value="">Tanlang...</option>
+                    ${employeesOptions}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Muhimlik</label>
+                <select id="taskPriority" class="form-input">
+                    <option value="low">Kam</option>
+                    <option value="medium" selected>O'rta</option>
+                    <option value="high">Yuqori</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tugash muddati</label>
+                <input type="date" id="taskDueDate" class="form-input">
+            </div>
+        `,
+        buttons: [
+            {
+                text: 'Bekor qilish',
+                class: 'btn-secondary',
+                onClick: () => modal.close()
+            },
+            {
+                text: 'Qo\'shish',
+                class: 'btn-primary',
+                onClick: async () => {
+                    const data = {
+                        title: document.getElementById('taskTitle').value,
+                        description: document.getElementById('taskDescription').value,
+                        assigned_to: parseInt(document.getElementById('taskAssignedTo').value) || null,
+                        priority: document.getElementById('taskPriority').value,
+                        status: 'pending',
+                        due_date: document.getElementById('taskDueDate').value || null
+                    };
+
+                    if (!data.title) {
+                        showToast('Vazifa nomini kiriting', 'error');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch('/api/business/tasks', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                            showToast('Vazifa qo\'shildi', 'success');
+                            clearCache('tasks');
+                            loadTasksPage(true);
+                            modal.close();
+                        } else {
+                            showToast('Xatolik yuz berdi', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Xato:', error);
+                        showToast('Xatolik yuz berdi', 'error');
+                    }
+                }
+            }
+        ]
+    });
 }
 
 // Vazifa tafsilotlari
-function showTaskDetails(taskId) {
-    showToast('Vazifa tafsilotlari tez orada qo\'shiladi', 'info');
+async function showTaskDetails(taskId) {
+    try {
+        const response = await fetch(`/api/business/tasks/${taskId}`);
+        const task = await response.json();
+
+        if (!task || task.error) {
+            showToast('Vazifa topilmadi', 'error');
+            return;
+        }
+
+        const statusText = {
+            'pending': 'Kutilmoqda',
+            'in_progress': 'Jarayonda',
+            'completed': 'Bajarildi'
+        }[task.status] || task.status;
+
+        const priorityText = {
+            'low': 'Kam',
+            'medium': 'O\'rta',
+            'high': 'Yuqori'
+        }[task.priority] || task.priority;
+
+        const modal = createModal({
+            title: task.title,
+            content: `
+                <div class="details-section">
+                    ${task.description ? `
+                        <div class="detail-row">
+                            <span class="detail-label">Tavsif:</span>
+                            <span class="detail-value">${task.description}</span>
+                        </div>
+                    ` : ''}
+                    <div class="detail-row">
+                        <span class="detail-label">Xodim:</span>
+                        <span class="detail-value">${task.employee_name || 'Biriktirilmagan'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Holat:</span>
+                        <span class="detail-value">${statusText}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Muhimlik:</span>
+                        <span class="detail-value">${priorityText}</span>
+                    </div>
+                    ${task.due_date ? `
+                        <div class="detail-row">
+                            <span class="detail-label">Tugash muddati:</span>
+                            <span class="detail-value">${new Date(task.due_date).toLocaleDateString('uz-UZ')}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            `,
+            buttons: [
+                {
+                    text: 'O\'chirish',
+                    class: 'btn-danger',
+                    onClick: async () => {
+                        if (confirm('Rostdan ham o\'chirmoqchimisiz?')) {
+                            try {
+                                const response = await fetch(`/api/business/tasks/${taskId}`, {
+                                    method: 'DELETE'
+                                });
+                                const result = await response.json();
+                                if (result.success) {
+                                    showToast('Vazifa o\'chirildi', 'success');
+                                    clearCache('tasks');
+                                    loadTasksPage(true);
+                                    modal.close();
+                                } else {
+                                    showToast('Xatolik yuz berdi', 'error');
+                                }
+                            } catch (error) {
+                                console.error('Xato:', error);
+                                showToast('Xatolik yuz berdi', 'error');
+                            }
+                        }
+                    }
+                },
+                {
+                    text: 'Tahrirlash',
+                    class: 'btn-primary',
+                    onClick: () => {
+                        modal.close();
+                        showEditTaskModal(task);
+                    }
+                },
+                {
+                    text: 'Yopish',
+                    class: 'btn-secondary',
+                    onClick: () => modal.close()
+                }
+            ]
+        });
+    } catch (error) {
+        console.error('Xato:', error);
+        showToast('Xatolik yuz berdi', 'error');
+    }
+}
+
+// Vazifani tahrirlash
+async function showEditTaskModal(task) {
+    // Xodimlarni yuklash
+    let employees = [];
+    try {
+        const response = await fetch('/api/business/employees?limit=100');
+        employees = await response.json();
+    } catch (error) {
+        console.error('Xodimlarni yuklashda xato:', error);
+    }
+
+    const employeesOptions = employees.map(emp =>
+        `<option value="${emp.id}" ${task.assigned_to === emp.id ? 'selected' : ''}>${emp.full_name} - ${emp.position || 'Lavozim ko\'rsatilmagan'}</option>`
+    ).join('');
+
+    const modal = createModal({
+        title: 'Vazifani tahrirlash',
+        content: `
+            <div class="form-group">
+                <label>Vazifa nomi *</label>
+                <input type="text" id="editTaskTitle" class="form-input" value="${task.title}" required>
+            </div>
+            <div class="form-group">
+                <label>Tavsif</label>
+                <textarea id="editTaskDescription" class="form-input" rows="3">${task.description || ''}</textarea>
+            </div>
+            <div class="form-group">
+                <label>Xodim biriktirish</label>
+                <select id="editTaskAssignedTo" class="form-input">
+                    <option value="">Tanlang...</option>
+                    ${employeesOptions}
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Holat</label>
+                <select id="editTaskStatus" class="form-input">
+                    <option value="pending" ${task.status === 'pending' ? 'selected' : ''}>Kutilmoqda</option>
+                    <option value="in_progress" ${task.status === 'in_progress' ? 'selected' : ''}>Jarayonda</option>
+                    <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>Bajarildi</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Muhimlik</label>
+                <select id="editTaskPriority" class="form-input">
+                    <option value="low" ${task.priority === 'low' ? 'selected' : ''}>Kam</option>
+                    <option value="medium" ${task.priority === 'medium' ? 'selected' : ''}>O'rta</option>
+                    <option value="high" ${task.priority === 'high' ? 'selected' : ''}>Yuqori</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Tugash muddati</label>
+                <input type="date" id="editTaskDueDate" class="form-input" value="${task.due_date || ''}">
+            </div>
+        `,
+        buttons: [
+            {
+                text: 'Bekor qilish',
+                class: 'btn-secondary',
+                onClick: () => modal.close()
+            },
+            {
+                text: 'Saqlash',
+                class: 'btn-primary',
+                onClick: async () => {
+                    const data = {
+                        title: document.getElementById('editTaskTitle').value,
+                        description: document.getElementById('editTaskDescription').value,
+                        assigned_to: parseInt(document.getElementById('editTaskAssignedTo').value) || null,
+                        status: document.getElementById('editTaskStatus').value,
+                        priority: document.getElementById('editTaskPriority').value,
+                        due_date: document.getElementById('editTaskDueDate').value || null
+                    };
+
+                    if (!data.title) {
+                        showToast('Vazifa nomini kiriting', 'error');
+                        return;
+                    }
+
+                    try {
+                        const response = await fetch(`/api/business/tasks/${task.id}`, {
+                            method: 'PUT',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify(data)
+                        });
+
+                        const result = await response.json();
+                        if (result.success) {
+                            showToast('Vazifa yangilandi', 'success');
+                            clearCache('tasks');
+                            loadTasksPage(true);
+                            modal.close();
+                        } else {
+                            showToast('Xatolik yuz berdi', 'error');
+                        }
+                    } catch (error) {
+                        console.error('Xato:', error);
+                        showToast('Xatolik yuz berdi', 'error');
+                    }
+                }
+            }
+        ]
+    });
 }
 
 // ==================== YORDAMCHI FUNKSIYALAR ====================
@@ -303,6 +1248,70 @@ function showToast(message, type = 'info') {
         alert(message);
     }
 }
+
+// Modal yaratish utility funksiyasi
+function createModal({ title, content, buttons }) {
+    // Modal konteynerini yaratish
+    const modalHTML = `
+        <div class="business-modal-overlay" id="businessModalOverlay" onclick="if(event.target === this) closeBusinessModal()">
+            <div class="business-modal">
+                <div class="business-modal-header">
+                    <h3>${title}</h3>
+                    <button class="business-modal-close" onclick="closeBusinessModal()">&times;</button>
+                </div>
+                <div class="business-modal-body">
+                    ${content}
+                </div>
+                <div class="business-modal-footer">
+                    ${buttons.map((btn, idx) => `
+                        <button class="business-modal-btn ${btn.class}" onclick="handleModalButton(${idx})">${btn.text}</button>
+                    `).join('')}
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Modalga DOM'ga qo'shish
+    const tempDiv = document.createElement('div');
+    tempDiv.innerHTML = modalHTML;
+    const modalElement = tempDiv.firstElementChild;
+    document.body.appendChild(modalElement);
+
+    // Button handlerlarini saqlash
+    window.currentModalButtons = buttons;
+
+    // Animatsiya uchun timeout
+    setTimeout(() => {
+        modalElement.classList.add('active');
+    }, 10);
+
+    return {
+        close: closeBusinessModal,
+        element: modalElement
+    };
+}
+
+// Modal button handlerini chaqirish
+window.handleModalButton = function(index) {
+    if (window.currentModalButtons && window.currentModalButtons[index]) {
+        window.currentModalButtons[index].onClick();
+    }
+};
+
+// Modal yopish
+function closeBusinessModal() {
+    const modal = document.getElementById('businessModalOverlay');
+    if (modal) {
+        modal.classList.remove('active');
+        setTimeout(() => {
+            modal.remove();
+            window.currentModalButtons = null;
+        }, 300);
+    }
+}
+
+// Global scope'ga export qilish
+window.closeBusinessModal = closeBusinessModal;
 
 // ==================== NAVIGATSIYA KENGAYTMASI ====================
 
