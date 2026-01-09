@@ -1376,6 +1376,88 @@
         <div class="wallet-spinner"></div>
         </div>
 
+    <!-- ============================================
+         SAVDO & OMBOR MODULI (BIZNES TARIFI)
+         ============================================ -->
+    <div id="pageSalesWarehouse" class="page">
+        <!-- Header with Back Button -->
+        <div class="wallet-page-header" style="position: sticky; top: 0; background: var(--wallet-bg-primary); z-index: 100;">
+            <button class="wallet-icon-btn" onclick="navigateTo('home')" style="margin-right: 12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h1 class="wallet-page-title">Savdo & Ombor</h1>
+        </div>
+
+        <!-- Sticky Statistics Panel -->
+        <div class="sales-stats-sticky">
+            <div class="sales-stat-mini" onclick="showStatsBottomSheet('sales')">
+                <div class="stat-mini-icon">📊</div>
+                <div class="stat-mini-value" id="stickyStatSales">0</div>
+                <div class="stat-mini-label">Sotuvlar</div>
+            </div>
+            <div class="sales-stat-mini" onclick="showStatsBottomSheet('products')">
+                <div class="stat-mini-icon">📦</div>
+                <div class="stat-mini-value" id="stickyStatProducts">0</div>
+                <div class="stat-mini-label">Mahsulotlar</div>
+            </div>
+            <div class="sales-stat-mini" onclick="showStatsBottomSheet('clients')">
+                <div class="stat-mini-icon">👥</div>
+                <div class="stat-mini-value" id="stickyStatClients">0</div>
+                <div class="stat-mini-label">Mijozlar</div>
+            </div>
+            <div class="sales-stat-mini" onclick="showStatsBottomSheet('invoices')">
+                <div class="stat-mini-icon">📄</div>
+                <div class="stat-mini-value" id="stickyStatInvoices">0</div>
+                <div class="stat-mini-label">Fakturalar</div>
+            </div>
+            <div class="sales-stat-mini" onclick="showStatsBottomSheet('credit')">
+                <div class="stat-mini-icon">💳</div>
+                <div class="stat-mini-value" id="stickyStatCredit">0</div>
+                <div class="stat-mini-label">Nasiya</div>
+            </div>
+            <div class="sales-stat-mini" onclick="showStatsBottomSheet('revenue')">
+                <div class="stat-mini-icon">💰</div>
+                <div class="stat-mini-value" id="stickyStatRevenue">0 so'm</div>
+                <div class="stat-mini-label">Daromad</div>
+            </div>
+        </div>
+
+        <!-- Inner Navigation Tabs -->
+        <div class="sales-tabs">
+            <button class="sales-tab active" data-tab="overview" onclick="switchSalesTab('overview', this)">Umumiy</button>
+            <button class="sales-tab" data-tab="sales" onclick="switchSalesTab('sales', this)">Sotuvlar</button>
+            <button class="sales-tab" data-tab="warehouse" onclick="switchSalesTab('warehouse', this)">Ombor</button>
+            <button class="sales-tab" data-tab="clients" onclick="switchSalesTab('clients', this)">Mijozlar</button>
+            <button class="sales-tab" data-tab="invoices" onclick="switchSalesTab('invoices', this)">Faktura</button>
+            <button class="sales-tab" data-tab="credit" onclick="switchSalesTab('credit', this)">Nasiya</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div id="salesTabContent" style="padding: 16px;">
+            <!-- Content will be loaded dynamically -->
+        </div>
+    </div>
+
+    <!-- Bottom Sheet for Stats Details -->
+    <div id="statsBottomSheet" class="bottom-sheet">
+        <div class="bottom-sheet-content">
+            <div class="bottom-sheet-handle"></div>
+            <div class="bottom-sheet-header">
+                <h3 id="bottomSheetTitle">Statistika</h3>
+                <button class="bottom-sheet-close" onclick="closeStatsBottomSheet()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="bottomSheetContent" style="padding: 20px;">
+                <!-- Dynamic content -->
+            </div>
+        </div>
+    </div>
+
     <!-- Scripts -->
     <script src="/static/js/wallet-app.js"></script>
     <script src="/static/js/business.js"></script>

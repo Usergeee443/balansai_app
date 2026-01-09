@@ -3194,3 +3194,455 @@ body.light-mode .tariff-info-card {
     background: #FFFFFF;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
+
+/* ==================== BUSINESS MODAL STYLES ==================== */
+.business-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    padding: 16px;
+}
+
+.business-modal-overlay.active {
+    opacity: 1;
+}
+
+.business-modal {
+    background: var(--wallet-bg-primary, #FFFFFF);
+    border-radius: 16px;
+    max-width: 500px;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    transform: scale(0.9);
+    transition: transform 0.3s ease;
+}
+
+.business-modal-overlay.active .business-modal {
+    transform: scale(1);
+}
+
+.business-modal-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--wallet-border, #E5E5EA);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.business-modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--wallet-text-primary, #000000);
+}
+
+.business-modal-close {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: var(--wallet-text-secondary, #8E8E93);
+    cursor: pointer;
+    padding: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    transition: all 0.2s;
+}
+
+.business-modal-close:hover {
+    background: rgba(142, 142, 147, 0.1);
+}
+
+.business-modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.business-modal-footer {
+    padding: 16px 20px;
+    border-top: 1px solid var(--wallet-border, #E5E5EA);
+    display: flex;
+    gap: 12px;
+}
+
+.business-modal-btn {
+    flex: 1;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.business-modal-btn.btn-primary {
+    background: var(--wallet-accent-blue, #0A84FF);
+    color: white;
+}
+
+.business-modal-btn.btn-primary:hover {
+    background: #0077ED;
+}
+
+.business-modal-btn.btn-secondary {
+    background: rgba(142, 142, 147, 0.15);
+    color: var(--wallet-text-primary, #000000);
+}
+
+.business-modal-btn.btn-secondary:hover {
+    background: rgba(142, 142, 147, 0.25);
+}
+
+.business-modal-btn.btn-danger {
+    background: rgba(255, 69, 58, 0.15);
+    color: #FF453A;
+}
+
+.business-modal-btn.btn-danger:hover {
+    background: rgba(255, 69, 58, 0.25);
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 16px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--wallet-text-secondary, #8E8E93);
+    margin-bottom: 8px;
+}
+
+.form-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid var(--wallet-border, #E5E5EA);
+    border-radius: 12px;
+    font-size: 15px;
+    background: var(--wallet-bg-secondary, #F2F2F7);
+    color: var(--wallet-text-primary, #000000);
+    transition: all 0.2s;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: var(--wallet-accent-blue, #0A84FF);
+    background: var(--wallet-bg-primary, #FFFFFF);
+}
+
+.form-input::placeholder {
+    color: var(--wallet-text-secondary, #8E8E93);
+}
+
+/* Details Section */
+.details-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.detail-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--wallet-border, rgba(229, 229, 234, 0.3));
+}
+
+.detail-row:last-child {
+    border-bottom: none;
+}
+
+.detail-label {
+    font-size: 14px;
+    color: var(--wallet-text-secondary, #8E8E93);
+    font-weight: 500;
+    flex: 0 0 40%;
+}
+
+.detail-value {
+    font-size: 15px;
+    color: var(--wallet-text-primary, #000000);
+    font-weight: 500;
+    text-align: right;
+    flex: 1;
+}
+
+/* Dark mode adjustments */
+body:not(.light-mode) .business-modal {
+    background: #1C1C1E;
+}
+
+body:not(.light-mode) .business-modal-header h3 {
+    color: #FFFFFF;
+}
+
+body:not(.light-mode) .business-modal-btn.btn-secondary {
+    background: rgba(142, 142, 147, 0.25);
+    color: #FFFFFF;
+}
+
+body:not(.light-mode) .form-input {
+    background: #2C2C2E;
+    border-color: rgba(229, 229, 234, 0.1);
+    color: #FFFFFF;
+}
+
+body:not(.light-mode) .detail-value {
+    color: #FFFFFF;
+}
+
+/* ==================== SAVDO & OMBOR MODULI ==================== */
+
+/* Sticky Statistics Panel */
+.sales-stats-sticky {
+    position: sticky;
+    top: 60px;
+    background: var(--wallet-bg-primary, #FFFFFF);
+    border-bottom: 1px solid var(--wallet-border, #E5E5EA);
+    padding: 12px 8px;
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    scrollbar-width: none;
+    z-index: 99;
+}
+
+.sales-stats-sticky::-webkit-scrollbar {
+    display: none;
+}
+
+.sales-stat-mini {
+    flex: 0 0 auto;
+    min-width: 80px;
+    text-align: center;
+    padding: 8px;
+    border-radius: 12px;
+    background: var(--wallet-bg-secondary, #F2F2F7);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.sales-stat-mini:hover {
+    background: rgba(90, 142, 244, 0.1);
+    transform: translateY(-2px);
+}
+
+.stat-mini-icon {
+    font-size: 20px;
+    margin-bottom: 4px;
+}
+
+.stat-mini-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--wallet-text-primary, #000000);
+    margin-bottom: 2px;
+}
+
+.stat-mini-label {
+    font-size: 10px;
+    color: var(--wallet-text-secondary, #8E8E93);
+}
+
+/* Inner Navigation Tabs */
+.sales-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 16px;
+    background: var(--wallet-bg-primary, #FFFFFF);
+    overflow-x: auto;
+    scrollbar-width: none;
+}
+
+.sales-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.sales-tab {
+    flex: 0 0 auto;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    background: var(--wallet-bg-secondary, #F2F2F7);
+    color: var(--wallet-text-primary, #000000);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.sales-tab:hover {
+    background: rgba(90, 142, 244, 0.1);
+}
+
+.sales-tab.active {
+    background: var(--wallet-accent-blue, #0A84FF);
+    color: white;
+}
+
+/* Bottom Sheet */
+.bottom-sheet {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0, 0, 0, 0.5);
+    z-index: 10000;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s;
+}
+
+.bottom-sheet.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.bottom-sheet-content {
+    background: var(--wallet-bg-primary, #FFFFFF);
+    border-radius: 20px 20px 0 0;
+    max-height: 70vh;
+    overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 0.3s;
+}
+
+.bottom-sheet.active .bottom-sheet-content {
+    transform: translateY(0);
+}
+
+.bottom-sheet-handle {
+    width: 40px;
+    height: 4px;
+    background: var(--wallet-border, #E5E5EA);
+    border-radius: 2px;
+    margin: 12px auto 8px;
+}
+
+.bottom-sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--wallet-border, #E5E5EA);
+}
+
+.bottom-sheet-header h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+}
+
+.bottom-sheet-close {
+    background: none;
+    border: none;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.bottom-sheet-close:hover {
+    background: rgba(142, 142, 147, 0.1);
+}
+
+.bottom-sheet-close svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--wallet-text-secondary, #8E8E93);
+}
+
+/* Tab Content Styles */
+.sales-overview-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.sales-overview-card {
+    background: var(--wallet-bg-secondary, #F2F2F7);
+    padding: 16px;
+    border-radius: 12px;
+}
+
+.sales-overview-card-title {
+    font-size: 12px;
+    color: var(--wallet-text-secondary, #8E8E93);
+    margin-bottom: 8px;
+}
+
+.sales-overview-card-value {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--wallet-text-primary, #000000);
+}
+
+.sales-overview-card-change {
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+.sales-overview-card-change.positive {
+    color: #34C759;
+}
+
+.sales-overview-card-change.negative {
+    color: #FF453A;
+}
+
+/* Dark mode */
+body:not(.light-mode) .sales-stats-sticky {
+    background: #1C1C1E;
+    border-bottom-color: rgba(229, 229, 234, 0.1);
+}
+
+body:not(.light-mode) .sales-stat-mini {
+    background: #2C2C2E;
+}
+
+body:not(.light-mode) .sales-stat-mini:hover {
+    background: rgba(90, 142, 244, 0.2);
+}
+
+body:not(.light-mode) .sales-tab {
+    background: #2C2C2E;
+    color: #FFFFFF;
+}
+
+body:not(.light-mode) .bottom-sheet-content {
+    background: #1C1C1E;
+}
+
+body:not(.light-mode) .sales-overview-card {
+    background: #2C2C2E;
+}
+
+body:not(.light-mode) .sales-overview-card-value {
+    color: #FFFFFF;
+}

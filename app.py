@@ -1725,6 +1725,94 @@ def api_business_quick_stats():
     return jsonify(stats)
 
 
+# MOLIYAVIY TAHLILLAR
+
+@app.route('/api/business/analysis/profit-loss', methods=['GET'])
+def api_profit_loss_analysis():
+    """Foyda-Zarar tahlili"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    days = request.args.get('days', 30, type=int)
+    analysis = database.get_profit_loss_analysis(user_id, days)
+    return jsonify(analysis)
+
+
+@app.route('/api/business/analysis/roi', methods=['GET'])
+def api_roi_analysis():
+    """ROI (Return on Investment) tahlili"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    analysis = database.get_roi_analysis(user_id)
+    return jsonify(analysis)
+
+
+@app.route('/api/business/analysis/inventory-turnover', methods=['GET'])
+def api_inventory_turnover():
+    """Tovar aylanishi tahlili"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    days = request.args.get('days', 30, type=int)
+    analysis = database.get_inventory_turnover_analysis(user_id, days)
+    return jsonify(analysis)
+
+
+@app.route('/api/business/alerts/low-stock', methods=['GET'])
+def api_low_stock_alerts():
+    """Kam qolgan mahsulotlar haqida ogohlantirishlar"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    alerts = database.get_low_stock_alerts(user_id)
+    return jsonify(alerts)
+
+
+# SAVDO & OMBOR MODULI
+
+@app.route('/api/business/sales-warehouse/stats', methods=['GET'])
+def api_sales_warehouse_stats():
+    """Savdo & Ombor - Sticky statistics"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+
+    try:
+        # Umumiy statistikalarni yig'ish
+        warehouse_stats = database.get_warehouse_statistics(user_id)
+
+        # Sotuvlar (oxirgi 30 kun)
+        sales_count = 0  # TODO: Implement sales tracking
+
+        # Mijozlar soni
+        clients_count = 0  # TODO: Implement clients management
+
+        # Fakturalar
+        invoices_count = 0  # TODO: Implement invoices
+
+        # Nasiya
+        credit_count = 0  # TODO: Implement credit tracking
+
+        # Daromad (oxirgi 30 kun)
+        revenue = 0  # TODO: Calculate from sales
+
+        return jsonify({
+            'total_sales': sales_count,
+            'total_products': warehouse_stats.get('total_products', 0),
+            'total_clients': clients_count,
+            'total_invoices': invoices_count,
+            'total_credit': credit_count,
+            'total_revenue': revenue
+        })
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 # TELEGRAM BOT ESLATMALARI
 
 @app.route('/api/business/send-task-notification', methods=['POST'])
