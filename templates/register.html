@@ -6,10 +6,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Ro'yxatdan o'tish - Balans AI</title>
-    
+
     <!-- Styles -->
     <link rel="stylesheet" href="/static/css/register.css">
-    
+
     <!-- Scripts -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
@@ -44,45 +44,48 @@
         <!-- Header -->
         <header class="app-header">
             <div class="header-content">
-                <div class="progress-dots">
-                    <div class="dot active" data-step="1"></div>
-                    <div class="dot" data-step="2"></div>
-                    <div class="dot" data-step="3"></div>
-                    <div class="dot" data-step="4"></div>
-                    <div class="dot" data-step="5"></div>
-                    <div class="dot" data-step="6"></div>
-                    <div class="dot" data-step="7"></div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                    <div class="progress-text">
+                        <span id="currentStepNum">1</span>/<span id="totalStepsNum">6</span>
+                    </div>
                 </div>
             </div>
         </header>
 
         <!-- Form Container -->
         <div class="form-container">
-            <!-- Step 1: Ism -->
+            <!-- Step 1: Ism (First Name) -->
             <div class="form-step active" id="step1">
                 <div class="step-header">
-                    <h1 class="step-title">Salom! 👋</h1>
+                    <div class="step-icon">👋</div>
+                    <h1 class="step-title">Salom!</h1>
                     <p class="step-subtitle">Ismingizni kiriting</p>
                 </div>
 
                 <div class="form-content">
                     <div class="input-group">
-                        <input 
-                            type="text" 
-                            id="name" 
-                            class="input-field large-input"
-                            placeholder="Ismingiz"
-                            autocomplete="name"
-                            required
-                            autofocus
-                        >
-                        <span class="error-message" id="nameError"></span>
+                        <div class="floating-input">
+                            <input
+                                type="text"
+                                id="first_name"
+                                class="input-field"
+                                placeholder=" "
+                                autocomplete="given-name"
+                                required
+                                autofocus
+                            >
+                            <label for="first_name" class="floating-label">Ismingiz</label>
+                        </div>
+                        <span class="error-message" id="firstNameError"></span>
                     </div>
                 </div>
 
                 <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-primary" onclick="nextStep(2)">
-                        Davom etish
+                    <button type="button" class="btn-primary btn-animated" onclick="nextStep(2)">
+                        <span>Davom etish</span>
                         <svg viewBox="0 0 24 24" fill="none">
                             <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
                         </svg>
@@ -98,6 +101,7 @@
                             <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
                         </svg>
                     </button>
+                    <div class="step-icon">🔍</div>
                     <h1 class="step-title">Bizni qayerdan eshitdingiz?</h1>
                     <p class="step-subtitle">Birini tanlang</p>
                 </div>
@@ -109,6 +113,7 @@
                             <div class="select-option-content">
                                 <div class="select-option-icon">📱</div>
                                 <div class="select-option-text">Telegram</div>
+                                <div class="check-mark">✓</div>
                             </div>
                         </label>
                         <label class="select-option">
@@ -116,6 +121,7 @@
                             <div class="select-option-content">
                                 <div class="select-option-icon">📷</div>
                                 <div class="select-option-text">Instagram</div>
+                                <div class="check-mark">✓</div>
                             </div>
                         </label>
                         <label class="select-option">
@@ -123,6 +129,7 @@
                             <div class="select-option-content">
                                 <div class="select-option-icon">📺</div>
                                 <div class="select-option-text">YouTube</div>
+                                <div class="check-mark">✓</div>
                             </div>
                         </label>
                         <label class="select-option">
@@ -130,6 +137,7 @@
                             <div class="select-option-content">
                                 <div class="select-option-icon">👥</div>
                                 <div class="select-option-text">Tanish orqali</div>
+                                <div class="check-mark">✓</div>
                             </div>
                         </label>
                         <label class="select-option">
@@ -137,6 +145,7 @@
                             <div class="select-option-content">
                                 <div class="select-option-icon">🔗</div>
                                 <div class="select-option-text">Boshqa</div>
+                                <div class="check-mark">✓</div>
                             </div>
                         </label>
                     </div>
@@ -144,8 +153,8 @@
                 </div>
 
                 <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-primary" onclick="nextStep(3)">
-                        Davom etish
+                    <button type="button" class="btn-primary btn-animated" onclick="nextStep(3)">
+                        <span>Davom etish</span>
                         <svg viewBox="0 0 24 24" fill="none">
                             <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
                         </svg>
@@ -153,7 +162,7 @@
                 </div>
             </div>
 
-            <!-- Step 3: Hisob turi -->
+            <!-- Step 3: Boshlang'ich balans -->
             <div class="form-step" id="step3">
                 <div class="step-header">
                     <button class="back-button" onclick="prevStep(2)">
@@ -161,86 +170,45 @@
                             <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
                         </svg>
                     </button>
-                    <h1 class="step-title">Hisob turi</h1>
-                    <p class="step-subtitle">Birini tanlang</p>
-                </div>
-
-                <div class="form-content">
-                    <div class="radio-group">
-                        <label class="radio-option">
-                            <input type="radio" name="account_type" value="SHI" required>
-                            <div class="radio-content">
-                                <div class="radio-icon">👤</div>
-                                <div class="radio-text">
-                                    <div class="radio-title">Shaxsiy</div>
-                                    <div class="radio-subtitle">Shaxsiy moliyaviy boshqaruv</div>
-                                </div>
-                            </div>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="account_type" value="BIZNES" required>
-                            <div class="radio-content">
-                                <div class="radio-icon">💼</div>
-                                <div class="radio-text">
-                                    <div class="radio-title">Biznes</div>
-                                    <div class="radio-subtitle">Biznes moliyaviy boshqaruv</div>
-                                </div>
-                            </div>
-                        </label>
-                    </div>
-                    <span class="error-message" id="accountTypeError"></span>
-                </div>
-
-                <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-primary" onclick="nextStep(4)">
-                        Davom etish
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Step 4: Boshlang'ich balans -->
-            <div class="form-step" id="step4">
-                <div class="step-header">
-                    <button class="back-button" onclick="prevStep(1)">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
+                    <div class="step-icon">💰</div>
                     <h1 class="step-title">Boshlang'ich balans</h1>
                     <p class="step-subtitle">Mavjud mablag'laringizni kiriting</p>
                 </div>
 
                 <div class="form-content">
-                    <div class="balance-card">
+                    <div class="balance-card glass-card">
                         <div class="balance-icon">💵</div>
                         <div class="balance-info">
                             <label class="balance-label">Naqd pul</label>
-                            <input 
-                                type="number" 
-                                id="cash_balance" 
-                                class="balance-input"
-                                placeholder="0"
-                                min="0"
-                                step="1000"
-                            >
+                            <div class="balance-input-wrapper">
+                                <input
+                                    type="number"
+                                    id="cash_balance"
+                                    class="balance-input"
+                                    placeholder="0"
+                                    min="0"
+                                    step="1000"
+                                >
+                                <span class="currency">so'm</span>
+                            </div>
                         </div>
                     </div>
 
-                    <div class="balance-card">
+                    <div class="balance-card glass-card">
                         <div class="balance-icon">💳</div>
                         <div class="balance-info">
                             <label class="balance-label">Karta balansi</label>
-                            <input 
-                                type="number" 
-                                id="card_balance" 
-                                class="balance-input"
-                                placeholder="0"
-                                min="0"
-                                step="1000"
-                            >
+                            <div class="balance-input-wrapper">
+                                <input
+                                    type="number"
+                                    id="card_balance"
+                                    class="balance-input"
+                                    placeholder="0"
+                                    min="0"
+                                    step="1000"
+                                >
+                                <span class="currency">so'm</span>
+                            </div>
                         </div>
                     </div>
 
@@ -254,8 +222,8 @@
                 </div>
 
                 <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-primary" onclick="nextStep(5)">
-                        Davom etish
+                    <button type="button" class="btn-primary btn-animated" onclick="nextStep(4)">
+                        <span>Davom etish</span>
                         <svg viewBox="0 0 24 24" fill="none">
                             <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
                         </svg>
@@ -263,14 +231,15 @@
                 </div>
             </div>
 
-            <!-- Step 5: Qarzlar -->
-            <div class="form-step" id="step5">
+            <!-- Step 4: Qarzlar -->
+            <div class="form-step" id="step4">
                 <div class="step-header">
-                    <button class="back-button" onclick="prevStep(2)">
+                    <button class="back-button" onclick="prevStep(3)">
                         <svg viewBox="0 0 24 24" fill="none">
                             <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
                         </svg>
                     </button>
+                    <div class="step-icon">📋</div>
                     <h1 class="step-title">Qarzlar</h1>
                     <p class="step-subtitle">Agar qarzingiz bo'lsa, qo'shing (ixtiyoriy)</p>
                 </div>
@@ -280,18 +249,18 @@
                         <!-- Qarzlar JavaScript orqali qo'shiladi -->
                     </div>
 
-                    <button type="button" class="btn-add" onclick="addDebtField()">
+                    <button type="button" class="btn-add glass-card" onclick="addDebtField()">
                         <svg viewBox="0 0 24 24" fill="none">
                             <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2"/>
                         </svg>
-                        Qarz qo'shish
+                        <span>Qarz qo'shish</span>
                     </button>
                 </div>
 
                 <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-secondary" onclick="prevStep(4)">Orqaga</button>
-                    <button type="button" class="btn-primary" onclick="nextStep(6)">
-                        Davom etish
+                    <button type="button" class="btn-secondary" onclick="prevStep(3)">Orqaga</button>
+                    <button type="button" class="btn-primary btn-animated" onclick="nextStep(5)">
+                        <span>Davom etish</span>
                         <svg viewBox="0 0 24 24" fill="none">
                             <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
                         </svg>
@@ -299,14 +268,15 @@
                 </div>
             </div>
 
-            <!-- Step 6: Tarif tanlash -->
-            <div class="form-step" id="step6">
+            <!-- Step 5: Tarif tanlash -->
+            <div class="form-step" id="step5">
                 <div class="step-header">
-                    <button class="back-button" onclick="prevStep(5)">
+                    <button class="back-button" onclick="prevStep(4)">
                         <svg viewBox="0 0 24 24" fill="none">
                             <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
                         </svg>
                     </button>
+                    <div class="step-icon">⭐</div>
                     <h1 class="step-title">Tarif tanlang</h1>
                     <p class="step-subtitle">O'zingizga mos tarifni tanlang</p>
                 </div>
@@ -314,7 +284,7 @@
                 <div class="form-content">
                     <div class="tariff-cards">
                         <!-- FREE Tariff -->
-                        <div class="tariff-card" id="tariffFree">
+                        <div class="tariff-card glass-card" id="tariffFree">
                             <div class="tariff-card-header">
                                 <div class="tariff-card-icon">🆓</div>
                                 <div class="tariff-card-title">Bepul</div>
@@ -331,7 +301,7 @@
                         </div>
 
                         <!-- PLUS Tariff -->
-                        <div class="tariff-card tariff-card-popular" id="tariffPlus">
+                        <div class="tariff-card tariff-card-popular glass-card" id="tariffPlus">
                             <div class="tariff-card-badge">Ommabop</div>
                             <div class="tariff-card-header">
                                 <div class="tariff-card-icon">⭐</div>
@@ -350,7 +320,7 @@
                         </div>
 
                         <!-- BUSINESS Tariff -->
-                        <div class="tariff-card" id="tariffBusiness">
+                        <div class="tariff-card glass-card" id="tariffBusiness">
                             <div class="tariff-card-header">
                                 <div class="tariff-card-icon">💼</div>
                                 <div class="tariff-card-title">Biznes</div>
@@ -371,54 +341,85 @@
                 </div>
             </div>
 
-            <!-- Step 7: Tasdiqlash -->
-            <div class="form-step" id="step7">
+            <!-- Step 6: Tasdiqlash -->
+            <div class="form-step" id="step6">
                 <div class="step-header">
-                    <button class="back-button" onclick="prevStep(6)">
+                    <button class="back-button" onclick="prevStep(5)">
                         <svg viewBox="0 0 24 24" fill="none">
                             <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
                         </svg>
                     </button>
+                    <div class="step-icon">✅</div>
                     <h1 class="step-title">Tasdiqlash</h1>
                     <p class="step-subtitle">Ma'lumotlaringizni tekshiring</p>
                 </div>
 
                 <div class="form-content">
-                    <div class="review-card">
+                    <div class="review-card glass-card">
                         <div class="review-item">
-                            <span class="review-label">Ism</span>
+                            <div class="review-label">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
+                                    <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span>Ism</span>
+                            </div>
                             <span class="review-value" id="reviewName">-</span>
                         </div>
                         <div class="review-item">
-                            <span class="review-label">Manba</span>
+                            <div class="review-label">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span>Manba</span>
+                            </div>
                             <span class="review-value" id="reviewSource">-</span>
                         </div>
                         <div class="review-item">
-                            <span class="review-label">Hisob turi</span>
-                            <span class="review-value" id="reviewAccountType">-</span>
-                        </div>
-                        <div class="review-item">
-                            <span class="review-label">Tarif</span>
+                            <div class="review-label">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M16 11l2 2 4-4" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span>Tarif</span>
+                            </div>
                             <span class="review-value" id="reviewTariff">-</span>
                         </div>
                         <div class="review-item">
-                            <span class="review-label">Naqd pul</span>
+                            <div class="review-label">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span>Naqd pul</span>
+                            </div>
                             <span class="review-value" id="reviewCash">-</span>
                         </div>
                         <div class="review-item">
-                            <span class="review-label">Karta balansi</span>
+                            <div class="review-label">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <rect x="1" y="4" width="22" height="16" rx="2" stroke="currentColor" stroke-width="2"/>
+                                    <path d="M1 10h22" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span>Karta balansi</span>
+                            </div>
                             <span class="review-value" id="reviewCard">-</span>
                         </div>
                         <div class="review-item" id="reviewDebts" style="display: none;">
-                            <span class="review-label">Qarzlar</span>
+                            <div class="review-label">
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="2"/>
+                                </svg>
+                                <span>Qarzlar</span>
+                            </div>
                             <span class="review-value" id="reviewDebtsValue">-</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-secondary" onclick="prevStep(6)">Orqaga</button>
-                    <button type="submit" class="btn-primary" id="submitBtn" form="registrationForm">
+                    <button type="button" class="btn-secondary" onclick="prevStep(5)">Orqaga</button>
+                    <button type="submit" class="btn-primary btn-animated" id="submitBtn" form="registrationForm">
                         <span id="submitText">Saqlash</span>
                         <span id="submitLoader" class="loader" style="display: none;"></span>
                     </button>
@@ -428,12 +429,27 @@
 
         <!-- Success Screen -->
         <div id="successScreen" class="success-screen" style="display: none;">
+            <div class="confetti-container" id="confettiContainer"></div>
             <div class="success-content">
-                <div class="success-icon-wrapper">
-                    <div class="success-icon">✓</div>
+                <div class="success-animation">
+                    <div class="success-circle">
+                        <div class="success-checkmark">
+                            <svg viewBox="0 0 52 52">
+                                <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
+                                <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
+                            </svg>
+                        </div>
+                    </div>
                 </div>
-                <h2 class="success-title">Muvaffaqiyatli! 🎉</h2>
-                <p class="success-message">Ma'lumotlaringiz saqlandi. Botdan foydalanishni boshlashingiz mumkin.</p>
+                <h2 class="success-title">Tabriklaymiz! 🎉</h2>
+                <p class="success-message">Siz muvaffaqiyatli ro'yxatdan o'tdingiz!</p>
+                <p class="success-submessage">Balans AI bilan moliyaviy maqsadlaringizga erishing</p>
+                <div class="success-stats">
+                    <div class="stat-item">
+                        <div class="stat-icon">🎯</div>
+                        <div class="stat-text">Boshladingiz!</div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
