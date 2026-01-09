@@ -289,6 +289,12 @@ body {
     justify-content: center;
     gap: 32px;
     padding: var(--wallet-spacing-lg) var(--wallet-spacing-md);
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.wallet-actions::-webkit-scrollbar {
+    display: none;
 }
 
 .wallet-action-item {
@@ -298,6 +304,7 @@ body {
     gap: 8px;
     cursor: pointer;
     transition: transform 0.15s ease;
+    flex-shrink: 0;
 }
 
 .wallet-action-item:active {

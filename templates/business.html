@@ -24,7 +24,7 @@
         <div class="wallet-header">
             <div class="wallet-header-left">
                 <div class="wallet-avatar" id="userAvatar">B</div>
-                <span class="wallet-title">Balans AI <span style="font-size: 12px; opacity: 0.7;">v1.0.5</span></span>
+                <span class="wallet-title">Balans AI <span style="font-size: 12px; opacity: 0.7;">v1.1.0</span></span>
             </div>
             <div class="wallet-header-right">
                 <div class="wallet-header-icon" onclick="showNotifications()">
@@ -117,6 +117,15 @@
                     </svg>
                 </div>
                 <span class="wallet-action-label">Statistika</span>
+            </div>
+            <div class="wallet-action-item" onclick="navigateTo('salesWarehouse')">
+                <div class="wallet-action-icon" style="background: rgba(0, 199, 190, 0.15); color: rgb(0, 199, 190);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                </div>
+                <span class="wallet-action-label">Savdo & Ombor</span>
             </div>
         </div>
 
@@ -554,6 +563,18 @@
                     <div class="service-card-content">
                         <span class="service-card-title">Statistika</span>
                         <span class="service-card-desc">Batafsil tahlil</span>
+                    </div>
+                </div>
+                <div class="service-card" onclick="navigateTo('salesWarehouse')">
+                    <div class="service-card-icon" style="background: rgba(0, 199, 190, 0.15); color: rgb(0, 199, 190);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Savdo & Ombor</span>
+                        <span class="service-card-desc">Savdo va ombor boshqaruvi</span>
                     </div>
                 </div>
                 <div class="service-card" onclick="showExportModal()">
