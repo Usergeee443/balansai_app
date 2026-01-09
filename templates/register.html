@@ -18,39 +18,19 @@
         <!-- Loading Screen -->
         <div id="loadingScreen" class="loading-screen">
             <div class="loading-content">
-                <div class="loading-spinner">
-                    <div class="spinner-ring"></div>
-                    <div class="spinner-ring"></div>
-                    <div class="spinner-ring"></div>
-                </div>
+                <div class="loading-spinner"></div>
                 <p class="loading-text">Yuklanmoqda...</p>
-            </div>
-        </div>
-
-        <!-- Already Registered Screen -->
-        <div id="alreadyRegistered" class="already-registered-screen" style="display: none;">
-            <div class="already-registered-content">
-                <div class="check-icon-wrapper">
-                    <div class="check-icon">✓</div>
-                </div>
-                <h2 class="already-registered-title">Siz allaqachon ro'yxatdan o'tgansiz! ✅</h2>
-                <p class="already-registered-message">Ma'lumotlaringiz saqlangan. Botdan foydalanishni boshlashingiz mumkin.</p>
-                <button type="button" class="btn-primary" onclick="closeApp()">
-                    Yopish
-                </button>
             </div>
         </div>
 
         <!-- Header -->
         <header class="app-header">
             <div class="header-content">
-                <div class="progress-container">
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="progressFill"></div>
-                    </div>
-                    <div class="progress-text">
-                        <span id="currentStepNum">1</span>/<span id="totalStepsNum">6</span>
-                    </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progressFill"></div>
+                </div>
+                <div class="progress-text">
+                    <span id="currentStepNum">1</span>/<span id="totalStepsNum">6</span>
                 </div>
             </div>
         </header>
@@ -60,35 +40,34 @@
             <!-- Step 1: Ism (First Name) -->
             <div class="form-step active" id="step1">
                 <div class="step-header">
-                    <div class="step-icon">👋</div>
+                    <div class="step-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                            <circle cx="12" cy="7" r="4"/>
+                        </svg>
+                    </div>
                     <h1 class="step-title">Salom!</h1>
                     <p class="step-subtitle">Ismingizni kiriting</p>
                 </div>
 
                 <div class="form-content">
                     <div class="input-group">
-                        <div class="floating-input">
-                            <input
-                                type="text"
-                                id="first_name"
-                                class="input-field"
-                                placeholder=" "
-                                autocomplete="given-name"
-                                required
-                                autofocus
-                            >
-                            <label for="first_name" class="floating-label">Ismingiz</label>
-                        </div>
+                        <input
+                            type="text"
+                            id="first_name"
+                            class="input-field"
+                            placeholder="Ismingiz"
+                            autocomplete="given-name"
+                            required
+                            autofocus
+                        >
                         <span class="error-message" id="firstNameError"></span>
                     </div>
                 </div>
 
-                <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-primary btn-animated" onclick="nextStep(2)">
-                        <span>Davom etish</span>
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
+                <div class="step-footer">
+                    <button type="button" class="btn-primary" onclick="nextStep(2)">
+                        Davom etish
                     </button>
                 </div>
             </div>
@@ -97,11 +76,16 @@
             <div class="form-step" id="step2">
                 <div class="step-header">
                     <button class="back-button" onclick="prevStep(1)">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
                         </svg>
                     </button>
-                    <div class="step-icon">🔍</div>
+                    <div class="step-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="11" cy="11" r="8"/>
+                            <path d="M21 21l-4.35-4.35"/>
+                        </svg>
+                    </div>
                     <h1 class="step-title">Bizni qayerdan eshitdingiz?</h1>
                     <p class="step-subtitle">Birini tanlang</p>
                 </div>
@@ -111,54 +95,67 @@
                         <label class="select-option">
                             <input type="radio" name="source" value="telegram" required>
                             <div class="select-option-content">
-                                <div class="select-option-icon">📱</div>
+                                <div class="select-option-icon">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/>
+                                    </svg>
+                                </div>
                                 <div class="select-option-text">Telegram</div>
-                                <div class="check-mark">✓</div>
                             </div>
                         </label>
                         <label class="select-option">
                             <input type="radio" name="source" value="instagram" required>
                             <div class="select-option-content">
-                                <div class="select-option-icon">📷</div>
+                                <div class="select-option-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+                                        <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
+                                        <circle cx="17.5" cy="6.5" r="1.5" fill="currentColor"/>
+                                    </svg>
+                                </div>
                                 <div class="select-option-text">Instagram</div>
-                                <div class="check-mark">✓</div>
                             </div>
                         </label>
                         <label class="select-option">
                             <input type="radio" name="source" value="youtube" required>
                             <div class="select-option-content">
-                                <div class="select-option-icon">📺</div>
+                                <div class="select-option-icon">
+                                    <svg viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 00.5 6.2C0 8.1 0 12 0 12s0 3.9.5 5.8a3 3 0 002.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 002.1-2.1c.5-1.9.5-5.8.5-5.8s0-3.9-.5-5.8zM9.5 15.5v-7l6.3 3.5-6.3 3.5z"/>
+                                    </svg>
+                                </div>
                                 <div class="select-option-text">YouTube</div>
-                                <div class="check-mark">✓</div>
                             </div>
                         </label>
                         <label class="select-option">
                             <input type="radio" name="source" value="tanish" required>
                             <div class="select-option-content">
-                                <div class="select-option-icon">👥</div>
+                                <div class="select-option-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                        <circle cx="9" cy="7" r="4"/>
+                                        <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                                        <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                                    </svg>
+                                </div>
                                 <div class="select-option-text">Tanish orqali</div>
-                                <div class="check-mark">✓</div>
                             </div>
                         </label>
                         <label class="select-option">
                             <input type="radio" name="source" value="boshqa" required>
                             <div class="select-option-content">
-                                <div class="select-option-icon">🔗</div>
+                                <div class="select-option-icon">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="10"/>
+                                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                                        <circle cx="12" cy="17" r="0.5" fill="currentColor"/>
+                                    </svg>
+                                </div>
                                 <div class="select-option-text">Boshqa</div>
-                                <div class="check-mark">✓</div>
                             </div>
                         </label>
                     </div>
                     <span class="error-message" id="sourceError"></span>
-                </div>
-
-                <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-primary btn-animated" onclick="nextStep(3)">
-                        <span>Davom etish</span>
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
                 </div>
             </div>
 
@@ -166,18 +163,26 @@
             <div class="form-step" id="step3">
                 <div class="step-header">
                     <button class="back-button" onclick="prevStep(2)">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
                         </svg>
                     </button>
-                    <div class="step-icon">💰</div>
+                    <div class="step-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                    </div>
                     <h1 class="step-title">Boshlang'ich balans</h1>
                     <p class="step-subtitle">Mavjud mablag'laringizni kiriting</p>
                 </div>
 
                 <div class="form-content">
-                    <div class="balance-card glass-card">
-                        <div class="balance-icon">💵</div>
+                    <div class="balance-card">
+                        <div class="balance-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                        </div>
                         <div class="balance-info">
                             <label class="balance-label">Naqd pul</label>
                             <div class="balance-input-wrapper">
@@ -194,8 +199,13 @@
                         </div>
                     </div>
 
-                    <div class="balance-card glass-card">
-                        <div class="balance-icon">💳</div>
+                    <div class="balance-card">
+                        <div class="balance-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="1" y="4" width="22" height="16" rx="2"/>
+                                <path d="M1 10h22"/>
+                            </svg>
+                        </div>
                         <div class="balance-info">
                             <label class="balance-label">Karta balansi</label>
                             <div class="balance-input-wrapper">
@@ -213,20 +223,17 @@
                     </div>
 
                     <div class="info-box">
-                        <svg class="info-icon" viewBox="0 0 24 24" fill="none">
-                            <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2"/>
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
+                        <svg class="info-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M12 16v-4M12 8h.01"/>
                         </svg>
                         <p>Agar mablag'ingiz bo'lmasa, 0 qoldirishingiz mumkin</p>
                     </div>
                 </div>
 
-                <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-primary btn-animated" onclick="nextStep(4)">
-                        <span>Davom etish</span>
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
+                <div class="step-footer">
+                    <button type="button" class="btn-primary" onclick="nextStep(4)">
+                        Davom etish
                     </button>
                 </div>
             </div>
@@ -235,11 +242,16 @@
             <div class="form-step" id="step4">
                 <div class="step-header">
                     <button class="back-button" onclick="prevStep(3)">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
                         </svg>
                     </button>
-                    <div class="step-icon">📋</div>
+                    <div class="step-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                            <path d="M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                    </div>
                     <h1 class="step-title">Qarzlar</h1>
                     <p class="step-subtitle">Agar qarzingiz bo'lsa, qo'shing (ixtiyoriy)</p>
                 </div>
@@ -249,21 +261,17 @@
                         <!-- Qarzlar JavaScript orqali qo'shiladi -->
                     </div>
 
-                    <button type="button" class="btn-add glass-card" onclick="addDebtField()">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2"/>
+                    <button type="button" class="btn-add" onclick="addDebtField()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M12 5v14M5 12h14"/>
                         </svg>
                         <span>Qarz qo'shish</span>
                     </button>
                 </div>
 
-                <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-secondary" onclick="prevStep(3)">Orqaga</button>
-                    <button type="button" class="btn-primary btn-animated" onclick="nextStep(5)">
-                        <span>Davom etish</span>
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
+                <div class="step-footer">
+                    <button type="button" class="btn-primary" onclick="nextStep(5)">
+                        Davom etish
                     </button>
                 </div>
             </div>
@@ -272,11 +280,15 @@
             <div class="form-step" id="step5">
                 <div class="step-header">
                     <button class="back-button" onclick="prevStep(4)">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
                         </svg>
                     </button>
-                    <div class="step-icon">⭐</div>
+                    <div class="step-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                        </svg>
+                    </div>
                     <h1 class="step-title">Tarif tanlang</h1>
                     <p class="step-subtitle">O'zingizga mos tarifni tanlang</p>
                 </div>
@@ -284,16 +296,30 @@
                 <div class="form-content">
                     <div class="tariff-cards">
                         <!-- FREE Tariff -->
-                        <div class="tariff-card glass-card" id="tariffFree">
+                        <div class="tariff-card">
                             <div class="tariff-card-header">
-                                <div class="tariff-card-icon">🆓</div>
                                 <div class="tariff-card-title">Bepul</div>
                                 <div class="tariff-card-price">0 so'm</div>
                             </div>
                             <div class="tariff-card-features">
-                                <div class="tariff-card-feature">✓ Asosiy funksiyalar</div>
-                                <div class="tariff-card-feature">✓ Cheklovli statistika</div>
-                                <div class="tariff-card-feature">✓ 2-3 ta tahlil</div>
+                                <div class="tariff-card-feature">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                    Asosiy funksiyalar
+                                </div>
+                                <div class="tariff-card-feature">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                    Cheklovli statistika
+                                </div>
+                                <div class="tariff-card-feature">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                    2-3 ta tahlil
+                                </div>
                             </div>
                             <button type="button" class="tariff-card-btn" onclick="selectTariff('FREE')">
                                 Davom etish
@@ -301,39 +327,77 @@
                         </div>
 
                         <!-- PLUS Tariff -->
-                        <div class="tariff-card tariff-card-popular glass-card" id="tariffPlus">
+                        <div class="tariff-card tariff-card-popular">
                             <div class="tariff-card-badge">Ommabop</div>
                             <div class="tariff-card-header">
-                                <div class="tariff-card-icon">⭐</div>
                                 <div class="tariff-card-title">Plus</div>
                                 <div class="tariff-card-price">Premium</div>
                             </div>
                             <div class="tariff-card-features">
-                                <div class="tariff-card-feature">✓ Barcha funksiyalar</div>
-                                <div class="tariff-card-feature">✓ To'liq statistika</div>
-                                <div class="tariff-card-feature">✓ Premium qo'llab-quvvatlash</div>
-                                <div class="tariff-card-feature">✓ <span id="plusTrialDays">7</span> kunlik bepul sinov</div>
+                                <div class="tariff-card-feature">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                    Barcha funksiyalar
+                                </div>
+                                <div class="tariff-card-feature">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                    To'liq statistika
+                                </div>
+                                <div class="tariff-card-feature">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                    Premium qo'llab-quvvatlash
+                                </div>
+                                <div class="tariff-card-feature">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                    <span id="plusTrialDays">7</span> kunlik bepul sinov
+                                </div>
                             </div>
                             <button type="button" class="tariff-card-btn tariff-card-btn-primary" onclick="selectTariff('PLUS')">
-                                <span id="plusBtnText"><span id="plusTrialDaysBtn">7</span> kun sinash</span>
+                                <span id="plusTrialDaysBtn">7</span> kun sinash
                             </button>
                         </div>
 
                         <!-- BUSINESS Tariff -->
-                        <div class="tariff-card glass-card" id="tariffBusiness">
+                        <div class="tariff-card">
                             <div class="tariff-card-header">
-                                <div class="tariff-card-icon">💼</div>
                                 <div class="tariff-card-title">Biznes</div>
                                 <div class="tariff-card-price">Professional</div>
                             </div>
                             <div class="tariff-card-features">
-                                <div class="tariff-card-feature">✓ Plus funksiyalar</div>
-                                <div class="tariff-card-feature">✓ Biznes tahlillar</div>
-                                <div class="tariff-card-feature">✓ Ko'p foydalanuvchi</div>
-                                <div class="tariff-card-feature">✓ <span id="businessTrialDays">7</span> kunlik bepul sinov</div>
+                                <div class="tariff-card-feature">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                    Plus funksiyalar
+                                </div>
+                                <div class="tariff-card-feature">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                    Biznes tahlillar
+                                </div>
+                                <div class="tariff-card-feature">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                    Ko'p foydalanuvchi
+                                </div>
+                                <div class="tariff-card-feature">
+                                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <polyline points="20 6 9 17 4 12"/>
+                                    </svg>
+                                    <span id="businessTrialDays">7</span> kunlik bepul sinov
+                                </div>
                             </div>
                             <button type="button" class="tariff-card-btn" onclick="selectTariff('BUSINESS')">
-                                <span id="businessBtnText"><span id="businessTrialDaysBtn">7</span> kun sinash</span>
+                                <span id="businessTrialDaysBtn">7</span> kun sinash
                             </button>
                         </div>
                     </div>
@@ -345,22 +409,26 @@
             <div class="form-step" id="step6">
                 <div class="step-header">
                     <button class="back-button" onclick="prevStep(5)">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M19 12H5M12 19l-7-7 7-7"/>
                         </svg>
                     </button>
-                    <div class="step-icon">✅</div>
+                    <div class="step-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12"/>
+                        </svg>
+                    </div>
                     <h1 class="step-title">Tasdiqlash</h1>
                     <p class="step-subtitle">Ma'lumotlaringizni tekshiring</p>
                 </div>
 
                 <div class="form-content">
-                    <div class="review-card glass-card">
+                    <div class="review-card">
                         <div class="review-item">
                             <div class="review-label">
-                                <svg viewBox="0 0 24 24" fill="none">
-                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" stroke="currentColor" stroke-width="2"/>
-                                    <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                                    <circle cx="12" cy="7" r="4"/>
                                 </svg>
                                 <span>Ism</span>
                             </div>
@@ -368,8 +436,9 @@
                         </div>
                         <div class="review-item">
                             <div class="review-label">
-                                <svg viewBox="0 0 24 24" fill="none">
-                                    <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" stroke="currentColor" stroke-width="2"/>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <circle cx="11" cy="11" r="8"/>
+                                    <path d="M21 21l-4.35-4.35"/>
                                 </svg>
                                 <span>Manba</span>
                             </div>
@@ -377,10 +446,8 @@
                         </div>
                         <div class="review-item">
                             <div class="review-label">
-                                <svg viewBox="0 0 24 24" fill="none">
-                                    <circle cx="9" cy="7" r="4" stroke="currentColor" stroke-width="2"/>
-                                    <path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2" stroke="currentColor" stroke-width="2"/>
-                                    <path d="M16 11l2 2 4-4" stroke="currentColor" stroke-width="2"/>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
                                 </svg>
                                 <span>Tarif</span>
                             </div>
@@ -388,8 +455,8 @@
                         </div>
                         <div class="review-item">
                             <div class="review-label">
-                                <svg viewBox="0 0 24 24" fill="none">
-                                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" stroke="currentColor" stroke-width="2"/>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M12 1v22M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
                                 </svg>
                                 <span>Naqd pul</span>
                             </div>
@@ -397,9 +464,9 @@
                         </div>
                         <div class="review-item">
                             <div class="review-label">
-                                <svg viewBox="0 0 24 24" fill="none">
-                                    <rect x="1" y="4" width="22" height="16" rx="2" stroke="currentColor" stroke-width="2"/>
-                                    <path d="M1 10h22" stroke="currentColor" stroke-width="2"/>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="1" y="4" width="22" height="16" rx="2"/>
+                                    <path d="M1 10h22"/>
                                 </svg>
                                 <span>Karta balansi</span>
                             </div>
@@ -407,8 +474,9 @@
                         </div>
                         <div class="review-item" id="reviewDebts" style="display: none;">
                             <div class="review-label">
-                                <svg viewBox="0 0 24 24" fill="none">
-                                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" stroke="currentColor" stroke-width="2"/>
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"/>
+                                    <path d="M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
                                 </svg>
                                 <span>Qarzlar</span>
                             </div>
@@ -417,9 +485,8 @@
                     </div>
                 </div>
 
-                <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-secondary" onclick="prevStep(5)">Orqaga</button>
-                    <button type="submit" class="btn-primary btn-animated" id="submitBtn" form="registrationForm">
+                <div class="step-footer">
+                    <button type="submit" class="btn-primary" id="submitBtn" onclick="handleSubmit(event)">
                         <span id="submitText">Saqlash</span>
                         <span id="submitLoader" class="loader" style="display: none;"></span>
                     </button>
@@ -429,27 +496,15 @@
 
         <!-- Success Screen -->
         <div id="successScreen" class="success-screen" style="display: none;">
-            <div class="confetti-container" id="confettiContainer"></div>
             <div class="success-content">
-                <div class="success-animation">
-                    <div class="success-circle">
-                        <div class="success-checkmark">
-                            <svg viewBox="0 0 52 52">
-                                <circle class="checkmark-circle" cx="26" cy="26" r="25" fill="none"/>
-                                <path class="checkmark-check" fill="none" d="M14.1 27.2l7.1 7.2 16.7-16.8"/>
-                            </svg>
-                        </div>
-                    </div>
+                <div class="success-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
                 </div>
-                <h2 class="success-title">Tabriklaymiz! 🎉</h2>
-                <p class="success-message">Siz muvaffaqiyatli ro'yxatdan o'tdingiz!</p>
+                <h2 class="success-title">Muvaffaqiyatli!</h2>
+                <p class="success-message">Siz muvaffaqiyatli ro'yxatdan o'tdingiz</p>
                 <p class="success-submessage">Balans AI bilan moliyaviy maqsadlaringizga erishing</p>
-                <div class="success-stats">
-                    <div class="stat-item">
-                        <div class="stat-icon">🎯</div>
-                        <div class="stat-text">Boshladingiz!</div>
-                    </div>
-                </div>
             </div>
         </div>
     </div>

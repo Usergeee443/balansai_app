@@ -221,6 +221,7 @@ function updateTrialDaysUI() {
 
 // Select tariff
 function selectTariff(tariff) {
+    console.log('[TARIFF] Tarif tanlandi:', tariff);
     formData.tariff = tariff;
 
     // Trigger haptic feedback
@@ -228,6 +229,7 @@ function selectTariff(tariff) {
         tg.HapticFeedback.impactOccurred('medium');
     }
 
+    console.log('[TARIFF] Keyingi qadamga o\'tilmoqda: step 6');
     // Move to review step (step 6)
     nextStep(6);
 }
@@ -707,7 +709,7 @@ async function handleSubmit(e) {
     }
 }
 
-// Show success screen with confetti
+// Show success screen
 function showSuccessScreen() {
     // Hide form container
     document.querySelector('.form-container').style.display = 'none';
@@ -721,79 +723,17 @@ function showSuccessScreen() {
         tg.HapticFeedback.notificationOccurred('success');
     }
 
-    // Create confetti
-    createConfetti();
-
-    // Play success sound (if possible in Telegram WebApp)
-    playSuccessSound();
-
     // Send data to bot
     if (tg && tg.sendData) {
         tg.sendData(JSON.stringify({ action: 'registration_complete' }));
     }
 
-    // Redirect to home after 3 seconds
+    // Redirect to home after 2 seconds
     setTimeout(() => {
         window.location.href = '/';
-    }, 3000);
+    }, 2000);
 }
 
-// Create confetti animation
-function createConfetti() {
-    const confettiContainer = document.getElementById('confettiContainer');
-    const colors = ['#667eea', '#764ba2', '#f093fb', '#34d399', '#fbbf24', '#ef4444'];
-    const confettiCount = 50;
-
-    for (let i = 0; i < confettiCount; i++) {
-        const confetti = document.createElement('div');
-        confetti.style.position = 'absolute';
-        confetti.style.width = '10px';
-        confetti.style.height = '10px';
-        confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
-        confetti.style.left = Math.random() * 100 + '%';
-        confetti.style.top = -20 + 'px';
-        confetti.style.opacity = Math.random();
-        confetti.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
-        confetti.style.animation = `confettiFall ${2 + Math.random() * 3}s linear ${Math.random() * 2}s`;
-
-        confettiContainer.appendChild(confetti);
-    }
-
-    // Add confetti CSS animation
-    if (!document.getElementById('confettiStyles')) {
-        const style = document.createElement('style');
-        style.id = 'confettiStyles';
-        style.textContent = `
-            @keyframes confettiFall {
-                0% {
-                    transform: translateY(0) rotate(0deg);
-                    opacity: 1;
-                }
-                100% {
-                    transform: translateY(100vh) rotate(720deg);
-                    opacity: 0;
-                }
-            }
-        `;
-        document.head.appendChild(style);
-    }
-}
-
-// Play success sound (vibration pattern for mobile)
-function playSuccessSound() {
-    // Use vibration pattern to simulate celebration
-    if (navigator.vibrate) {
-        // Happy vibration pattern
-        navigator.vibrate([100, 50, 100, 50, 100, 50, 200]);
-    }
-
-    // Trigger multiple haptic feedbacks
-    if (tg && tg.HapticFeedback) {
-        setTimeout(() => tg.HapticFeedback.notificationOccurred('success'), 0);
-        setTimeout(() => tg.HapticFeedback.impactOccurred('medium'), 200);
-        setTimeout(() => tg.HapticFeedback.notificationOccurred('success'), 400);
-    }
-}
 
 // Update user data
 async function updateUserData(userId) {
