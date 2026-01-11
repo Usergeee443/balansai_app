@@ -2008,23 +2008,40 @@ function handleLogout() {
 // INITIALIZATION
 // ============================================
 
+// Helper function - must be defined before use
+function getInitData() {
+    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+        return window.Telegram.WebApp.initData;
+    }
+    return '';
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Wallet App initialized');
 
     // Check user tariff and redirect to business if needed
     try {
+        console.log('[DEBUG] Checking user tariff...');
         const userResponse = await apiRequest('/api/user');
+        console.log('[DEBUG] User response:', userResponse);
+
         if (userResponse && userResponse.tariff &&
             (userResponse.tariff === 'BIZNES' || userResponse.tariff === 'BUSINESS')) {
             console.log('[DEBUG] User has BIZNES tariff, redirecting to business.html');
             // Use openBusinessApp to include initData in redirect
             const initData = getInitData();
+            console.log('[DEBUG] InitData:', initData ? 'Present' : 'Not found');
             if (initData) {
-                window.location.href = `/business?initData=${encodeURIComponent(initData)}`;
+                const redirectUrl = `/business?initData=${encodeURIComponent(initData)}`;
+                console.log('[DEBUG] Redirecting to:', redirectUrl);
+                window.location.href = redirectUrl;
             } else {
+                console.log('[DEBUG] Redirecting to /business without initData');
                 window.location.href = '/business';
             }
             return; // Don't load home page
+        } else {
+            console.log('[DEBUG] User does not have BIZNES tariff, loading home page');
         }
     } catch (error) {
         console.error('[DEBUG] Error checking tariff:', error);
@@ -3018,14 +3035,6 @@ async function changeTariff() {
         console.error('Tarifni o\'zgartirishda xato:', error);
         alert('Xatolik yuz berdi!');
     }
-}
-
-// Helper function
-function getInitData() {
-    if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
-        return window.Telegram.WebApp.initData;
-    }
-    return '';
 }
 
 // Load tariff info on profile page load
