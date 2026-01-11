@@ -2017,7 +2017,13 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (userResponse && userResponse.tariff &&
             (userResponse.tariff === 'BIZNES' || userResponse.tariff === 'BUSINESS')) {
             console.log('[DEBUG] User has BIZNES tariff, redirecting to business.html');
-            window.location.href = '/business';
+            // Use openBusinessApp to include initData in redirect
+            const initData = getInitData();
+            if (initData) {
+                window.location.href = `/business?initData=${encodeURIComponent(initData)}`;
+            } else {
+                window.location.href = '/business';
+            }
             return; // Don't load home page
         }
     } catch (error) {
