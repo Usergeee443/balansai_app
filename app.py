@@ -157,11 +157,12 @@ def index():
     # Foydalanuvchining tarifini tekshirish
     try:
         user_id = get_user_id_from_request()
-        if user_id:
+        if user_id and user_id != 123456789:  # Default test user emas
             user = database.get_user(user_id)
             if user and user.get('tariff') in ['BUSINESS', 'BIZNES']:
                 # Biznes foydalanuvchini biznes ilovasiga yo'naltirish
-                return redirect('/business')
+                print(f"[DEBUG] User {user_id} BIZNES tarifida, business.html ochilmoqda")
+                return render_template('business.html')
     except Exception as e:
         print(f"[DEBUG] Tarif tekshirishda xato: {e}")
 

@@ -552,6 +552,51 @@
         </div>
 
         <div class="services-section">
+            <div class="services-section-title">Biznes boshqaruvi</div>
+            <div class="services-grid">
+                <div class="service-card" onclick="navigateTo('tasks')">
+                    <div class="service-card-icon" style="background: rgba(52, 199, 89, 0.15); color: rgb(52, 199, 89);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 11l3 3L22 4"/>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Vazifalar</span>
+                        <span class="service-card-desc">Vazifalarni boshqaring</span>
+                    </div>
+                </div>
+                <div class="service-card" onclick="navigateTo('warehouse')">
+                    <div class="service-card-icon" style="background: rgba(0, 122, 255, 0.15); color: rgb(0, 122, 255);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                            <polyline points="3.27 6.96 12 12.01 20.73 6.96"/>
+                            <line x1="12" y1="22.08" x2="12" y2="12"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Ombor</span>
+                        <span class="service-card-desc">Mahsulotlar va inventar</span>
+                    </div>
+                </div>
+                <div class="service-card" onclick="navigateTo('employees')">
+                    <div class="service-card-icon" style="background: rgba(175, 82, 222, 0.15); color: rgb(175, 82, 222);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </div>
+                    <div class="service-card-content">
+                        <span class="service-card-title">Xodimlar</span>
+                        <span class="service-card-desc">Jamoani boshqaring</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="services-section">
             <div class="services-section-title">Hisobotlar</div>
             <div class="services-grid">
                 <div class="service-card" onclick="navigateTo('statistics')">
@@ -1172,6 +1217,14 @@
             </div>
             <span class="tg-wallet-nav-label">Ombor</span>
         </button>
+        <button class="tg-wallet-nav-item" data-page="statistics" onclick="navigateTo('statistics')">
+            <div class="tg-wallet-nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M18 20V10M12 20V4M6 20v-6"/>
+                </svg>
+            </div>
+            <span class="tg-wallet-nav-label">Statistika</span>
+        </button>
         <button class="tg-wallet-nav-item" data-page="employees" onclick="navigateTo('employees')">
             <div class="tg-wallet-nav-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -1183,22 +1236,16 @@
             </div>
             <span class="tg-wallet-nav-label">Xodimlar</span>
         </button>
-        <button class="tg-wallet-nav-item" data-page="tasks" onclick="navigateTo('tasks')">
+        <button class="tg-wallet-nav-item" data-page="services" onclick="navigateTo('services')">
             <div class="tg-wallet-nav-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M9 11l3 3L22 4"/>
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
                 </svg>
             </div>
-            <span class="tg-wallet-nav-label">Vazifalar</span>
-        </button>
-        <button class="tg-wallet-nav-item" data-page="statistics" onclick="navigateTo('statistics')">
-            <div class="tg-wallet-nav-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <path d="M18 20V10M12 20V4M6 20v-6"/>
-                </svg>
-            </div>
-            <span class="tg-wallet-nav-label">Statistika</span>
+            <span class="tg-wallet-nav-label">Xizmatlar</span>
         </button>
     </nav>
 
