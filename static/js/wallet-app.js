@@ -2011,6 +2011,19 @@ function handleLogout() {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Wallet App initialized');
 
+    // Check user tariff and redirect to business if needed
+    try {
+        const userResponse = await apiRequest('/api/user');
+        if (userResponse && userResponse.tariff &&
+            (userResponse.tariff === 'BIZNES' || userResponse.tariff === 'BUSINESS')) {
+            console.log('[DEBUG] User has BIZNES tariff, redirecting to business.html');
+            window.location.href = '/business';
+            return; // Don't load home page
+        }
+    } catch (error) {
+        console.error('[DEBUG] Error checking tariff:', error);
+    }
+
     // Load home page directly without loading screen
     await loadHomePage();
 });

@@ -157,8 +157,10 @@ def index():
     # Foydalanuvchining tarifini tekshirish
     try:
         user_id = get_user_id_from_request()
+        print(f"[DEBUG] Index route: user_id = {user_id}")
         if user_id and user_id != 123456789:  # Default test user emas
             user = database.get_user(user_id)
+            print(f"[DEBUG] Index route: user = {user}, tariff = {user.get('tariff') if user else None}")
             if user and user.get('tariff') in ['BUSINESS', 'BIZNES']:
                 # Biznes foydalanuvchini biznes ilovasiga yo'naltirish
                 print(f"[DEBUG] User {user_id} BIZNES tarifida, business.html ochilmoqda")
@@ -166,6 +168,7 @@ def index():
     except Exception as e:
         print(f"[DEBUG] Tarif tekshirishda xato: {e}")
 
+    print(f"[DEBUG] Index route: index.html ochilmoqda")
     return render_template('index.html')
 
 @app.route('/register')
