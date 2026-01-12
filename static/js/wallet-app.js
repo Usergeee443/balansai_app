@@ -2020,6 +2020,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('Wallet App initialized');
 
     // Check user tariff and redirect to business if needed
+    // BUT only if we're NOT already on business page (prevent loop)
+    const currentPath = window.location.pathname;
+    console.log('[DEBUG] Current path:', currentPath);
+
+    if (currentPath === '/business') {
+        console.log('[DEBUG] Already on business page, skipping redirect check');
+        return; // Don't check tariff, we're already on business page
+    }
+
     try {
         console.log('[DEBUG] Checking user tariff...');
         const userResponse = await apiRequest('/api/user');
