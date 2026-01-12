@@ -56,18 +56,18 @@
         // Show loading immediately
         document.body.classList.add('loading');
 
-        // Function to hide loading
-        function hideLoading() {
+        // Make hideLoading available globally
+        window.hideAppLoading = function() {
             document.body.classList.remove('loading');
             const loading = document.getElementById('appLoading');
             if (loading) loading.remove();
-        }
+        };
 
         // Wait for Telegram WebApp to be ready
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
 
-            // Check tariff when DOM is ready
+            // Check tariff when DOM is ready (only for redirect)
             document.addEventListener('DOMContentLoaded', async function() {
                 try {
                     const initData = window.Telegram.WebApp.initData || '';
@@ -83,23 +83,18 @@
                         if (data.tariff === 'BIZNES' || data.tariff === 'BUSINESS') {
                             // BIZNES tariff - immediate redirect
                             window.location.replace(`/business?initData=${encodeURIComponent(initData)}`);
-                        } else {
-                            // FREE tariff - show index page
-                            hideLoading();
                         }
-                    } else {
-                        // Error - show page anyway
-                        hideLoading();
+                        // For FREE tariff - do nothing, let wallet-app.js handle loading
                     }
+                    // If error - do nothing, let wallet-app.js handle loading
                 } catch (e) {
                     console.error('[AUTO-REDIRECT] Error:', e);
-                    // Error - show page anyway
-                    hideLoading();
+                    // If error - do nothing, let wallet-app.js handle loading
                 }
             });
         } else {
-            // No Telegram WebApp - show page when DOM ready
-            document.addEventListener('DOMContentLoaded', hideLoading);
+            // No Telegram WebApp - hide loading when DOM ready
+            document.addEventListener('DOMContentLoaded', window.hideAppLoading);
         }
     })();
     </script>
@@ -125,7 +120,7 @@
         <div class="wallet-header">
             <div class="wallet-header-left">
                 <div class="wallet-avatar" id="userAvatar">B</div>
-                <span class="wallet-title">Balans AI <span style="font-size: 12px; opacity: 0.7;">v1.5.0</span></span>
+                <span class="wallet-title">Balans AI <span style="font-size: 12px; opacity: 0.7;">v1.5.1</span></span>
             </div>
             <div class="wallet-header-right">
                 <div class="wallet-header-icon" id="themeToggleBtn" onclick="toggleTheme()" title="Rejimni o'zgartirish">

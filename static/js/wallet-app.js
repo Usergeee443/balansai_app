@@ -2019,45 +2019,29 @@ function getInitData() {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Wallet App initialized');
 
-    // Check user tariff and redirect to business if needed
-    // BUT only if we're NOT already on business page (prevent loop)
+    // Check if we're on business page
     const currentPath = window.location.pathname;
     console.log('[DEBUG] Current path:', currentPath);
 
     if (currentPath === '/business') {
-        console.log('[DEBUG] Already on business page, skipping redirect check');
-        return; // Don't check tariff, we're already on business page
+        console.log('[DEBUG] On business page, skipping home page load');
+        return; // Don't load home page on business page
     }
 
+    // Load home page (tariff check already done in index.html)
+    console.log('[DEBUG] Loading home page...');
     try {
-        console.log('[DEBUG] Checking user tariff...');
-        const userResponse = await apiRequest('/api/user');
-        console.log('[DEBUG] User response:', userResponse);
-
-        if (userResponse && userResponse.tariff &&
-            (userResponse.tariff === 'BIZNES' || userResponse.tariff === 'BUSINESS')) {
-            console.log('[DEBUG] User has BIZNES tariff, redirecting to business.html');
-            // Use openBusinessApp to include initData in redirect
-            const initData = getInitData();
-            console.log('[DEBUG] InitData:', initData ? 'Present' : 'Not found');
-            if (initData) {
-                const redirectUrl = `/business?initData=${encodeURIComponent(initData)}`;
-                console.log('[DEBUG] Redirecting to:', redirectUrl);
-                window.location.href = redirectUrl;
-            } else {
-                console.log('[DEBUG] Redirecting to /business without initData');
-                window.location.href = '/business';
-            }
-            return; // Don't load home page
-        } else {
-            console.log('[DEBUG] User does not have BIZNES tariff, loading home page');
-        }
+        await loadHomePage();
+        console.log('[DEBUG] Home page loaded successfully');
     } catch (error) {
-        console.error('[DEBUG] Error checking tariff:', error);
+        console.error('[DEBUG] Error loading home page:', error);
+    } finally {
+        // Hide loading screen after home page loaded (or failed)
+        if (typeof window.hideAppLoading === 'function') {
+            window.hideAppLoading();
+            console.log('[DEBUG] Loading screen hidden');
+        }
     }
-
-    // Load home page directly without loading screen
-    await loadHomePage();
 });
 
 // Make functions globally available
