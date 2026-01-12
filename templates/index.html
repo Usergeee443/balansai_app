@@ -13,14 +13,54 @@
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <!-- Auto-redirect to business for BIZNES tariff -->
+    <!-- Loading Screen Styles -->
+    <style>
+        #appLoading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--tg-theme-bg-color, #ffffff);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 99999;
+        }
+        #appLoading .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid var(--tg-theme-hint-color, #999999);
+            border-top-color: var(--tg-theme-button-color, #3390ec);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        #appLoading .text {
+            margin-top: 16px;
+            color: var(--tg-theme-text-color, #000000);
+            font-size: 14px;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        body.loading .page {
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
+
+    <!-- Fast Tariff Check & Redirect -->
     <script>
     (function() {
+        // Show loading immediately
+        document.body.classList.add('loading');
+
         // Wait for Telegram WebApp to be ready
         if (window.Telegram && window.Telegram.WebApp) {
             window.Telegram.WebApp.ready();
 
-            // Check tariff and redirect
+            // Check tariff ASAP - reduced timeout
             setTimeout(async function() {
                 try {
                     const initData = window.Telegram.WebApp.initData || '';
@@ -32,17 +72,35 @@
 
                     if (response.ok) {
                         const data = await response.json();
-                        console.log('[AUTO-REDIRECT] User tariff:', data.tariff);
 
                         if (data.tariff === 'BIZNES' || data.tariff === 'BUSINESS') {
-                            console.log('[AUTO-REDIRECT] Redirecting to business...');
-                            window.location.href = `/business?initData=${encodeURIComponent(initData)}`;
+                            // BIZNES tariff - immediate redirect
+                            window.location.replace(`/business?initData=${encodeURIComponent(initData)}`);
+                        } else {
+                            // FREE tariff - show index page
+                            document.body.classList.remove('loading');
+                            const loading = document.getElementById('appLoading');
+                            if (loading) loading.remove();
                         }
+                    } else {
+                        // Error - show page anyway
+                        document.body.classList.remove('loading');
+                        const loading = document.getElementById('appLoading');
+                        if (loading) loading.remove();
                     }
                 } catch (e) {
                     console.error('[AUTO-REDIRECT] Error:', e);
+                    // Error - show page anyway
+                    document.body.classList.remove('loading');
+                    const loading = document.getElementById('appLoading');
+                    if (loading) loading.remove();
                 }
-            }, 500); // 500ms kutish - Telegram WebApp to'liq tayyor bo'lishi uchun
+            }, 100); // 100ms - very fast!
+        } else {
+            // No Telegram WebApp - show page
+            document.body.classList.remove('loading');
+            const loading = document.getElementById('appLoading');
+            if (loading) loading.remove();
         }
     })();
     </script>
@@ -51,6 +109,12 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
 <body>
+    <!-- Loading Screen -->
+    <div id="appLoading">
+        <div class="spinner"></div>
+        <div class="text">Yuklanmoqda...</div>
+    </div>
+
     <!-- ============================================
          HOME PAGE - WALLET STYLE
          ============================================ -->
