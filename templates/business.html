@@ -24,7 +24,7 @@
         <div class="wallet-header">
             <div class="wallet-header-left">
                 <div class="wallet-avatar" id="userAvatar">B</div>
-                <span class="wallet-title">Balans AI <span style="font-size: 12px; opacity: 0.7;">v1.3.0</span></span>
+                <span class="wallet-title">Balans AI <span style="font-size: 12px; opacity: 0.7;">v1.4.0</span></span>
             </div>
             <div class="wallet-header-right">
                 <div class="wallet-header-icon" onclick="showNotifications()">
@@ -1631,53 +1631,131 @@
             <h1 class="wallet-page-title">HR bo'limi</h1>
         </div>
 
-        <!-- Top Tabs (Sticky) -->
-        <div class="hr-top-tabs" style="position: sticky; top: 56px; background: var(--wallet-bg-primary); z-index: 99; display: flex; gap: 8px; padding: 12px 16px; overflow-x: auto; border-bottom: 1px solid var(--wallet-border-color);">
-            <button class="hr-tab active" data-tab="employees" onclick="switchHRTab('employees', this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
-                </svg>
-                <span>Xodimlar</span>
-            </button>
-            <button class="hr-tab" data-tab="schedule" onclick="switchHRTab('schedule', this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
-                    <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                    <path d="M16 2v4M8 2v4M3 10h18"/>
-                </svg>
-                <span>Jadval</span>
-            </button>
-            <button class="hr-tab" data-tab="vacation" onclick="switchHRTab('vacation', this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
-                    <circle cx="12" cy="12" r="10"/>
-                    <path d="M12 6v6l4 2"/>
-                </svg>
-                <span>Tatil</span>
-            </button>
-            <button class="hr-tab" data-tab="tasks" onclick="switchHRTab('tasks', this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
-                    <path d="M9 11l3 3L22 4"/>
-                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                </svg>
-                <span>Vazifa</span>
-            </button>
-            <button class="hr-tab" data-tab="salary" onclick="switchHRTab('salary', this)">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
-                    <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
-                </svg>
-                <span>Maosh</span>
-            </button>
-        </div>
-
-        <!-- Dynamic Statistics Panel -->
-        <div id="hrStatsPanel" style="padding: 12px 16px; background: var(--wallet-bg-secondary); border-bottom: 1px solid var(--wallet-border-color);">
-            <!-- Stats will be dynamically loaded based on selected tab -->
+        <!-- Sticky Statistics Panel -->
+        <div class="sales-stats-sticky">
+            <div class="sales-stat-mini" onclick="showHRSection('employees')">
+                <div class="stat-mini-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="9" cy="7" r="4"/>
+                        <path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>
+                    </svg>
+                </div>
+                <div class="stat-mini-value" id="hrStatEmployees">0</div>
+                <div class="stat-mini-label">Xodimlar</div>
+            </div>
+            <div class="sales-stat-mini" onclick="showHRSection('schedule')">
+                <div class="stat-mini-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                        <path d="M16 2v4M8 2v4M3 10h18"/>
+                    </svg>
+                </div>
+                <div class="stat-mini-value" id="hrStatSchedule">0</div>
+                <div class="stat-mini-label">Bugun ishda</div>
+            </div>
+            <div class="sales-stat-mini" onclick="showHRSection('vacation')">
+                <div class="stat-mini-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 6v6l4 2"/>
+                    </svg>
+                </div>
+                <div class="stat-mini-value" id="hrStatVacation">0</div>
+                <div class="stat-mini-label">Tatilda</div>
+            </div>
+            <div class="sales-stat-mini" onclick="showHRSection('tasks')">
+                <div class="stat-mini-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path d="M9 11l3 3L22 4"/>
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                    </svg>
+                </div>
+                <div class="stat-mini-value" id="hrStatTasks">0</div>
+                <div class="stat-mini-label">Vazifalar</div>
+            </div>
+            <div class="sales-stat-mini" onclick="showHRSection('salary')">
+                <div class="stat-mini-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                        <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                    </svg>
+                </div>
+                <div class="stat-mini-value" id="hrStatSalary">0 so'm</div>
+                <div class="stat-mini-label">Jami maosh</div>
+            </div>
         </div>
 
         <!-- Main Content Area -->
         <div id="hrContent" style="padding: 16px;">
-            <!-- Content will be dynamically loaded based on selected tab -->
+            <!-- Default Overview -->
+            <div id="hrOverview">
+                <h3 style="margin: 0 0 16px 0; color: var(--wallet-text-primary); font-size: 18px;">Umumiy ko'rinish</h3>
+
+                <!-- Key Statistics Grid -->
+                <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
+                    <div class="wallet-stat-card">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; color: #10b981;">
+                                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                                <circle cx="9" cy="7" r="4"/>
+                            </svg>
+                            <span style="color: var(--wallet-text-secondary); font-size: 13px;">Jami xodimlar</span>
+                        </div>
+                        <div style="font-size: 22px; font-weight: 600; color: var(--wallet-text-primary);" id="overviewTotalEmployees">0</div>
+                        <div style="font-size: 12px; color: #10b981; margin-top: 4px;" id="overviewEmployeesTrend">Faol: 0</div>
+                    </div>
+
+                    <div class="wallet-stat-card">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; color: #3b82f6;">
+                                <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                                <path d="M16 2v4M8 2v4M3 10h18"/>
+                            </svg>
+                            <span style="color: var(--wallet-text-secondary); font-size: 13px;">Bugun ishda</span>
+                        </div>
+                        <div style="font-size: 22px; font-weight: 600; color: var(--wallet-text-primary);" id="overviewWorkingToday">0</div>
+                        <div style="font-size: 12px; color: var(--wallet-text-secondary); margin-top: 4px;" id="overviewAbsentToday">Dam olishda: 0</div>
+                    </div>
+
+                    <div class="wallet-stat-card">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; color: #f59e0b;">
+                                <path d="M9 11l3 3L22 4"/>
+                                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                            </svg>
+                            <span style="color: var(--wallet-text-secondary); font-size: 13px;">Vazifalar</span>
+                        </div>
+                        <div style="font-size: 22px; font-weight: 600; color: var(--wallet-text-primary);" id="overviewActiveTasks">0</div>
+                        <div style="font-size: 12px; color: var(--wallet-text-secondary); margin-top: 4px;" id="overviewCompletedTasks">Bajarilgan: 0</div>
+                    </div>
+
+                    <div class="wallet-stat-card">
+                        <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px; color: #ef4444;">
+                                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                            </svg>
+                            <span style="color: var(--wallet-text-secondary); font-size: 13px;">Bu oy maosh</span>
+                        </div>
+                        <div style="font-size: 22px; font-weight: 600; color: var(--wallet-text-primary);" id="overviewMonthSalary">0 so'm</div>
+                        <div style="font-size: 12px; color: var(--wallet-text-secondary); margin-top: 4px;" id="overviewUnpaidSalary">To'lanmagan: 0</div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="wallet-card" style="margin-top: 20px;">
+                    <h4 style="margin: 0 0 12px 0; font-size: 16px; color: var(--wallet-text-primary);">So'nggi harakatlar</h4>
+                    <div id="hrRecentActivityList">
+                        <div style="text-align: center; padding: 20px; color: var(--wallet-text-secondary);">
+                            Ma'lumot yuklanmoqda...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Detail View Container (Hidden by default) -->
+            <div id="hrDetailView" style="display: none;">
+                <!-- Content will be dynamically loaded based on selected section -->
+            </div>
         </div>
     </div>
 

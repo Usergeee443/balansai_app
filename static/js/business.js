@@ -1723,175 +1723,133 @@ window.showAddCreditModal = showAddCreditModal;
 
 // ==================== HR BO'LIMI (XODIMLAR BOSHQARUVI) ====================
 
-// Current HR tab
-let currentHRTab = 'employees';
+// Temporary data storage (will be replaced with backend API)
+let hrEmployees = [];
+let hrTasks = [];
+let hrVacations = [];
 
 // HR bo'limiga o'tish
 function openHR() {
     window.navigateTo('HR');
-    loadHRData('employees');
-}
-
-// HR tab o'zgartirish
-function switchHRTab(tabName, element) {
-    // Remove active from all tabs
-    document.querySelectorAll('.hr-tab').forEach(tab => {
-        tab.classList.remove('active');
-    });
-
-    // Add active to clicked tab
-    element.classList.add('active');
-
-    // Update current tab
-    currentHRTab = tabName;
-
-    // Load tab content and stats
-    loadHRData(tabName);
+    loadHRData();
 }
 
 // HR ma'lumotlarini yuklash
-async function loadHRData(tabName) {
+async function loadHRData() {
     try {
-        // Load stats and content based on tab
-        updateHRStats(tabName);
-        loadHRTabContent(tabName);
+        // Load sticky statistics
+        updateHRStickyStats();
+
+        // Load overview statistics
+        updateHROverviewStats();
     } catch (error) {
         console.error('HR ma\'lumotlarini yuklashda xato:', error);
         showToast('Ma\'lumotlarni yuklashda xatolik', 'error');
     }
 }
 
-// HR statistikalarni yangilash
-function updateHRStats(tabName) {
-    const statsPanel = document.getElementById('hrStatsPanel');
+// Sticky statistikalarni yangilash
+function updateHRStickyStats() {
+    document.getElementById('hrStatEmployees').textContent = hrEmployees.length || 0;
+    document.getElementById('hrStatSchedule').textContent = hrEmployees.filter(e => e.status === 'active').length || 0;
+    document.getElementById('hrStatVacation').textContent = hrVacations.filter(v => v.status === 'approved').length || 0;
+    document.getElementById('hrStatTasks').textContent = hrTasks.length || 0;
 
-    switch (tabName) {
-        case 'employees':
-            statsPanel.innerHTML = `
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Jami xodimlar</div>
-                        <div style="font-size: 20px; font-weight: 700; color: var(--wallet-text-primary);" id="statTotalEmployees">0</div>
-                    </div>
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Faol</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #10b981;" id="statActiveEmployees">0</div>
-                    </div>
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Yangi</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #3b82f6;" id="statNewEmployees">0</div>
-                    </div>
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Bo'limlar</div>
-                        <div style="font-size: 20px; font-weight: 700; color: var(--wallet-text-primary);" id="statDepartments">0</div>
-                    </div>
-                </div>
-            `;
-            break;
-        case 'schedule':
-            statsPanel.innerHTML = `
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Bugun ishda</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #10b981;" id="statWorkingToday">0</div>
-                    </div>
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Dam olishda</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;" id="statOffToday">0</div>
-                    </div>
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Kechikkan</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #ef4444;" id="statLate">0</div>
-                    </div>
-                </div>
-            `;
-            break;
-        case 'vacation':
-            statsPanel.innerHTML = `
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Tatilda</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #10b981;" id="statOnVacation">0</div>
-                    </div>
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">So'rovlar</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;" id="statPendingVacation">0</div>
-                    </div>
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Tasdiqlangan</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #3b82f6;" id="statApprovedVacation">0</div>
-                    </div>
-                </div>
-            `;
-            break;
-        case 'tasks':
-            statsPanel.innerHTML = `
-                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Jami vazifalar</div>
-                        <div style="font-size: 20px; font-weight: 700; color: var(--wallet-text-primary);" id="statTotalTasks">0</div>
-                    </div>
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Bajarilgan</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #10b981;" id="statCompletedTasks">0</div>
-                    </div>
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Jarayonda</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;" id="statInProgressTasks">0</div>
-                    </div>
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Kechikkan</div>
-                        <div style="font-size: 20px; font-weight: 700; color: #ef4444;" id="statOverdueTasks">0</div>
-                    </div>
-                </div>
-            `;
-            break;
-        case 'salary':
-            statsPanel.innerHTML = `
-                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Jami maosh</div>
-                        <div style="font-size: 18px; font-weight: 700; color: var(--wallet-text-primary);" id="statTotalSalary">0 so'm</div>
-                    </div>
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">O'rtacha maosh</div>
-                        <div style="font-size: 18px; font-weight: 700; color: #3b82f6;" id="statAvgSalary">0 so'm</div>
-                    </div>
-                    <div class="wallet-stat-card" style="padding: 12px;">
-                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">To'lanmagan</div>
-                        <div style="font-size: 18px; font-weight: 700; color: #ef4444;" id="statUnpaidSalary">0 so'm</div>
-                    </div>
-                </div>
-            `;
-            break;
-    }
+    const totalSalary = hrEmployees.reduce((sum, e) => sum + (e.salary || 0), 0);
+    document.getElementById('hrStatSalary').textContent = formatCurrency(totalSalary);
 }
 
-// HR tab content yuklash
-async function loadHRTabContent(tabName) {
-    const container = document.getElementById('hrContent');
+// Overview statistikalarni yangilash
+function updateHROverviewStats() {
+    const activeEmployees = hrEmployees.filter(e => e.status === 'active').length;
+    const completedTasks = hrTasks.filter(t => t.status === 'completed').length;
+    const totalSalary = hrEmployees.reduce((sum, e) => sum + (e.salary || 0), 0);
+    const unpaidSalary = hrEmployees.reduce((sum, e) => sum + (e.unpaid || 0), 0);
 
-    switch (tabName) {
-        case 'employees':
-            container.innerHTML = await getEmployeesTabContent();
-            break;
-        case 'schedule':
-            container.innerHTML = await getScheduleTabContent();
-            break;
-        case 'vacation':
-            container.innerHTML = await getVacationTabContent();
-            break;
-        case 'tasks':
-            container.innerHTML = await getTasksTabContent();
-            break;
-        case 'salary':
-            container.innerHTML = await getSalaryTabContent();
-            break;
-    }
+    document.getElementById('overviewTotalEmployees').textContent = hrEmployees.length || 0;
+    document.getElementById('overviewEmployeesTrend').textContent = `Faol: ${activeEmployees}`;
+    document.getElementById('overviewWorkingToday').textContent = activeEmployees || 0;
+    document.getElementById('overviewAbsentToday').textContent = `Dam olishda: ${hrEmployees.length - activeEmployees}`;
+    document.getElementById('overviewActiveTasks').textContent = hrTasks.filter(t => t.status !== 'completed').length || 0;
+    document.getElementById('overviewCompletedTasks').textContent = `Bajarilgan: ${completedTasks}`;
+    document.getElementById('overviewMonthSalary').textContent = formatCurrency(totalSalary);
+    document.getElementById('overviewUnpaidSalary').textContent = `To'lanmagan: ${formatCurrency(unpaidSalary)}`;
 }
 
-// Xodimlar tab content
-async function getEmployeesTabContent() {
+// HR bo'limlarini ko'rsatish
+function showHRSection(sectionType) {
+    const overview = document.getElementById('hrOverview');
+    const detailView = document.getElementById('hrDetailView');
+
+    // Hide overview, show detail view
+    overview.style.display = 'none';
+    detailView.style.display = 'block';
+
+    // Load section content
+    loadHRSectionDetail(sectionType);
+}
+
+// Umumiy ko'rinishga qaytish
+function showHROverview() {
+    document.getElementById('hrOverview').style.display = 'block';
+    document.getElementById('hrDetailView').style.display = 'none';
+}
+
+// Bo'lim tafsilotini yuklash
+async function loadHRSectionDetail(sectionType) {
+    const container = document.getElementById('hrDetailView');
+
+    // Section titles
+    const titles = {
+        'employees': 'Xodimlar',
+        'schedule': 'Ish jadvali',
+        'vacation': 'Tatil jadvali',
+        'tasks': 'Vazifalar',
+        'salary': 'Maosh'
+    };
+
+    // Header with back button
+    let html = `
+        <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 20px;">
+            <button class="wallet-icon-btn" onclick="showHROverview()" style="flex-shrink: 0;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h3 style="margin: 0; font-size: 20px; color: var(--wallet-text-primary);">${titles[sectionType]}</h3>
+        </div>
+    `;
+
+    // Add content based on section
+    switch (sectionType) {
+        case 'employees':
+            html += getEmployeesDetailContent();
+            break;
+        case 'schedule':
+            html += getScheduleDetailContent();
+            break;
+        case 'vacation':
+            html += getVacationDetailContent();
+            break;
+        case 'tasks':
+            html += getTasksDetailContent();
+            break;
+        case 'salary':
+            html += getSalaryDetailContent();
+            break;
+    }
+
+    container.innerHTML = html;
+
+    // Render list
+    if (sectionType === 'employees') renderEmployeesList();
+    else if (sectionType === 'tasks') renderTasksList();
+    else if (sectionType === 'vacation') renderVacationsList();
+    else if (sectionType === 'salary') renderSalariesList();
+}
+
+// Xodimlar tafsiloti
+function getEmployeesDetailContent() {
     return `
         <button class="wallet-btn-primary" onclick="showAddEmployeeModal()" style="margin-bottom: 16px;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
@@ -1903,17 +1861,13 @@ async function getEmployeesTabContent() {
             <div class="wallet-section-header">
                 <h2 class="wallet-section-title">Xodimlar ro'yxati</h2>
             </div>
-            <div id="employeesListContainer">
-                <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
-                    Xodimlar mavjud emas
-                </div>
-            </div>
+            <div id="hrEmployeesListContainer"></div>
         </div>
     `;
 }
 
-// Jadval tab content
-async function getScheduleTabContent() {
+// Jadval tafsiloti
+function getScheduleDetailContent() {
     return `
         <div class="wallet-card" style="margin-bottom: 16px;">
             <h4 style="margin: 0 0 12px 0; font-size: 16px; color: var(--wallet-text-primary);">Ish jadvali</h4>
@@ -1931,8 +1885,8 @@ async function getScheduleTabContent() {
     `;
 }
 
-// Tatil tab content
-async function getVacationTabContent() {
+// Tatil tafsiloti
+function getVacationDetailContent() {
     return `
         <button class="wallet-btn-primary" onclick="showAddVacationModal()" style="margin-bottom: 16px;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
@@ -1944,19 +1898,15 @@ async function getVacationTabContent() {
             <div class="wallet-section-header">
                 <h2 class="wallet-section-title">Tatil jadvali</h2>
             </div>
-            <div id="vacationListContainer">
-                <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
-                    Tatil so'rovlari mavjud emas
-                </div>
-            </div>
+            <div id="hrVacationsListContainer"></div>
         </div>
     `;
 }
 
-// Vazifa tab content
-async function getTasksTabContent() {
+// Vazifalar tafsiloti
+function getTasksDetailContent() {
     return `
-        <button class="wallet-btn-primary" onclick="showAddTaskModal()" style="margin-bottom: 16px;">
+        <button class="wallet-btn-primary" onclick="showAddHRTaskModal()" style="margin-bottom: 16px;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
                 <path d="M12 5v14M5 12h14"/>
             </svg>
@@ -1966,17 +1916,13 @@ async function getTasksTabContent() {
             <div class="wallet-section-header">
                 <h2 class="wallet-section-title">Vazifalar ro'yxati</h2>
             </div>
-            <div id="tasksListContainer">
-                <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
-                    Vazifalar mavjud emas
-                </div>
-            </div>
+            <div id="hrTasksListContainer"></div>
         </div>
     `;
 }
 
-// Maosh tab content
-async function getSalaryTabContent() {
+// Maosh tafsiloti
+function getSalaryDetailContent() {
     return `
         <div class="wallet-section">
             <div class="wallet-section-header">
@@ -1987,41 +1933,775 @@ async function getSalaryTabContent() {
                     </svg>
                 </button>
             </div>
-            <div id="salaryListContainer">
-                <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
-                    Maosh ma'lumotlari yuklanmoqda...
+            <div id="hrSalariesListContainer"></div>
+        </div>
+    `;
+}
+// ==================== XODIMLAR CRUD ====================
+
+// Xodimlarni render qilish
+function renderEmployeesList() {
+    const container = document.getElementById('hrEmployeesListContainer');
+
+    if (hrEmployees.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
+                Xodimlar mavjud emas. "Yangi xodim" tugmasini bosib qo'shing.
+            </div>
+        `;
+        return;
+    }
+
+    const html = hrEmployees.map(emp => `
+        <div class="wallet-card" style="margin-bottom: 12px; cursor: pointer;" onclick="showEmployeeDetails(${emp.id})">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="width: 48px; height: 48px; border-radius: 50%; background: var(--wallet-accent-blue); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 18px;">
+                    ${emp.name.charAt(0).toUpperCase()}
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; color: var(--wallet-text-primary); margin-bottom: 4px;">${emp.name}</div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary);">${emp.position} • ${emp.department}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 14px; font-weight: 600; color: var(--wallet-text-primary); margin-bottom: 4px;">${formatCurrency(emp.salary)}</div>
+                    <div style="font-size: 11px; color: ${emp.status === 'active' ? '#10b981' : '#ef4444'};">${emp.status === 'active' ? 'Faol' : 'Passiv'}</div>
                 </div>
             </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = html;
+}
+
+// Xodim qo'shish modali
+function showAddEmployeeModal() {
+    const modal = createModal({
+        title: 'Yangi xodim qo\'shish',
+        content: `
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Ism familiya *</label>
+                    <input type="text" id="empName" class="wallet-input" placeholder="Ismni kiriting" />
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Lavozim *</label>
+                    <input type="text" id="empPosition" class="wallet-input" placeholder="Lavozimni kiriting" />
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Bo'lim *</label>
+                    <input type="text" id="empDepartment" class="wallet-input" placeholder="Bo'limni kiriting" />
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Maosh *</label>
+                    <input type="number" id="empSalary" class="wallet-input" placeholder="Maoshni kiriting" />
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Telefon</label>
+                    <input type="tel" id="empPhone" class="wallet-input" placeholder="+998 XX XXX XX XX" />
+                </div>
+            </div>
+        `,
+        buttons: [
+            {
+                text: 'Bekor qilish',
+                style: 'secondary',
+                onClick: () => modal.close()
+            },
+            {
+                text: 'Saqlash',
+                style: 'primary',
+                onClick: () => {
+                    const name = document.getElementById('empName').value.trim();
+                    const position = document.getElementById('empPosition').value.trim();
+                    const department = document.getElementById('empDepartment').value.trim();
+                    const salary = parseFloat(document.getElementById('empSalary').value);
+                    const phone = document.getElementById('empPhone').value.trim();
+
+                    if (!name || !position || !department || !salary) {
+                        showToast('Barcha majburiy maydonlarni to\'ldiring', 'error');
+                        return;
+                    }
+
+                    const newEmployee = {
+                        id: Date.now(),
+                        name,
+                        position,
+                        department,
+                        salary,
+                        phone,
+                        status: 'active',
+                        hireDate: new Date().toISOString().split('T')[0],
+                        unpaid: 0
+                    };
+
+                    hrEmployees.push(newEmployee);
+                    updateHRStickyStats();
+                    updateHROverviewStats();
+                    renderEmployeesList();
+                    modal.close();
+                    showToast('Xodim muvaffaqiyatli qo\'shildi', 'success');
+                }
+            }
+        ]
+    });
+}
+
+// Xodim tafsilotlari
+function showEmployeeDetails(empId) {
+    const emp = hrEmployees.find(e => e.id === empId);
+    if (!emp) return;
+
+    const modal = createModal({
+        title: emp.name,
+        content: `
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div style="display: flex; justify-content: center; margin-bottom: 8px;">
+                    <div style="width: 80px; height: 80px; border-radius: 50%; background: var(--wallet-accent-blue); display: flex; align-items: center; justify-content: center; color: white; font-weight: 600; font-size: 32px;">
+                        ${emp.name.charAt(0).toUpperCase()}
+                    </div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Lavozim</div>
+                    <div style="font-weight: 600; color: var(--wallet-text-primary);">${emp.position}</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Bo'lim</div>
+                    <div style="font-weight: 600; color: var(--wallet-text-primary);">${emp.department}</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Maosh</div>
+                    <div style="font-weight: 600; color: var(--wallet-text-primary);">${formatCurrency(emp.salary)}</div>
+                </div>
+                ${emp.phone ? `
+                <div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Telefon</div>
+                    <div style="font-weight: 600; color: var(--wallet-text-primary);">${emp.phone}</div>
+                </div>
+                ` : ''}
+                <div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Ishga kirgan sana</div>
+                    <div style="font-weight: 600; color: var(--wallet-text-primary);">${emp.hireDate}</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Holat</div>
+                    <div style="font-weight: 600; color: ${emp.status === 'active' ? '#10b981' : '#ef4444'};">${emp.status === 'active' ? 'Faol' : 'Passiv'}</div>
+                </div>
+            </div>
+        `,
+        buttons: [
+            {
+                text: 'O\'chirish',
+                style: 'danger',
+                onClick: () => {
+                    if (confirm(`${emp.name} xodimni o'chirmoqchimisiz?`)) {
+                        hrEmployees = hrEmployees.filter(e => e.id !== empId);
+                        updateHRStickyStats();
+                        updateHROverviewStats();
+                        renderEmployeesList();
+                        modal.close();
+                        showToast('Xodim o\'chirildi', 'success');
+                    }
+                }
+            },
+            {
+                text: 'Tahrirlash',
+                style: 'primary',
+                onClick: () => {
+                    modal.close();
+                    showEditEmployeeModal(empId);
+                }
+            }
+        ]
+    });
+}
+
+// Xodim tahrirlash
+function showEditEmployeeModal(empId) {
+    const emp = hrEmployees.find(e => e.id === empId);
+    if (!emp) return;
+
+    const modal = createModal({
+        title: 'Xodimni tahrirlash',
+        content: `
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Ism familiya *</label>
+                    <input type="text" id="empName" class="wallet-input" value="${emp.name}" />
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Lavozim *</label>
+                    <input type="text" id="empPosition" class="wallet-input" value="${emp.position}" />
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Bo'lim *</label>
+                    <input type="text" id="empDepartment" class="wallet-input" value="${emp.department}" />
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Maosh *</label>
+                    <input type="number" id="empSalary" class="wallet-input" value="${emp.salary}" />
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Telefon</label>
+                    <input type="tel" id="empPhone" class="wallet-input" value="${emp.phone || ''}" />
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Holat</label>
+                    <select id="empStatus" class="wallet-input">
+                        <option value="active" ${emp.status === 'active' ? 'selected' : ''}>Faol</option>
+                        <option value="inactive" ${emp.status === 'inactive' ? 'selected' : ''}>Passiv</option>
+                    </select>
+                </div>
+            </div>
+        `,
+        buttons: [
+            {
+                text: 'Bekor qilish',
+                style: 'secondary',
+                onClick: () => modal.close()
+            },
+            {
+                text: 'Saqlash',
+                style: 'primary',
+                onClick: () => {
+                    emp.name = document.getElementById('empName').value.trim();
+                    emp.position = document.getElementById('empPosition').value.trim();
+                    emp.department = document.getElementById('empDepartment').value.trim();
+                    emp.salary = parseFloat(document.getElementById('empSalary').value);
+                    emp.phone = document.getElementById('empPhone').value.trim();
+                    emp.status = document.getElementById('empStatus').value;
+
+                    updateHRStickyStats();
+                    updateHROverviewStats();
+                    renderEmployeesList();
+                    modal.close();
+                    showToast('Xodim ma\'lumotlari yangilandi', 'success');
+                }
+            }
+        ]
+    });
+}
+
+// ==================== VAZIFALAR CRUD ====================
+
+// Vazifalarni render qilish
+function renderTasksList() {
+    const container = document.getElementById('hrTasksListContainer');
+
+    if (hrTasks.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
+                Vazifalar mavjud emas. "Yangi vazifa" tugmasini bosib qo'shing.
+            </div>
+        `;
+        return;
+    }
+
+    const html = hrTasks.map(task => {
+        const statusColor = task.status === 'completed' ? '#10b981' : task.status === 'in-progress' ? '#f59e0b' : '#ef4444';
+        const statusText = task.status === 'completed' ? 'Bajarilgan' : task.status === 'in-progress' ? 'Jarayonda' : 'Kechikkan';
+
+        return `
+            <div class="wallet-card" style="margin-bottom: 12px; cursor: pointer;" onclick="showTaskDetails(${task.id})">
+                <div style="display: flex; align-items: start; gap: 12px;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--wallet-text-primary); margin-bottom: 4px;">${task.title}</div>
+                        <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 8px;">${task.assignedTo || 'Tayinlanmagan'}</div>
+                        <div style="display: flex; gap: 8px;">
+                            <span style="font-size: 11px; padding: 4px 8px; border-radius: 12px; background: ${statusColor}22; color: ${statusColor};">${statusText}</span>
+                            <span style="font-size: 11px; padding: 4px 8px; border-radius: 12px; background: var(--wallet-bg-secondary); color: var(--wallet-text-secondary);">📅 ${task.deadline}</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = html;
+}
+
+// Vazifa qo'shish
+function showAddHRTaskModal() {
+    const modal = createModal({
+        title: 'Yangi vazifa qo\'shish',
+        content: `
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Vazifa nomi *</label>
+                    <input type="text" id="taskTitle" class="wallet-input" placeholder="Vazifa nomini kiriting" />
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Tavsif</label>
+                    <textarea id="taskDesc" class="wallet-input" placeholder="Qisqa tavsif" rows="3"></textarea>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Tayinlangan xodim</label>
+                    <select id="taskAssignee" class="wallet-input">
+                        <option value="">Tanlang</option>
+                        ${hrEmployees.map(emp => `<option value="${emp.name}">${emp.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Muddat *</label>
+                    <input type="date" id="taskDeadline" class="wallet-input" />
+                </div>
+            </div>
+        `,
+        buttons: [
+            {
+                text: 'Bekor qilish',
+                style: 'secondary',
+                onClick: () => modal.close()
+            },
+            {
+                text: 'Saqlash',
+                style: 'primary',
+                onClick: () => {
+                    const title = document.getElementById('taskTitle').value.trim();
+                    const description = document.getElementById('taskDesc').value.trim();
+                    const assignedTo = document.getElementById('taskAssignee').value;
+                    const deadline = document.getElementById('taskDeadline').value;
+
+                    if (!title || !deadline) {
+                        showToast('Vazifa nomi va muddatni kiriting', 'error');
+                        return;
+                    }
+
+                    const newTask = {
+                        id: Date.now(),
+                        title,
+                        description,
+                        assignedTo,
+                        deadline,
+                        status: 'in-progress',
+                        createdAt: new Date().toISOString().split('T')[0]
+                    };
+
+                    hrTasks.push(newTask);
+                    updateHRStickyStats();
+                    updateHROverviewStats();
+                    renderTasksList();
+                    modal.close();
+                    showToast('Vazifa qo\'shildi', 'success');
+                }
+            }
+        ]
+    });
+}
+
+// Vazifa tafsilotlari
+function showTaskDetails(taskId) {
+    const task = hrTasks.find(t => t.id === taskId);
+    if (!task) return;
+
+    const statusColor = task.status === 'completed' ? '#10b981' : task.status === 'in-progress' ? '#f59e0b' : '#ef4444';
+    const statusText = task.status === 'completed' ? 'Bajarilgan' : task.status === 'in-progress' ? 'Jarayonda' : 'Kechikkan';
+
+    const modal = createModal({
+        title: task.title,
+        content: `
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                ${task.description ? `
+                <div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Tavsif</div>
+                    <div style="color: var(--wallet-text-primary);">${task.description}</div>
+                </div>
+                ` : ''}
+                <div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Tayinlangan</div>
+                    <div style="font-weight: 600; color: var(--wallet-text-primary);">${task.assignedTo || 'Tayinlanmagan'}</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Muddat</div>
+                    <div style="font-weight: 600; color: var(--wallet-text-primary);">${task.deadline}</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Holat</div>
+                    <span style="padding: 6px 12px; border-radius: 12px; background: ${statusColor}22; color: ${statusColor}; font-weight: 600;">${statusText}</span>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Holatni o'zgartirish</label>
+                    <select id="taskStatusUpdate" class="wallet-input">
+                        <option value="in-progress" ${task.status === 'in-progress' ? 'selected' : ''}>Jarayonda</option>
+                        <option value="completed" ${task.status === 'completed' ? 'selected' : ''}>Bajarilgan</option>
+                        <option value="overdue" ${task.status === 'overdue' ? 'selected' : ''}>Kechikkan</option>
+                    </select>
+                </div>
+            </div>
+        `,
+        buttons: [
+            {
+                text: 'O\'chirish',
+                style: 'danger',
+                onClick: () => {
+                    if (confirm(`"${task.title}" vazifani o'chirmoqchimisiz?`)) {
+                        hrTasks = hrTasks.filter(t => t.id !== taskId);
+                        updateHRStickyStats();
+                        updateHROverviewStats();
+                        renderTasksList();
+                        modal.close();
+                        showToast('Vazifa o\'chirildi', 'success');
+                    }
+                }
+            },
+            {
+                text: 'Saqlash',
+                style: 'primary',
+                onClick: () => {
+                    task.status = document.getElementById('taskStatusUpdate').value;
+                    updateHRStickyStats();
+                    updateHROverviewStats();
+                    renderTasksList();
+                    modal.close();
+                    showToast('Vazifa yangilandi', 'success');
+                }
+            }
+        ]
+    });
+}
+
+// ==================== TATILLAR CRUD ====================
+
+// Tatillarni render qilish
+function renderVacationsList() {
+    const container = document.getElementById('hrVacationsListContainer');
+
+    if (hrVacations.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
+                Tatil so'rovlari mavjud emas.
+            </div>
+        `;
+        return;
+    }
+
+    const html = hrVacations.map(vac => {
+        const statusColor = vac.status === 'approved' ? '#10b981' : vac.status === 'pending' ? '#f59e0b' : '#ef4444';
+        const statusText = vac.status === 'approved' ? 'Tasdiqlangan' : vac.status === 'pending' ? 'Kutilmoqda' : 'Rad etilgan';
+
+        return `
+            <div class="wallet-card" style="margin-bottom: 12px; cursor: pointer;" onclick="showVacationDetails(${vac.id})">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--wallet-text-primary); margin-bottom: 4px;">${vac.employeeName}</div>
+                        <div style="font-size: 13px; color: var(--wallet-text-secondary);">${vac.startDate} — ${vac.endDate}</div>
+                    </div>
+                    <span style="padding: 6px 12px; border-radius: 12px; background: ${statusColor}22; color: ${statusColor}; font-weight: 600; font-size: 12px;">${statusText}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+
+    container.innerHTML = html;
+}
+
+// Tatil qo'shish
+function showAddVacationModal() {
+    const modal = createModal({
+        title: 'Tatil so\'rovi',
+        content: `
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Xodim *</label>
+                    <select id="vacEmployee" class="wallet-input">
+                        <option value="">Tanlang</option>
+                        ${hrEmployees.map(emp => `<option value="${emp.name}">${emp.name}</option>`).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Boshlanish sanasi *</label>
+                    <input type="date" id="vacStartDate" class="wallet-input" />
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Tugash sanasi *</label>
+                    <input type="date" id="vacEndDate" class="wallet-input" />
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Sabab</label>
+                    <textarea id="vacReason" class="wallet-input" placeholder="Tatil sababi" rows="2"></textarea>
+                </div>
+            </div>
+        `,
+        buttons: [
+            {
+                text: 'Bekor qilish',
+                style: 'secondary',
+                onClick: () => modal.close()
+            },
+            {
+                text: 'Yuborish',
+                style: 'primary',
+                onClick: () => {
+                    const employeeName = document.getElementById('vacEmployee').value;
+                    const startDate = document.getElementById('vacStartDate').value;
+                    const endDate = document.getElementById('vacEndDate').value;
+                    const reason = document.getElementById('vacReason').value.trim();
+
+                    if (!employeeName || !startDate || !endDate) {
+                        showToast('Barcha majburiy maydonlarni to\'ldiring', 'error');
+                        return;
+                    }
+
+                    const newVacation = {
+                        id: Date.now(),
+                        employeeName,
+                        startDate,
+                        endDate,
+                        reason,
+                        status: 'pending',
+                        createdAt: new Date().toISOString().split('T')[0]
+                    };
+
+                    hrVacations.push(newVacation);
+                    updateHRStickyStats();
+                    renderVacationsList();
+                    modal.close();
+                    showToast('Tatil so\'rovi yuborildi', 'success');
+                }
+            }
+        ]
+    });
+}
+
+// Tatil tafsilotlari
+function showVacationDetails(vacId) {
+    const vac = hrVacations.find(v => v.id === vacId);
+    if (!vac) return;
+
+    const statusColor = vac.status === 'approved' ? '#10b981' : vac.status === 'pending' ? '#f59e0b' : '#ef4444';
+    const statusText = vac.status === 'approved' ? 'Tasdiqlangan' : vac.status === 'pending' ? 'Kutilmoqda' : 'Rad etilgan';
+
+    const modal = createModal({
+        title: 'Tatil tafsilotlari',
+        content: `
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Xodim</div>
+                    <div style="font-weight: 600; color: var(--wallet-text-primary);">${vac.employeeName}</div>
+                </div>
+                <div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Davomiyligi</div>
+                    <div style="font-weight: 600; color: var(--wallet-text-primary);">${vac.startDate} — ${vac.endDate}</div>
+                </div>
+                ${vac.reason ? `
+                <div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Sabab</div>
+                    <div style="color: var(--wallet-text-primary);">${vac.reason}</div>
+                </div>
+                ` : ''}
+                <div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Holat</div>
+                    <span style="padding: 6px 12px; border-radius: 12px; background: ${statusColor}22; color: ${statusColor}; font-weight: 600;">${statusText}</span>
+                </div>
+                ${vac.status === 'pending' ? `
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Qaror qabul qilish</label>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="wallet-btn-secondary" style="flex: 1;" onclick="updateVacationStatus(${vac.id}, 'rejected')">Rad etish</button>
+                        <button class="wallet-btn-primary" style="flex: 1;" onclick="updateVacationStatus(${vac.id}, 'approved')">Tasdiqlash</button>
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `,
+        buttons: [
+            {
+                text: 'O\'chirish',
+                style: 'danger',
+                onClick: () => {
+                    if (confirm('Tatil so\'rovini o\'chirmoqchimisiz?')) {
+                        hrVacations = hrVacations.filter(v => v.id !== vacId);
+                        updateHRStickyStats();
+                        renderVacationsList();
+                        modal.close();
+                        showToast('Tatil so\'rovi o\'chirildi', 'success');
+                    }
+                }
+            },
+            {
+                text: 'Yopish',
+                style: 'secondary',
+                onClick: () => modal.close()
+            }
+        ]
+    });
+}
+
+// Tatil holatini yangilash
+function updateVacationStatus(vacId, status) {
+    const vac = hrVacations.find(v => v.id === vacId);
+    if (!vac) return;
+
+    vac.status = status;
+    updateHRStickyStats();
+    renderVacationsList();
+
+    // Close all modals
+    document.querySelectorAll('.modal-overlay').forEach(m => m.remove());
+
+    const statusText = status === 'approved' ? 'tasdiqlandi' : 'rad etildi';
+    showToast(`Tatil so'rovi ${statusText}`, 'success');
+}
+
+// ==================== MAOSHLAR ====================
+
+// Maoshlarni render qilish
+function renderSalariesList() {
+    const container = document.getElementById('hrSalariesListContainer');
+
+    if (hrEmployees.length === 0) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
+                Xodimlar mavjud emas.
+            </div>
+        `;
+        return;
+    }
+
+    const html = hrEmployees.map(emp => `
+        <div class="wallet-card" style="margin-bottom: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+                <div style="flex: 1;">
+                    <div style="font-weight: 600; color: var(--wallet-text-primary); margin-bottom: 4px;">${emp.name}</div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary);">${emp.position}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-size: 16px; font-weight: 600; color: var(--wallet-text-primary); margin-bottom: 4px;">${formatCurrency(emp.salary)}</div>
+                    ${emp.unpaid ? `<div style="font-size: 12px; color: #ef4444;">To'lanmagan: ${formatCurrency(emp.unpaid)}</div>` : '<div style="font-size: 12px; color: #10b981;">To\'langan</div>'}
+                </div>
+                ${emp.unpaid ? `<button class="wallet-btn-secondary" style="padding: 8px 16px; font-size: 13px;" onclick="paySalary(${emp.id})">To'lash</button>` : ''}
+            </div>
+        </div>
+    `).join('');
+
+    container.innerHTML = html;
+}
+
+// Maosh to'lash
+function paySalary(empId) {
+    const emp = hrEmployees.find(e => e.id === empId);
+    if (!emp) return;
+
+    const modal = createModal({
+        title: 'Maosh to\'lash',
+        content: `
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Xodim</div>
+                    <div style="font-weight: 600; color: var(--wallet-text-primary); font-size: 18px;">${emp.name}</div>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">To'lov summasi</label>
+                    <input type="number" id="paymentAmount" class="wallet-input" value="${emp.unpaid || emp.salary}" />
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">To'lov sanasi</label>
+                    <input type="date" id="paymentDate" class="wallet-input" value="${new Date().toISOString().split('T')[0]}" />
+                </div>
+            </div>
+        `,
+        buttons: [
+            {
+                text: 'Bekor qilish',
+                style: 'secondary',
+                onClick: () => modal.close()
+            },
+            {
+                text: 'To\'lash',
+                style: 'primary',
+                onClick: () => {
+                    const amount = parseFloat(document.getElementById('paymentAmount').value);
+
+                    if (emp.unpaid) {
+                        emp.unpaid = Math.max(0, emp.unpaid - amount);
+                    }
+
+                    updateHRStickyStats();
+                    updateHROverviewStats();
+                    renderSalariesList();
+                    modal.close();
+                    showToast(`${emp.name}ga ${formatCurrency(amount)} to'landi`, 'success');
+                }
+            }
+        ]
+    });
+}
+
+// Maosh to'lash modali (barcha xodimlar)
+function showPaySalariesModal() {
+    const modal = createModal({
+        title: 'Maosh to\'lash',
+        content: `
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Xodimni tanlang</label>
+                    <select id="payEmpSelect" class="wallet-input">
+                        <option value="">Tanlang</option>
+                        ${hrEmployees.map(emp => `<option value="${emp.id}">${emp.name} - ${formatCurrency(emp.salary)}</option>`).join('')}
+                    </select>
+                </div>
+                <div>
+                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Summa</label>
+                    <input type="number" id="payAmount" class="wallet-input" placeholder="Summa" />
+                </div>
+            </div>
+        `,
+        buttons: [
+            {
+                text: 'Bekor qilish',
+                style: 'secondary',
+                onClick: () => modal.close()
+            },
+            {
+                text: 'To\'lash',
+                style: 'primary',
+                onClick: () => {
+                    const empId = parseInt(document.getElementById('payEmpSelect').value);
+                    const amount = parseFloat(document.getElementById('payAmount').value);
+
+                    if (!empId || !amount) {
+                        showToast('Xodim va summani tanlang', 'error');
+                        return;
+                    }
+
+                    const emp = hrEmployees.find(e => e.id === empId);
+                    if (emp) {
+                        if (emp.unpaid) {
+                            emp.unpaid = Math.max(0, emp.unpaid - amount);
+                        }
+                        updateHRStickyStats();
+                        updateHROverviewStats();
+                        renderSalariesList();
+                        showToast(`${emp.name}ga maosh to'landi`, 'success');
+                    }
+
+                    modal.close();
+                }
+            }
+        ]
+    });
+}
+
+// Jadval ko'rinishi
+function loadScheduleView(viewType) {
+    const container = document.getElementById('scheduleViewContainer');
+    container.innerHTML = `
+        <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
+            ${viewType.charAt(0).toUpperCase() + viewType.slice(1)} jadval ko'rinishi tez orada qo'shiladi.
         </div>
     `;
 }
 
-// Placeholder CRUD functions
-function showAddEmployeeModal() {
-    alert('Yangi xodim qo\'shish funksiyasi tez orada qo\'shiladi');
-}
-
-function showAddVacationModal() {
-    alert('Tatil so\'rovi yuborish funksiyasi tez orada qo\'shiladi');
-}
-
-function showAddTaskModal() {
-    alert('Yangi vazifa qo\'shish funksiyasi tez orada qo\'shiladi');
-}
-
-function showPaySalariesModal() {
-    alert('Maosh to\'lash funksiyasi tez orada qo\'shiladi');
-}
-
-function loadScheduleView(viewType) {
-    alert(`${viewType} jadval ko'rinishi tez orada qo'shiladi`);
-}
-
 // Global scope'ga export
 window.openHR = openHR;
-window.switchHRTab = switchHRTab;
+window.showHRSection = showHRSection;
+window.showHROverview = showHROverview;
 window.showAddEmployeeModal = showAddEmployeeModal;
+window.showEmployeeDetails = showEmployeeDetails;
+window.showAddHRTaskModal = showAddHRTaskModal;
+window.showTaskDetails = showTaskDetails;
 window.showAddVacationModal = showAddVacationModal;
-window.showAddTaskModal = showAddTaskModal;
+window.showVacationDetails = showVacationDetails;
+window.updateVacationStatus = updateVacationStatus;
+window.paySalary = paySalary;
 window.showPaySalariesModal = showPaySalariesModal;
 window.loadScheduleView = loadScheduleView;
