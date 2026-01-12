@@ -12,6 +12,41 @@
     
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <!-- Auto-redirect to business for BIZNES tariff -->
+    <script>
+    (function() {
+        // Wait for Telegram WebApp to be ready
+        if (window.Telegram && window.Telegram.WebApp) {
+            window.Telegram.WebApp.ready();
+
+            // Check tariff and redirect
+            setTimeout(async function() {
+                try {
+                    const initData = window.Telegram.WebApp.initData || '';
+                    const response = await fetch('/api/user', {
+                        headers: {
+                            'X-Telegram-Init-Data': initData
+                        }
+                    });
+
+                    if (response.ok) {
+                        const data = await response.json();
+                        console.log('[AUTO-REDIRECT] User tariff:', data.tariff);
+
+                        if (data.tariff === 'BIZNES' || data.tariff === 'BUSINESS') {
+                            console.log('[AUTO-REDIRECT] Redirecting to business...');
+                            window.location.href = `/business?initData=${encodeURIComponent(initData)}`;
+                        }
+                    }
+                } catch (e) {
+                    console.error('[AUTO-REDIRECT] Error:', e);
+                }
+            }, 500); // 500ms kutish - Telegram WebApp to'liq tayyor bo'lishi uchun
+        }
+    })();
+    </script>
+
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 </head>
