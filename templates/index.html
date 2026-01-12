@@ -56,12 +56,29 @@
         // Show loading immediately
         document.body.classList.add('loading');
 
+        let loadingHidden = false;
+
         // Make hideLoading available globally
         window.hideAppLoading = function() {
+            if (loadingHidden) return; // Already hidden
+            loadingHidden = true;
+
+            console.log('[LOADING] Hiding loading screen...');
             document.body.classList.remove('loading');
             const loading = document.getElementById('appLoading');
-            if (loading) loading.remove();
+            if (loading) {
+                loading.remove();
+                console.log('[LOADING] Loading screen removed');
+            }
         };
+
+        // Safety timeout - force hide after 10 seconds
+        setTimeout(function() {
+            if (!loadingHidden) {
+                console.warn('[LOADING] Force hiding loading screen after 10s timeout');
+                window.hideAppLoading();
+            }
+        }, 10000);
 
         // Wait for Telegram WebApp to be ready
         if (window.Telegram && window.Telegram.WebApp) {
@@ -69,6 +86,7 @@
 
             // Check tariff when DOM is ready (only for redirect)
             document.addEventListener('DOMContentLoaded', async function() {
+                console.log('[LOADING] DOM ready, checking tariff...');
                 try {
                     const initData = window.Telegram.WebApp.initData || '';
                     const response = await fetch('/api/user', {
@@ -79,22 +97,29 @@
 
                     if (response.ok) {
                         const data = await response.json();
+                        console.log('[LOADING] Tariff:', data.tariff);
 
                         if (data.tariff === 'BIZNES' || data.tariff === 'BUSINESS') {
                             // BIZNES tariff - immediate redirect
+                            console.log('[LOADING] Redirecting to business...');
                             window.location.replace(`/business?initData=${encodeURIComponent(initData)}`);
+                        } else {
+                            console.log('[LOADING] FREE tariff, waiting for wallet-app.js...');
                         }
                         // For FREE tariff - do nothing, let wallet-app.js handle loading
                     }
                     // If error - do nothing, let wallet-app.js handle loading
                 } catch (e) {
-                    console.error('[AUTO-REDIRECT] Error:', e);
+                    console.error('[LOADING] Error:', e);
                     // If error - do nothing, let wallet-app.js handle loading
                 }
             });
         } else {
             // No Telegram WebApp - hide loading when DOM ready
-            document.addEventListener('DOMContentLoaded', window.hideAppLoading);
+            document.addEventListener('DOMContentLoaded', function() {
+                console.log('[LOADING] No Telegram WebApp, hiding loading');
+                window.hideAppLoading();
+            });
         }
     })();
     </script>
@@ -1818,7 +1843,7 @@
         </div>
 
     <!-- Scripts -->
-    <script src="/static/js/wallet-app.js"></script>
-    <script src="/static/js/business.js"></script>
+    <script src="/static/js/wallet-app.js?v=1.5.1"></script>
+    <script src="/static/js/business.js?v=1.5.1"></script>
 </body>
 </html>
