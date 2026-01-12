@@ -211,6 +211,53 @@ def run_migrations():
             except Exception as e:
                 print(f"⚠️ Migration xatosi (warehouse_movements): {e}")
 
+            # QR kodlar jadvali (xodim qo'shish uchun)
+            try:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS qr_codes (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        business_user_id BIGINT NOT NULL,
+                        qr_token VARCHAR(255) NOT NULL UNIQUE,
+                        expires_at DATETIME NOT NULL,
+                        used TINYINT(1) DEFAULT 0,
+                        used_by_user_id BIGINT,
+                        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        used_at DATETIME,
+                        FOREIGN KEY (business_user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                        INDEX idx_business_user (business_user_id),
+                        INDEX idx_qr_token (qr_token),
+                        INDEX idx_expires_at (expires_at)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """)
+                connection.commit()
+                print("✅ Migration: qr_codes jadvali yaratildi")
+            except Exception as e:
+                print(f"⚠️ Migration xatosi (qr_codes): {e}")
+
+            # Xodim bog'lanishlari jadvali
+            try:
+                cursor.execute("""
+                    CREATE TABLE IF NOT EXISTS employee_links (
+                        id INT AUTO_INCREMENT PRIMARY KEY,
+                        business_user_id BIGINT NOT NULL,
+                        employee_user_id BIGINT NOT NULL,
+                        permissions JSON,
+                        status VARCHAR(50) DEFAULT 'active',
+                        joined_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                        FOREIGN KEY (business_user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                        FOREIGN KEY (employee_user_id) REFERENCES users(user_id) ON DELETE CASCADE,
+                        UNIQUE KEY unique_business_employee (business_user_id, employee_user_id),
+                        INDEX idx_business_user (business_user_id),
+                        INDEX idx_employee_user (employee_user_id),
+                        INDEX idx_status (status)
+                    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+                """)
+                connection.commit()
+                print("✅ Migration: employee_links jadvali yaratildi")
+            except Exception as e:
+                print(f"⚠️ Migration xatosi (employee_links): {e}")
+
         _migrations_done = True
         print("✅ Barcha migrationlar bajarildi")
     except Exception as e:
@@ -2757,6 +2804,177 @@ def get_low_stock_alerts(user_id):
                 'total_alerts': len(alerts),
                 'critical_count': len([a for a in alerts if a['urgency'] == 'critical'])
             }
+    finally:
+        connection.close()
+
+
+# ============ QR CODE VA EMPLOYEE LINKS ============
+
+def save_qr_code(business_user_id, qr_token, expires_at):
+    """QR kodni saqlash"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO qr_codes (business_user_id, qr_token, expires_at)
+                VALUES (%s, %s, %s)
+            """, (business_user_id, qr_token, expires_at))
+            connection.commit()
+            return cursor.lastrowid
+    finally:
+        connection.close()
+
+
+def validate_qr_code(qr_token):
+    """QR kodni tekshirish va ma'lumotlarini olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # QR kodni topish va muddatini tekshirish
+            cursor.execute("""
+                SELECT * FROM qr_codes
+                WHERE qr_token = %s
+                AND used = 0
+                AND expires_at > NOW()
+            """, (qr_token,))
+
+            qr_data = cursor.fetchone()
+            return qr_data
+    finally:
+        connection.close()
+
+
+def mark_qr_code_used(qr_token, employee_user_id):
+    """QR kodni ishlatilgan deb belgilash"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                UPDATE qr_codes
+                SET used = 1,
+                    used_by_user_id = %s,
+                    used_at = NOW()
+                WHERE qr_token = %s
+            """, (employee_user_id, qr_token))
+            connection.commit()
+            return cursor.rowcount > 0
+    finally:
+        connection.close()
+
+
+def create_employee_link(business_user_id, employee_user_id, permissions=None):
+    """Xodimni biznesga bog'lash"""
+    if permissions is None:
+        permissions = {
+            'warehouse': True,
+            'sales': True,
+            'tasks': True,
+            'reports': False
+        }
+
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            import json
+            cursor.execute("""
+                INSERT INTO employee_links (business_user_id, employee_user_id, permissions)
+                VALUES (%s, %s, %s)
+                ON DUPLICATE KEY UPDATE
+                    status = 'active',
+                    permissions = %s,
+                    updated_at = NOW()
+            """, (business_user_id, employee_user_id, json.dumps(permissions), json.dumps(permissions)))
+            connection.commit()
+            return cursor.lastrowid
+    finally:
+        connection.close()
+
+
+def get_employee_link(employee_user_id):
+    """Xodimning biznesga bog'lanishini olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT el.*, u.username as business_name, u.tariff, u.tariff_expires_at
+                FROM employee_links el
+                LEFT JOIN users u ON el.business_user_id = u.user_id
+                WHERE el.employee_user_id = %s
+                AND el.status = 'active'
+            """, (employee_user_id,))
+
+            link = cursor.fetchone()
+            if link and link.get('permissions'):
+                import json
+                try:
+                    link['permissions'] = json.loads(link['permissions'])
+                except:
+                    link['permissions'] = {}
+            return link
+    finally:
+        connection.close()
+
+
+def get_business_employees(business_user_id):
+    """Biznesning barcha xodimlarini olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT el.*, u.username, u.first_name, u.last_name
+                FROM employee_links el
+                LEFT JOIN users u ON el.employee_user_id = u.user_id
+                WHERE el.business_user_id = %s
+                AND el.status = 'active'
+                ORDER BY el.joined_at DESC
+            """, (business_user_id,))
+
+            employees = cursor.fetchall()
+            for emp in employees:
+                if emp.get('permissions'):
+                    import json
+                    try:
+                        emp['permissions'] = json.loads(emp['permissions'])
+                    except:
+                        emp['permissions'] = {}
+            return employees
+    finally:
+        connection.close()
+
+
+def remove_employee_link(business_user_id, employee_user_id):
+    """Xodimni biznesdan olib tashlash"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                UPDATE employee_links
+                SET status = 'removed',
+                    updated_at = NOW()
+                WHERE business_user_id = %s
+                AND employee_user_id = %s
+            """, (business_user_id, employee_user_id))
+            connection.commit()
+            return cursor.rowcount > 0
+    finally:
+        connection.close()
+
+
+def update_employee_permissions(business_user_id, employee_user_id, permissions):
+    """Xodim ruxsatlarini yangilash"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            import json
+            cursor.execute("""
+                UPDATE employee_links
+                SET permissions = %s,
+                    updated_at = NOW()
+                WHERE business_user_id = %s
+                AND employee_user_id = %s
+            """, (json.dumps(permissions), business_user_id, employee_user_id))
+            connection.commit()
+            return cursor.rowcount > 0
     finally:
         connection.close()
 

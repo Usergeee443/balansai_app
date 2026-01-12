@@ -3067,3 +3067,170 @@ function openBusinessApp() {
 
 // Make it globally accessible
 window.openBusinessApp = openBusinessApp;
+
+// Employee Join Modal - QR Scanner
+function showEmployeeJoinModal() {
+    let html5QrCode = null;
+
+    const modal = createModal({
+        title: 'Biznesga qo\'shilish',
+        content: `
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                <p style="color: var(--wallet-text-secondary); text-align: center;">
+                    Biznes egasidan olingan QR kodni scan qiling
+                </p>
+
+                <!-- QR Scanner Container -->
+                <div id="qrScannerContainer" style="
+                    width: 100%;
+                    max-width: 100%;
+                    border-radius: 12px;
+                    overflow: hidden;
+                    background: #000;
+                "></div>
+
+                <!-- Scanner Status -->
+                <div id="scannerStatus" style="
+                    padding: 12px;
+                    border-radius: 8px;
+                    background: var(--wallet-bg-secondary);
+                    text-align: center;
+                    color: var(--wallet-text-secondary);
+                    font-size: 14px;
+                ">
+                    Kamerani tayyorlash...
+                </div>
+
+                <!-- Instructions -->
+                <div style="
+                    background: rgba(33, 150, 243, 0.1);
+                    padding: 12px;
+                    border-radius: 8px;
+                    border-left: 3px solid var(--wallet-accent-blue);
+                ">
+                    <div style="display: flex; align-items: start; gap: 8px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--wallet-accent-blue)" stroke-width="2" style="flex-shrink: 0; margin-top: 2px;">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="16" x2="12" y2="12"/>
+                            <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                        <div style="font-size: 13px; color: var(--wallet-text-secondary);">
+                            QR kodni kamera oynasiga to'g'ri joylashtiring. Scan avtomatik amalga oshiriladi.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `,
+        buttons: [
+            {
+                text: 'Bekor qilish',
+                style: 'secondary',
+                onClick: async () => {
+                    if (html5QrCode && html5QrCode.isScanning) {
+                        try {
+                            await html5QrCode.stop();
+                        } catch (err) {
+                            console.error('Error stopping scanner:', err);
+                        }
+                    }
+                    modal.close();
+                }
+            }
+        ]
+    });
+
+    // Start QR Scanner
+    setTimeout(() => {
+        const qrContainer = document.getElementById('qrScannerContainer');
+        const statusDiv = document.getElementById('scannerStatus');
+
+        if (!qrContainer) return;
+
+        if (typeof Html5Qrcode === 'undefined') {
+            statusDiv.innerHTML = '<span style="color: var(--wallet-error);">QR scanner yuklanmadi</span>';
+            return;
+        }
+
+        html5QrCode = new Html5Qrcode("qrScannerContainer");
+
+        const qrCodeSuccessCallback = async (decodedText, decodedResult) => {
+            // Stop scanning immediately
+            try {
+                await html5QrCode.stop();
+            } catch (err) {
+                console.error('Error stopping scanner:', err);
+            }
+
+            statusDiv.innerHTML = '<span style="color: var(--wallet-success);">✓ QR kod o\'qildi, tekshirilmoqda...</span>';
+
+            // Validate QR code format
+            if (!decodedText.startsWith('BALANSAI_EMP_')) {
+                statusDiv.innerHTML = '<span style="color: var(--wallet-error);">✗ Noto\'g\'ri QR kod formati</span>';
+                setTimeout(() => modal.close(), 2000);
+                return;
+            }
+
+            // Send to backend for validation
+            try {
+                const initData = getInitData();
+                const response = await fetch('/api/qr/validate', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Telegram-Init-Data': initData
+                    },
+                    body: JSON.stringify({
+                        qr_token: decodedText
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    statusDiv.innerHTML = '<span style="color: var(--wallet-success);">✓ Muvaffaqiyatli qo\'shildingiz!</span>';
+                    showToast('Biznesga muvaffaqiyatli qo\'shildingiz', 'success');
+
+                    // Close modal and reload to show employee view
+                    setTimeout(() => {
+                        modal.close();
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    const errorMsg = data.message || 'QR kod yaroqsiz yoki muddati o\'tgan';
+                    statusDiv.innerHTML = `<span style="color: var(--wallet-error);">✗ ${errorMsg}</span>`;
+                    showToast(errorMsg, 'error');
+                    setTimeout(() => modal.close(), 2000);
+                }
+            } catch (error) {
+                console.error('Error validating QR code:', error);
+                statusDiv.innerHTML = '<span style="color: var(--wallet-error);">✗ Xatolik yuz berdi</span>';
+                showToast('QR kodni tekshirishda xatolik', 'error');
+                setTimeout(() => modal.close(), 2000);
+            }
+        };
+
+        const config = {
+            fps: 10,
+            qrbox: { width: 250, height: 250 },
+            aspectRatio: 1.0
+        };
+
+        // Start scanning
+        html5QrCode.start(
+            { facingMode: "environment" }, // Use back camera
+            config,
+            qrCodeSuccessCallback,
+            (errorMessage) => {
+                // Ignore continuous scanning errors (too verbose)
+            }
+        ).then(() => {
+            statusDiv.innerHTML = '<span style="color: var(--wallet-accent-blue);">📷 QR kodni scan qiling</span>';
+        }).catch((err) => {
+            console.error('Error starting QR scanner:', err);
+            statusDiv.innerHTML = '<span style="color: var(--wallet-error);">Kamerani ishga tushirib bo\'lmadi. Ruxsat berilganligini tekshiring.</span>';
+        });
+    }, 300);
+}
+
+// Make it globally accessible
+window.showEmployeeJoinModal = showEmployeeJoinModal;

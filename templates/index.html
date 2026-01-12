@@ -107,6 +107,9 @@
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- QR Code Scanner -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
     <!-- Loading Screen -->
@@ -1201,6 +1204,23 @@
                     <div class="wallet-settings-content">
                         <div class="wallet-settings-label">Ko'rinish</div>
                         <div class="wallet-settings-desc" id="indexThemeDesc">Qorong'u rejim</div>
+                    </div>
+                    <div class="wallet-settings-value">
+                        <svg class="wallet-settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="wallet-settings-item" onclick="showEmployeeJoinModal()">
+                    <div class="wallet-settings-icon orange">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                            <polyline points="9 22 9 12 15 12 15 22"/>
+                        </svg>
+                    </div>
+                    <div class="wallet-settings-content">
+                        <div class="wallet-settings-label">Xodim sifatida qo'shilish</div>
+                        <div class="wallet-settings-desc">Biznesga qo'shilish uchun QR kod scan qiling</div>
                     </div>
                     <div class="wallet-settings-value">
                         <svg class="wallet-settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">

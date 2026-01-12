@@ -1973,77 +1973,129 @@ function renderEmployeesList() {
     container.innerHTML = html;
 }
 
-// Xodim qo'shish modali
+// Xodim qo'shish modali (QR kod orqali)
 function showAddEmployeeModal() {
+    // Generate unique QR code token
+    const businessId = window.Telegram.WebApp.initDataUnsafe.user?.id || 'demo';
+    const timestamp = Date.now();
+    const randomStr = Math.random().toString(36).substring(2, 15);
+    const qrToken = `BALANSAI_EMP_${businessId}_${timestamp}_${randomStr}`;
+
+    // Save QR code to backend
+    const initData = getInitData();
+    fetch('/api/qr/generate', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-Telegram-Init-Data': initData
+        },
+        body: JSON.stringify({ qr_token: qrToken })
+    }).then(response => response.json())
+      .then(data => {
+          if (data.success) {
+              console.log('QR kod saqlandi:', data);
+          }
+      }).catch(err => console.error('QR kod saqlashda xatolik:', err));
+
     const modal = createModal({
-        title: 'Yangi xodim qo\'shish',
+        title: 'Xodim qo\'shish',
         content: `
-            <div style="display: flex; flex-direction: column; gap: 16px;">
-                <div>
-                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Ism familiya *</label>
-                    <input type="text" id="empName" class="wallet-input" placeholder="Ismni kiriting" />
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 20px; padding: 10px;">
+                <div style="text-align: center;">
+                    <p style="color: var(--wallet-text-secondary); margin-bottom: 16px;">
+                        Yangi xodimni qo'shish uchun bu QR kodni ko'rsating
+                    </p>
                 </div>
-                <div>
-                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Lavozim *</label>
-                    <input type="text" id="empPosition" class="wallet-input" placeholder="Lavozimni kiriting" />
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Bo'lim *</label>
-                    <input type="text" id="empDepartment" class="wallet-input" placeholder="Bo'limni kiriting" />
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Maosh *</label>
-                    <input type="number" id="empSalary" class="wallet-input" placeholder="Maoshni kiriting" />
-                </div>
-                <div>
-                    <label style="display: block; margin-bottom: 6px; font-weight: 600; color: var(--wallet-text-primary);">Telefon</label>
-                    <input type="tel" id="empPhone" class="wallet-input" placeholder="+998 XX XXX XX XX" />
+
+                <!-- QR Code Container -->
+                <div id="qrCodeContainer" style="
+                    background: white;
+                    padding: 20px;
+                    border-radius: 16px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+                "></div>
+
+                <!-- Instructions -->
+                <div style="
+                    background: var(--wallet-bg-secondary);
+                    padding: 16px;
+                    border-radius: 12px;
+                    width: 100%;
+                ">
+                    <div style="display: flex; align-items: start; gap: 12px; margin-bottom: 12px;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--wallet-accent-blue)" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="16" x2="12" y2="12"/>
+                            <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                        <div>
+                            <p style="font-weight: 600; color: var(--wallet-text-primary); margin-bottom: 8px;">
+                                Qanday ishlaydi?
+                            </p>
+                            <ol style="color: var(--wallet-text-secondary); font-size: 14px; margin: 0; padding-left: 20px;">
+                                <li style="margin-bottom: 6px;">Xodim Balans AI botini ochadi</li>
+                                <li style="margin-bottom: 6px;">Sozlamalar → "Xodim sifatida qo'shilish" tugmasini bosadi</li>
+                                <li style="margin-bottom: 6px;">Bu QR kodni scan qiladi</li>
+                                <li>Avtomatik sizning biznesingizga qo'shiladi</li>
+                            </ol>
+                        </div>
+                    </div>
+
+                    <div style="
+                        display: flex;
+                        align-items: center;
+                        gap: 8px;
+                        padding: 8px 12px;
+                        background: rgba(255, 193, 7, 0.1);
+                        border-radius: 8px;
+                        margin-top: 12px;
+                    ">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FFC107" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="8" x2="12" y2="12"/>
+                            <line x1="12" y1="16" x2="12.01" y2="16"/>
+                        </svg>
+                        <span style="font-size: 13px; color: var(--wallet-text-secondary);">
+                            QR kod 24 soat davomida amal qiladi
+                        </span>
+                    </div>
                 </div>
             </div>
         `,
         buttons: [
             {
-                text: 'Bekor qilish',
+                text: 'Yangi QR yaratish',
                 style: 'secondary',
-                onClick: () => modal.close()
+                onClick: () => {
+                    modal.close();
+                    setTimeout(() => showAddEmployeeModal(), 100);
+                }
             },
             {
-                text: 'Saqlash',
+                text: 'Yopish',
                 style: 'primary',
-                onClick: () => {
-                    const name = document.getElementById('empName').value.trim();
-                    const position = document.getElementById('empPosition').value.trim();
-                    const department = document.getElementById('empDepartment').value.trim();
-                    const salary = parseFloat(document.getElementById('empSalary').value);
-                    const phone = document.getElementById('empPhone').value.trim();
-
-                    if (!name || !position || !department || !salary) {
-                        showToast('Barcha majburiy maydonlarni to\'ldiring', 'error');
-                        return;
-                    }
-
-                    const newEmployee = {
-                        id: Date.now(),
-                        name,
-                        position,
-                        department,
-                        salary,
-                        phone,
-                        status: 'active',
-                        hireDate: new Date().toISOString().split('T')[0],
-                        unpaid: 0
-                    };
-
-                    hrEmployees.push(newEmployee);
-                    updateHRStickyStats();
-                    updateHROverviewStats();
-                    renderEmployeesList();
-                    modal.close();
-                    showToast('Xodim muvaffaqiyatli qo\'shildi', 'success');
-                }
+                onClick: () => modal.close()
             }
         ]
     });
+
+    // Generate QR code after modal is shown
+    setTimeout(() => {
+        const qrContainer = document.getElementById('qrCodeContainer');
+        if (qrContainer && typeof QRCode !== 'undefined') {
+            qrContainer.innerHTML = ''; // Clear previous QR if any
+            new QRCode(qrContainer, {
+                text: qrToken,
+                width: 200,
+                height: 200,
+                colorDark: "#000000",
+                colorLight: "#ffffff",
+                correctLevel: QRCode.CorrectLevel.H
+            });
+        } else {
+            qrContainer.innerHTML = '<p style="color: red;">QR kod yuklanmadi</p>';
+        }
+    }, 100);
 }
 
 // Xodim tafsilotlari

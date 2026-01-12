@@ -1962,6 +1962,231 @@ def change_tariff():
             connection.close()
 
 
+# ============ QR CODE VA EMPLOYEE SYSTEM ============
+
+@app.route('/api/qr/validate', methods=['POST'])
+def validate_qr_endpoint():
+    """QR kodni validatsiya qilish va xodimni biznesga bog'lash"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+        data = request.get_json()
+        qr_token = data.get('qr_token')
+
+        if not qr_token:
+            return jsonify({'success': False, 'message': 'QR token kiritilmagan'}), 400
+
+        # QR kodni validatsiya qilish
+        qr_data = database.validate_qr_code(qr_token)
+
+        if not qr_data:
+            return jsonify({
+                'success': False,
+                'message': 'QR kod yaroqsiz yoki muddati o\'tgan'
+            }), 400
+
+        business_user_id = qr_data['business_user_id']
+
+        # Xodimni o'zi biznes egasi bo'lishi mumkin emas
+        if user_id == business_user_id:
+            return jsonify({
+                'success': False,
+                'message': 'Siz o\'z biznesingizga xodim sifatida qo\'shila olmaysiz'
+            }), 400
+
+        # Xodimni biznesga bog'lash
+        link_id = database.create_employee_link(business_user_id, user_id)
+
+        # QR kodni ishlatilgan deb belgilash
+        database.mark_qr_code_used(qr_token, user_id)
+
+        return jsonify({
+            'success': True,
+            'message': 'Biznesga muvaffaqiyatli qo\'shildingiz',
+            'link_id': link_id,
+            'business_user_id': business_user_id
+        }), 200
+
+    except Exception as e:
+        print(f"QR validation error: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Serverda xatolik yuz berdi'
+        }), 500
+
+
+@app.route('/api/qr/generate', methods=['POST'])
+def generate_qr_endpoint():
+    """QR kod generatsiya qilish va bazaga saqlash"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+        # Foydalanuvchi biznes tarifiga ega ekanligini tekshirish
+        user = database.get_user(user_id)
+        if not user or user.get('tariff') not in ['BUSINESS', 'BIZNES']:
+            return jsonify({
+                'success': False,
+                'message': 'Faqat biznes tarifi foydalanuvchilari xodim qo\'sha oladi'
+            }), 403
+
+        data = request.get_json()
+        qr_token = data.get('qr_token')
+
+        if not qr_token:
+            return jsonify({'success': False, 'message': 'QR token kiritilmagan'}), 400
+
+        # QR kod 24 soat amal qiladi
+        from datetime import datetime, timedelta
+        expires_at = datetime.now() + timedelta(hours=24)
+
+        # Bazaga saqlash
+        qr_id = database.save_qr_code(user_id, qr_token, expires_at)
+
+        return jsonify({
+            'success': True,
+            'message': 'QR kod yaratildi',
+            'qr_id': qr_id,
+            'expires_at': expires_at.isoformat()
+        }), 200
+
+    except Exception as e:
+        print(f"QR generation error: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Serverda xatolik yuz berdi'
+        }), 500
+
+
+@app.route('/api/employee/link', methods=['GET'])
+def get_employee_link_endpoint():
+    """Xodimning biznesga bog'lanishini olish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+        link = database.get_employee_link(user_id)
+
+        if not link:
+            return jsonify({
+                'success': True,
+                'has_link': False,
+                'link': None
+            }), 200
+
+        return jsonify({
+            'success': True,
+            'has_link': True,
+            'link': link
+        }), 200
+
+    except Exception as e:
+        print(f"Get employee link error: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Serverda xatolik yuz berdi'
+        }), 500
+
+
+@app.route('/api/employee/list', methods=['GET'])
+def get_business_employees_endpoint():
+    """Biznesning barcha xodimlarini olish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+        employees = database.get_business_employees(user_id)
+
+        return jsonify({
+            'success': True,
+            'employees': employees,
+            'total': len(employees)
+        }), 200
+
+    except Exception as e:
+        print(f"Get business employees error: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Serverda xatolik yuz berdi'
+        }), 500
+
+
+@app.route('/api/employee/remove', methods=['POST'])
+def remove_employee_endpoint():
+    """Xodimni biznesdan olib tashlash"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+        data = request.get_json()
+        employee_user_id = data.get('employee_user_id')
+
+        if not employee_user_id:
+            return jsonify({'success': False, 'message': 'Xodim ID kiritilmagan'}), 400
+
+        success = database.remove_employee_link(user_id, employee_user_id)
+
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Xodim olib tashlandi'
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Xodim topilmadi'
+            }), 404
+
+    except Exception as e:
+        print(f"Remove employee error: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Serverda xatolik yuz berdi'
+        }), 500
+
+
+@app.route('/api/employee/permissions', methods=['POST'])
+def update_employee_permissions_endpoint():
+    """Xodim ruxsatlarini yangilash"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+        data = request.get_json()
+        employee_user_id = data.get('employee_user_id')
+        permissions = data.get('permissions')
+
+        if not employee_user_id or not permissions:
+            return jsonify({'success': False, 'message': 'Ma\'lumotlar to\'liq emas'}), 400
+
+        success = database.update_employee_permissions(user_id, employee_user_id, permissions)
+
+        if success:
+            return jsonify({
+                'success': True,
+                'message': 'Ruxsatlar yangilandi'
+            }), 200
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Xodim topilmadi'
+            }), 404
+
+    except Exception as e:
+        print(f"Update permissions error: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Serverda xatolik yuz berdi'
+        }), 500
+
+
 # BIZNES ILOVASI SAHIFASI
 
 @app.route('/business')
