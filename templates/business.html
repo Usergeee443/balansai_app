@@ -24,7 +24,7 @@
         <div class="wallet-header">
             <div class="wallet-header-left">
                 <div class="wallet-avatar" id="userAvatar">B</div>
-                <span class="wallet-title">Balans AI <span style="font-size: 12px; opacity: 0.7;">v1.4.0</span></span>
+                <span class="wallet-title">Balans AI <span style="font-size: 12px; opacity: 0.7;">v1.5.0</span></span>
             </div>
             <div class="wallet-header-right">
                 <div class="wallet-header-icon" onclick="showNotifications()">
@@ -33,12 +33,30 @@
                         <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
                     </svg>
                 </div>
+                <div class="wallet-header-icon" id="themeToggleBtn" onclick="toggleTheme()" title="Rejimni o'zgartirish">
+                    <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <!-- Moon icon (dark mode) -->
+                        <path id="moonIcon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        <!-- Sun icon (light mode) - hidden by default -->
+                        <g id="sunIcon" style="display: none;">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3"/>
+                            <line x1="12" y1="21" x2="12" y2="23"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                            <line x1="1" y1="12" x2="3" y2="12"/>
+                            <line x1="21" y1="12" x2="23" y2="12"/>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                        </g>
+                    </svg>
+                </div>
                 <div class="wallet-header-icon" onclick="navigateTo('profile')">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                         <circle cx="12" cy="12" r="3"/>
                         <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-            </svg>
-        </div>
+                    </svg>
+                </div>
             </div>
         </div>
 
@@ -1230,7 +1248,7 @@
             </div>
             <span class="tg-wallet-nav-label">Asosiy</span>
         </button>
-        <button class="tg-wallet-nav-item" data-page="warehouse" onclick="navigateTo('warehouse')">
+        <button class="tg-wallet-nav-item" data-page="salesWarehouse" onclick="navigateTo('salesWarehouse')">
             <div class="tg-wallet-nav-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
@@ -1238,7 +1256,7 @@
                     <line x1="12" y1="22.08" x2="12" y2="12"/>
                 </svg>
             </div>
-            <span class="tg-wallet-nav-label">Ombor</span>
+            <span class="tg-wallet-nav-label">Savdo & Ombor</span>
         </button>
         <button class="tg-wallet-nav-item" data-page="statistics" onclick="navigateTo('statistics')">
             <div class="tg-wallet-nav-icon">
@@ -1248,7 +1266,7 @@
             </div>
             <span class="tg-wallet-nav-label">Statistika</span>
         </button>
-        <button class="tg-wallet-nav-item" data-page="employees" onclick="navigateTo('employees')">
+        <button class="tg-wallet-nav-item" data-page="HR" onclick="openHR()">
             <div class="tg-wallet-nav-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
@@ -1257,7 +1275,7 @@
                     <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
                 </svg>
             </div>
-            <span class="tg-wallet-nav-label">Xodimlar</span>
+            <span class="tg-wallet-nav-label">HR bo'limi</span>
         </button>
         <button class="tg-wallet-nav-item" data-page="services" onclick="navigateTo('services')">
             <div class="tg-wallet-nav-icon">
