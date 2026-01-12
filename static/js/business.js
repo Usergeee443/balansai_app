@@ -1720,3 +1720,308 @@ window.showAddProductModal = showAddProductModal;
 window.showAddClientModal = showAddClientModal;
 window.showAddInvoiceModal = showAddInvoiceModal;
 window.showAddCreditModal = showAddCreditModal;
+
+// ==================== HR BO'LIMI (XODIMLAR BOSHQARUVI) ====================
+
+// Current HR tab
+let currentHRTab = 'employees';
+
+// HR bo'limiga o'tish
+function openHR() {
+    window.navigateTo('HR');
+    loadHRData('employees');
+}
+
+// HR tab o'zgartirish
+function switchHRTab(tabName, element) {
+    // Remove active from all tabs
+    document.querySelectorAll('.hr-tab').forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    // Add active to clicked tab
+    element.classList.add('active');
+
+    // Update current tab
+    currentHRTab = tabName;
+
+    // Load tab content and stats
+    loadHRData(tabName);
+}
+
+// HR ma'lumotlarini yuklash
+async function loadHRData(tabName) {
+    try {
+        // Load stats and content based on tab
+        updateHRStats(tabName);
+        loadHRTabContent(tabName);
+    } catch (error) {
+        console.error('HR ma\'lumotlarini yuklashda xato:', error);
+        showToast('Ma\'lumotlarni yuklashda xatolik', 'error');
+    }
+}
+
+// HR statistikalarni yangilash
+function updateHRStats(tabName) {
+    const statsPanel = document.getElementById('hrStatsPanel');
+
+    switch (tabName) {
+        case 'employees':
+            statsPanel.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Jami xodimlar</div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--wallet-text-primary);" id="statTotalEmployees">0</div>
+                    </div>
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Faol</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #10b981;" id="statActiveEmployees">0</div>
+                    </div>
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Yangi</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #3b82f6;" id="statNewEmployees">0</div>
+                    </div>
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Bo'limlar</div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--wallet-text-primary);" id="statDepartments">0</div>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'schedule':
+            statsPanel.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Bugun ishda</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #10b981;" id="statWorkingToday">0</div>
+                    </div>
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Dam olishda</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;" id="statOffToday">0</div>
+                    </div>
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Kechikkan</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #ef4444;" id="statLate">0</div>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'vacation':
+            statsPanel.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Tatilda</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #10b981;" id="statOnVacation">0</div>
+                    </div>
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">So'rovlar</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;" id="statPendingVacation">0</div>
+                    </div>
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Tasdiqlangan</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #3b82f6;" id="statApprovedVacation">0</div>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'tasks':
+            statsPanel.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;">
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Jami vazifalar</div>
+                        <div style="font-size: 20px; font-weight: 700; color: var(--wallet-text-primary);" id="statTotalTasks">0</div>
+                    </div>
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Bajarilgan</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #10b981;" id="statCompletedTasks">0</div>
+                    </div>
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Jarayonda</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #f59e0b;" id="statInProgressTasks">0</div>
+                    </div>
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Kechikkan</div>
+                        <div style="font-size: 20px; font-weight: 700; color: #ef4444;" id="statOverdueTasks">0</div>
+                    </div>
+                </div>
+            `;
+            break;
+        case 'salary':
+            statsPanel.innerHTML = `
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px;">
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Jami maosh</div>
+                        <div style="font-size: 18px; font-weight: 700; color: var(--wallet-text-primary);" id="statTotalSalary">0 so'm</div>
+                    </div>
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">O'rtacha maosh</div>
+                        <div style="font-size: 18px; font-weight: 700; color: #3b82f6;" id="statAvgSalary">0 so'm</div>
+                    </div>
+                    <div class="wallet-stat-card" style="padding: 12px;">
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary); margin-bottom: 4px;">To'lanmagan</div>
+                        <div style="font-size: 18px; font-weight: 700; color: #ef4444;" id="statUnpaidSalary">0 so'm</div>
+                    </div>
+                </div>
+            `;
+            break;
+    }
+}
+
+// HR tab content yuklash
+async function loadHRTabContent(tabName) {
+    const container = document.getElementById('hrContent');
+
+    switch (tabName) {
+        case 'employees':
+            container.innerHTML = await getEmployeesTabContent();
+            break;
+        case 'schedule':
+            container.innerHTML = await getScheduleTabContent();
+            break;
+        case 'vacation':
+            container.innerHTML = await getVacationTabContent();
+            break;
+        case 'tasks':
+            container.innerHTML = await getTasksTabContent();
+            break;
+        case 'salary':
+            container.innerHTML = await getSalaryTabContent();
+            break;
+    }
+}
+
+// Xodimlar tab content
+async function getEmployeesTabContent() {
+    return `
+        <button class="wallet-btn-primary" onclick="showAddEmployeeModal()" style="margin-bottom: 16px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                <path d="M12 5v14M5 12h14"/>
+            </svg>
+            <span>Yangi xodim</span>
+        </button>
+        <div class="wallet-section">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">Xodimlar ro'yxati</h2>
+            </div>
+            <div id="employeesListContainer">
+                <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
+                    Xodimlar mavjud emas
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Jadval tab content
+async function getScheduleTabContent() {
+    return `
+        <div class="wallet-card" style="margin-bottom: 16px;">
+            <h4 style="margin: 0 0 12px 0; font-size: 16px; color: var(--wallet-text-primary);">Ish jadvali</h4>
+            <div style="display: flex; gap: 8px; margin-bottom: 16px;">
+                <button class="wallet-btn-secondary" style="flex: 1;" onclick="loadScheduleView('daily')">Kunlik</button>
+                <button class="wallet-btn-secondary" style="flex: 1;" onclick="loadScheduleView('weekly')">Haftalik</button>
+                <button class="wallet-btn-secondary" style="flex: 1;" onclick="loadScheduleView('monthly')">Oylik</button>
+            </div>
+            <div id="scheduleViewContainer">
+                <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
+                    Jadval ma'lumotlari yuklanmoqda...
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Tatil tab content
+async function getVacationTabContent() {
+    return `
+        <button class="wallet-btn-primary" onclick="showAddVacationModal()" style="margin-bottom: 16px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                <path d="M12 5v14M5 12h14"/>
+            </svg>
+            <span>Tatil so'rovi</span>
+        </button>
+        <div class="wallet-section">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">Tatil jadvali</h2>
+            </div>
+            <div id="vacationListContainer">
+                <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
+                    Tatil so'rovlari mavjud emas
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Vazifa tab content
+async function getTasksTabContent() {
+    return `
+        <button class="wallet-btn-primary" onclick="showAddTaskModal()" style="margin-bottom: 16px;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                <path d="M12 5v14M5 12h14"/>
+            </svg>
+            <span>Yangi vazifa</span>
+        </button>
+        <div class="wallet-section">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">Vazifalar ro'yxati</h2>
+            </div>
+            <div id="tasksListContainer">
+                <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
+                    Vazifalar mavjud emas
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Maosh tab content
+async function getSalaryTabContent() {
+    return `
+        <div class="wallet-section">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">Maosh ro'yxati</h2>
+                <button class="wallet-icon-btn" onclick="showPaySalariesModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                </button>
+            </div>
+            <div id="salaryListContainer">
+                <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
+                    Maosh ma'lumotlari yuklanmoqda...
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+// Placeholder CRUD functions
+function showAddEmployeeModal() {
+    alert('Yangi xodim qo\'shish funksiyasi tez orada qo\'shiladi');
+}
+
+function showAddVacationModal() {
+    alert('Tatil so\'rovi yuborish funksiyasi tez orada qo\'shiladi');
+}
+
+function showAddTaskModal() {
+    alert('Yangi vazifa qo\'shish funksiyasi tez orada qo\'shiladi');
+}
+
+function showPaySalariesModal() {
+    alert('Maosh to\'lash funksiyasi tez orada qo\'shiladi');
+}
+
+function loadScheduleView(viewType) {
+    alert(`${viewType} jadval ko'rinishi tez orada qo'shiladi`);
+}
+
+// Global scope'ga export
+window.openHR = openHR;
+window.switchHRTab = switchHRTab;
+window.showAddEmployeeModal = showAddEmployeeModal;
+window.showAddVacationModal = showAddVacationModal;
+window.showAddTaskModal = showAddTaskModal;
+window.showPaySalariesModal = showPaySalariesModal;
+window.loadScheduleView = loadScheduleView;

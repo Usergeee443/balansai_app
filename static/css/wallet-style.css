@@ -3653,3 +3653,59 @@ body:not(.light-mode) .sales-overview-card {
 body:not(.light-mode) .sales-overview-card-value {
     color: #FFFFFF;
 }
+
+/* ==================== HR BO'LIMI STILLARI ==================== */
+
+/* HR Top Tabs */
+.hr-top-tabs {
+    scrollbar-width: none;
+}
+
+.hr-top-tabs::-webkit-scrollbar {
+    display: none;
+}
+
+.hr-tab {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 20px;
+    background: var(--wallet-bg-secondary, #F2F2F7);
+    color: var(--wallet-text-primary, #000000);
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.hr-tab svg {
+    flex-shrink: 0;
+}
+
+.hr-tab:hover {
+    background: rgba(90, 142, 244, 0.1);
+}
+
+.hr-tab.active {
+    background: var(--wallet-accent-blue, #0A84FF);
+    color: white;
+}
+
+/* Dark mode */
+body:not(.light-mode) .hr-tab {
+    background: #2C2C2E;
+    color: #FFFFFF;
+}
+
+body:not(.light-mode) .hr-tab:hover {
+    background: rgba(90, 142, 244, 0.2);
+}
+
+body:not(.light-mode) .hr-tab.active {
+    background: var(--wallet-accent-blue, #0A84FF);
+    color: white;
+}
