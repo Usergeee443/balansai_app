@@ -72,13 +72,13 @@
             }
         };
 
-        // Safety timeout - force hide after 10 seconds
+        // AGGRESSIVE timeout - force hide after 2 seconds
         setTimeout(function() {
             if (!loadingHidden) {
-                console.warn('[LOADING] Force hiding loading screen after 10s timeout');
+                console.warn('[LOADING] Force hiding loading screen after 2s timeout');
                 window.hideAppLoading();
             }
-        }, 10000);
+        }, 2000);
 
         // Wait for Telegram WebApp to be ready
         if (window.Telegram && window.Telegram.WebApp) {
@@ -104,22 +104,25 @@
                             console.log('[LOADING] Redirecting to business...');
                             window.location.replace(`/business?initData=${encodeURIComponent(initData)}`);
                         } else {
-                            console.log('[LOADING] FREE tariff, waiting for wallet-app.js...');
+                            // FREE tariff - hide loading immediately
+                            console.log('[LOADING] FREE tariff, hiding loading immediately');
+                            window.hideAppLoading();
                         }
-                        // For FREE tariff - do nothing, let wallet-app.js handle loading
+                    } else {
+                        // Error - hide loading immediately
+                        console.warn('[LOADING] API error, hiding loading');
+                        window.hideAppLoading();
                     }
-                    // If error - do nothing, let wallet-app.js handle loading
                 } catch (e) {
                     console.error('[LOADING] Error:', e);
-                    // If error - do nothing, let wallet-app.js handle loading
+                    // Error - hide loading immediately
+                    window.hideAppLoading();
                 }
             });
         } else {
-            // No Telegram WebApp - hide loading when DOM ready
-            document.addEventListener('DOMContentLoaded', function() {
-                console.log('[LOADING] No Telegram WebApp, hiding loading');
-                window.hideAppLoading();
-            });
+            // No Telegram WebApp - hide loading immediately
+            console.log('[LOADING] No Telegram WebApp, hiding loading immediately');
+            window.hideAppLoading();
         }
     })();
     </script>
@@ -145,7 +148,7 @@
         <div class="wallet-header">
             <div class="wallet-header-left">
                 <div class="wallet-avatar" id="userAvatar">B</div>
-                <span class="wallet-title">Balans AI <span style="font-size: 12px; opacity: 0.7;">v1.5.1</span></span>
+                <span class="wallet-title">Balans AI <span style="font-size: 12px; opacity: 0.7;">v1.5.2</span></span>
             </div>
             <div class="wallet-header-right">
                 <div class="wallet-header-icon" id="themeToggleBtn" onclick="toggleTheme()" title="Rejimni o'zgartirish">
@@ -1843,7 +1846,7 @@
         </div>
 
     <!-- Scripts -->
-    <script src="/static/js/wallet-app.js?v=1.5.1"></script>
-    <script src="/static/js/business.js?v=1.5.1"></script>
+    <script src="/static/js/wallet-app.js?v=1.5.2"></script>
+    <script src="/static/js/business.js?v=1.5.2"></script>
 </body>
 </html>
