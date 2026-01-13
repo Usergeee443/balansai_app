@@ -50,80 +50,17 @@
         }
     </style>
 
-    <!-- Fast Tariff Check & Redirect -->
+    <!-- Simple Loading Screen - 1 second -->
     <script>
     (function() {
-        // Show loading immediately
         document.body.classList.add('loading');
 
-        let loadingHidden = false;
-
-        // Make hideLoading available globally
-        window.hideAppLoading = function() {
-            if (loadingHidden) return; // Already hidden
-            loadingHidden = true;
-
-            console.log('[LOADING] Hiding loading screen...');
+        // Hide loading after 1 second - SIMPLE!
+        setTimeout(function() {
             document.body.classList.remove('loading');
             const loading = document.getElementById('appLoading');
-            if (loading) {
-                loading.remove();
-                console.log('[LOADING] Loading screen removed');
-            }
-        };
-
-        // AGGRESSIVE timeout - force hide after 2 seconds
-        setTimeout(function() {
-            if (!loadingHidden) {
-                console.warn('[LOADING] Force hiding loading screen after 2s timeout');
-                window.hideAppLoading();
-            }
-        }, 2000);
-
-        // Wait for Telegram WebApp to be ready
-        if (window.Telegram && window.Telegram.WebApp) {
-            window.Telegram.WebApp.ready();
-
-            // Check tariff when DOM is ready (only for redirect)
-            document.addEventListener('DOMContentLoaded', async function() {
-                console.log('[LOADING] DOM ready, checking tariff...');
-                try {
-                    const initData = window.Telegram.WebApp.initData || '';
-                    const response = await fetch('/api/user', {
-                        headers: {
-                            'X-Telegram-Init-Data': initData
-                        }
-                    });
-
-                    if (response.ok) {
-                        const data = await response.json();
-                        console.log('[LOADING] Tariff:', data.tariff);
-
-                        if (data.tariff === 'BIZNES' || data.tariff === 'BUSINESS') {
-                            // BIZNES tariff - immediate redirect
-                            console.log('[LOADING] Redirecting to business...');
-                            window.location.replace(`/business?initData=${encodeURIComponent(initData)}`);
-                        } else {
-                            // FREE tariff - hide loading immediately
-                            console.log('[LOADING] FREE tariff, hiding loading immediately');
-                            window.hideAppLoading();
-                        }
-                    } else {
-                        // Error - hide loading immediately
-                        console.warn('[LOADING] API error, hiding loading');
-                        window.hideAppLoading();
-                    }
-                } catch (e) {
-                    console.error('[LOADING] Error:', e);
-                    // Error - hide loading immediately
-                    window.hideAppLoading();
-                }
-            });
-        } else {
-            // No Telegram WebApp - hide loading immediately
-            console.log('[LOADING] No Telegram WebApp, hiding loading immediately');
-            window.hideAppLoading();
-        }
+            if (loading) loading.remove();
+        }, 1000);
     })();
     </script>
 

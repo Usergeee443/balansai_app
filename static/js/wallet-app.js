@@ -2024,24 +2024,35 @@ document.addEventListener('DOMContentLoaded', async () => {
     console.log('[DEBUG] Current path:', currentPath);
 
     if (currentPath === '/business') {
-        console.log('[DEBUG] On business page, skipping home page load');
-        return; // Don't load home page on business page
+        console.log('[DEBUG] On business page, skipping checks');
+        return;
     }
 
-    // Load home page (tariff check already done in index.html)
-    console.log('[DEBUG] Loading home page...');
+    // Check user tariff and redirect if BIZNES
     try {
-        await loadHomePage();
-        console.log('[DEBUG] Home page loaded successfully');
-    } catch (error) {
-        console.error('[DEBUG] Error loading home page:', error);
-    } finally {
-        // Hide loading screen after home page loaded (or failed)
-        if (typeof window.hideAppLoading === 'function') {
-            window.hideAppLoading();
-            console.log('[DEBUG] Loading screen hidden');
+        console.log('[DEBUG] Checking user tariff...');
+        const userResponse = await apiRequest('/api/user');
+        console.log('[DEBUG] User response:', userResponse);
+
+        if (userResponse && userResponse.tariff &&
+            (userResponse.tariff === 'BIZNES' || userResponse.tariff === 'BUSINESS')) {
+            console.log('[DEBUG] User has BIZNES tariff, redirecting...');
+            const initData = getInitData();
+            if (initData) {
+                window.location.href = `/business?initData=${encodeURIComponent(initData)}`;
+            } else {
+                window.location.href = '/business';
+            }
+            return;
+        } else {
+            console.log('[DEBUG] FREE tariff, loading home page...');
         }
+    } catch (error) {
+        console.error('[DEBUG] Error checking tariff:', error);
     }
+
+    // Load home page
+    await loadHomePage();
 });
 
 // Make functions globally available
