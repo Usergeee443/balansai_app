@@ -13,57 +13,6 @@
     <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    <!-- Loading Screen Styles -->
-    <style>
-        #appLoading {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: var(--tg-theme-bg-color, #ffffff);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            z-index: 99999;
-        }
-        #appLoading .spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid var(--tg-theme-hint-color, #999999);
-            border-top-color: var(--tg-theme-button-color, #3390ec);
-            border-radius: 50%;
-            animation: spin 0.8s linear infinite;
-        }
-        #appLoading .text {
-            margin-top: 16px;
-            color: var(--tg-theme-text-color, #000000);
-            font-size: 14px;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-        body.loading .page {
-            opacity: 0;
-            pointer-events: none;
-        }
-    </style>
-
-    <!-- Simple Loading Screen - 1 second -->
-    <script>
-    (function() {
-        document.body.classList.add('loading');
-
-        // Hide loading after 1 second - SIMPLE!
-        setTimeout(function() {
-            document.body.classList.remove('loading');
-            const loading = document.getElementById('appLoading');
-            if (loading) loading.remove();
-        }, 1000);
-    })();
-    </script>
-
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
@@ -71,12 +20,6 @@
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
 <body>
-    <!-- Loading Screen -->
-    <div id="appLoading">
-        <div class="spinner"></div>
-        <div class="text">Yuklanmoqda...</div>
-    </div>
-
     <!-- ============================================
          HOME PAGE - WALLET STYLE
          ============================================ -->
