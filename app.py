@@ -317,8 +317,11 @@ def get_user_info():
         
         # Optimallashtirilgan: balance va statistics ni bir vaqtda olish
         balance_stats = get_balance_and_statistics(user_id, days=30)
-        
-        return jsonify({
+
+        # Xodim ekanligini tekshirish
+        employee_link = database.get_employee_link(user_id)
+
+        response_data = {
             'user_id': user['user_id'],
             'username': user.get('username'),
             'first_name': user.get('first_name'),
@@ -329,7 +332,22 @@ def get_user_info():
             'income': balance_stats['income'],
             'expense': balance_stats['expense'],
             'currency_balances': balance_stats.get('currency_balances', {})
-        })
+        }
+
+        # Agar xodim bo'lsa, employee ma'lumotlarini qo'shish
+        if employee_link:
+            response_data['is_employee'] = True
+            response_data['employee_data'] = {
+                'business_user_id': employee_link['business_user_id'],
+                'business_name': employee_link.get('business_name', 'Biznes'),
+                'permissions': employee_link.get('permissions', {}),
+                'business_tariff': employee_link.get('tariff'),
+                'business_tariff_expires_at': str(employee_link.get('tariff_expires_at')) if employee_link.get('tariff_expires_at') else None
+            }
+        else:
+            response_data['is_employee'] = False
+
+        return jsonify(response_data)
     except Exception as e:
         error_msg = str(e)
         if "Access denied" in error_msg or "Can't connect" in error_msg:
@@ -1498,7 +1516,7 @@ def api_get_low_stock():
 
 @app.route('/api/business/employees', methods=['GET'])
 def api_get_employees():
-    """Barcha xodimlarni olish"""
+    """Barcha xodimlarni olish (eski employees + yangi employee_links)"""
     user_id = get_user_id_from_request()
     if not user_id:
         return jsonify({'error': 'User topilmadi'}), 401
@@ -1507,8 +1525,28 @@ def api_get_employees():
     limit = request.args.get('limit', 100, type=int)
     offset = request.args.get('offset', 0, type=int)
 
-    employees = database.get_employees(user_id, status, limit, offset)
-    return jsonify(employees)
+    # Eski employees tizimidan
+    old_employees = database.get_employees(user_id, status, limit, offset)
+
+    # Yangi employee_links tizimidan (QR orqali qo'shilganlar)
+    employee_links = database.get_business_employees(user_id)
+
+    # Employee_links'ni eski format'ga o'tkazish
+    for link in employee_links:
+        # employee_links'da: employee_user_id, username, first_name, last_name, permissions, joined_at
+        # eski format'da: id, full_name, position, salary, phone, status
+        link['id'] = link.get('id', 0)
+        link['full_name'] = f"{link.get('first_name', '')} {link.get('last_name', '')}".strip() or link.get('username', 'Noma\'lum')
+        link['position'] = 'Xodim (QR)'  # QR orqali qo'shilganligini ko'rsatish
+        link['salary'] = 0  # Employee links'da oylik yo'q
+        link['phone'] = ''
+        link['status'] = link.get('status', 'active')
+        link['is_employee_link'] = True  # Bu QR orqali qo'shilgan xodim
+
+    # Ikkalasini birlashtirish
+    all_employees = old_employees + employee_links
+
+    return jsonify(all_employees)
 
 
 @app.route('/api/business/employees/<int:employee_id>', methods=['GET'])

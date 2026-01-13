@@ -2393,10 +2393,11 @@ def get_warehouse_statistics(user_id):
 
 
 def get_employee_statistics(user_id):
-    """Xodimlar statistikasi"""
+    """Xodimlar statistikasi (eski employees + yangi employee_links)"""
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
+            # Eski employees tizimidan statistika
             cursor.execute("""
                 SELECT
                     COUNT(*) as total_employees,
@@ -2405,12 +2406,22 @@ def get_employee_statistics(user_id):
                 FROM employees
                 WHERE user_id = %s
             """, (user_id,))
-            stats = cursor.fetchone()
+            old_stats = cursor.fetchone()
+
+            # Yangi employee_links tizimidan statistika (QR orqali qo'shilganlar)
+            cursor.execute("""
+                SELECT
+                    COUNT(*) as total_employees,
+                    COUNT(CASE WHEN status = 'active' THEN 1 END) as active_employees
+                FROM employee_links
+                WHERE business_user_id = %s
+            """, (user_id,))
+            link_stats = cursor.fetchone()
 
             return {
-                'total_employees': stats['total_employees'] or 0,
-                'active_employees': stats['active_employees'] or 0,
-                'total_salary': float(stats['total_salary']) if stats['total_salary'] else 0
+                'total_employees': (old_stats['total_employees'] or 0) + (link_stats['total_employees'] or 0),
+                'active_employees': (old_stats['active_employees'] or 0) + (link_stats['active_employees'] or 0),
+                'total_salary': float(old_stats['total_salary']) if old_stats['total_salary'] else 0
             }
     finally:
         connection.close()
