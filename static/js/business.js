@@ -1395,20 +1395,20 @@ function updateStickyStats(data) {
 }
 
 // Tab o'zgartirish
-function switchSalesTab(tabName, element) {
+async function switchSalesTab(tabName, element) {
     // Remove active from all tabs
     document.querySelectorAll('.sales-tab').forEach(tab => {
         tab.classList.remove('active');
     });
-    
+
     // Add active to clicked tab
     element.classList.add('active');
-    
+
     // Update current tab
     currentSalesTab = tabName;
-    
+
     // Load tab content
-    loadSalesTabContent(tabName);
+    await loadSalesTabContent(tabName);
 }
 
 // Tab tarkibini yuklash
