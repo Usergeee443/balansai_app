@@ -1558,7 +1558,8 @@ def api_add_employee():
         hire_date=data.get('hire_date'),
         photo_url=data.get('photo_url'),
         address=data.get('address'),
-        notes=data.get('notes')
+        notes=data.get('notes'),
+        telegram_user_id=data.get('telegram_user_id')
     )
 
     return jsonify({'success': True, 'id': employee_id}), 201

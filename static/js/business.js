@@ -538,6 +538,13 @@ async function showAddEmployeeModal() {
                 <input type="tel" id="employeePhone" class="form-input">
             </div>
             <div class="form-group">
+                <label>Telegram User ID (optional)</label>
+                <input type="number" id="employeeTelegramId" class="form-input" placeholder="Xodimning Telegram ID raqami">
+                <small style="color: var(--wallet-text-secondary); font-size: 11px; display: block; margin-top: 4px;">
+                    Agar xodim ilovadan foydalansa, uning Telegram ID raqamini kiriting
+                </small>
+            </div>
+            <div class="form-group">
                 <label>Ish haqi</label>
                 <input type="number" id="employeeSalary" class="form-input" step="0.01">
             </div>
@@ -572,10 +579,12 @@ async function showAddEmployeeModal() {
                 text: 'Qo\'shish',
                 class: 'btn-primary',
                 onClick: async () => {
+                    const telegramIdValue = document.getElementById('employeeTelegramId').value;
                     const data = {
                         full_name: document.getElementById('employeeFullName').value,
                         position: document.getElementById('employeePosition').value,
                         phone: document.getElementById('employeePhone').value,
+                        telegram_user_id: telegramIdValue ? parseInt(telegramIdValue) : null,
                         salary: parseFloat(document.getElementById('employeeSalary').value) || null,
                         currency: document.getElementById('employeeCurrency').value,
                         hire_date: document.getElementById('employeeHireDate').value || null,

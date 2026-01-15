@@ -100,6 +100,25 @@ def run_migrations():
             except Exception as e:
                 print(f"⚠️ Migration xatosi (tariff_expires_at): {e}")
 
+            # Migration: manager_id ustuni qo'shish (xodimlar uchun)
+            try:
+                cursor.execute("""
+                    SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                    WHERE TABLE_NAME = 'users' AND COLUMN_NAME = 'manager_id'
+                """)
+                if not cursor.fetchone():
+                    cursor.execute("""
+                        ALTER TABLE users ADD COLUMN manager_id BIGINT DEFAULT NULL
+                    """)
+                    cursor.execute("""
+                        ALTER TABLE users ADD CONSTRAINT fk_manager
+                        FOREIGN KEY (manager_id) REFERENCES users(user_id) ON DELETE SET NULL
+                    """)
+                    connection.commit()
+                    print("✅ Migration: manager_id ustuni qo'shildi")
+            except Exception as e:
+                print(f"⚠️ Migration xatosi (manager_id): {e}")
+
             # BIZNES TARIFI UCHUN JADVALLAR
 
             # Ombor (warehouse) jadvali
@@ -136,6 +155,7 @@ def run_migrations():
                     CREATE TABLE IF NOT EXISTS employees (
                         id INT AUTO_INCREMENT PRIMARY KEY,
                         user_id BIGINT NOT NULL,
+                        telegram_user_id BIGINT DEFAULT NULL,
                         full_name VARCHAR(255) NOT NULL,
                         position VARCHAR(100),
                         phone VARCHAR(20),
@@ -150,11 +170,30 @@ def run_migrations():
                         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                         FOREIGN KEY (user_id) REFERENCES users(user_id) ON DELETE CASCADE,
                         INDEX idx_user_id (user_id),
+                        INDEX idx_telegram_user_id (telegram_user_id),
                         INDEX idx_status (status)
                     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
                 """)
                 connection.commit()
                 print("✅ Migration: employees jadvali yaratildi")
+
+                # telegram_user_id ustunini qo'shish (mavjud jadvalga)
+                try:
+                    cursor.execute("""
+                        SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS
+                        WHERE TABLE_NAME = 'employees' AND COLUMN_NAME = 'telegram_user_id'
+                    """)
+                    if not cursor.fetchone():
+                        cursor.execute("""
+                            ALTER TABLE employees ADD COLUMN telegram_user_id BIGINT DEFAULT NULL
+                        """)
+                        cursor.execute("""
+                            CREATE INDEX idx_telegram_user_id ON employees(telegram_user_id)
+                        """)
+                        connection.commit()
+                        print("✅ Migration: employees jadvaliga telegram_user_id qo'shildi")
+                except:
+                    pass
             except Exception as e:
                 print(f"⚠️ Migration xatosi (employees): {e}")
 
@@ -2146,17 +2185,38 @@ def get_employee(employee_id):
 
 
 def add_employee(user_id, full_name, position=None, phone=None, salary=None,
-                currency='UZS', hire_date=None, photo_url=None, address=None, notes=None):
+                currency='UZS', hire_date=None, photo_url=None, address=None, notes=None, telegram_user_id=None):
     """Yangi xodim qo'shish"""
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
+            # Agar telegram_user_id berilgan bo'lsa, users jadvalida xodim accountini yaratish yoki yangilash
+            if telegram_user_id:
+                # Xodimning user accountini tekshirish
+                cursor.execute("SELECT user_id FROM users WHERE user_id = %s", (telegram_user_id,))
+                employee_user = cursor.fetchone()
+
+                if employee_user:
+                    # Mavjud user'ni EMPLOYEE ga o'zgartirish
+                    cursor.execute("""
+                        UPDATE users
+                        SET tariff = 'EMPLOYEE', manager_id = %s, name = %s
+                        WHERE user_id = %s
+                    """, (user_id, full_name, telegram_user_id))
+                else:
+                    # Yangi EMPLOYEE user yaratish
+                    cursor.execute("""
+                        INSERT INTO users (user_id, name, tariff, manager_id, created_at)
+                        VALUES (%s, %s, 'EMPLOYEE', %s, NOW())
+                    """, (telegram_user_id, full_name, user_id))
+
+            # Xodimni employees jadvaliga qo'shish
             cursor.execute("""
                 INSERT INTO employees
-                (user_id, full_name, position, phone, salary, currency, hire_date,
+                (user_id, telegram_user_id, full_name, position, phone, salary, currency, hire_date,
                  photo_url, address, notes, status)
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active')
-            """, (user_id, full_name, position, phone, salary, currency, hire_date,
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, 'active')
+            """, (user_id, telegram_user_id, full_name, position, phone, salary, currency, hire_date,
                   photo_url, address, notes))
             connection.commit()
             return cursor.lastrowid
@@ -2169,7 +2229,7 @@ def update_employee(employee_id, **kwargs):
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            allowed_fields = ['full_name', 'position', 'phone', 'salary', 'currency',
+            allowed_fields = ['telegram_user_id', 'full_name', 'position', 'phone', 'salary', 'currency',
                             'hire_date', 'status', 'photo_url', 'address', 'notes']
 
             updates = []
