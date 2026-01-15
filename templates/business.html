@@ -1482,5 +1482,21 @@
     <!-- Scripts -->
     <script src="/static/js/wallet-app.js"></script>
     <script src="/static/js/business.js"></script>
+    <script>
+    // URL parametridan sahifani aniqlash
+    document.addEventListener('DOMContentLoaded', function() {
+        const urlParams = new URLSearchParams(window.location.search);
+        const page = urlParams.get('page') || 'home';
+
+        console.log('[BUSINESS] URL sahifa:', page);
+
+        // Sahifaga o'tish
+        if (page && page !== 'home') {
+            setTimeout(() => {
+                navigateTo(page);
+            }, 100);
+        }
+    });
+    </script>
 </body>
 </html>
