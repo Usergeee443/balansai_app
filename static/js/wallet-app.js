@@ -240,13 +240,8 @@ function navigateTo(pageName) {
 
 async function loadPageData(pageName) {
     try {
-        // Agar sahifa allaqachon yuklangan bo'lsa, qayta yuklamaslik
-        // home va settings har doim yangilanadi
-        if (dataCache.isPageLoaded(pageName) && pageName !== 'home' && pageName !== 'settings') {
-            console.log(`[Cache] ${pageName} sahifasi cache'dan`);
-            return;
-        }
-
+        // Home va settings har doim yangilanadi
+        // Boshqa sahifalar ham chaqiriladi, lekin ular o'z cache'larini tekshiradilar
         switch (pageName) {
             case 'home':
                 // Home har doim yangilansin (limit, balance)
@@ -301,6 +296,12 @@ async function loadPageData(pageName) {
                 break;
             case 'businessStats':
                 // Business stats page - coming soon
+                dataCache.setPageLoaded(pageName);
+                break;
+            case 'salesWarehouse':
+                if (typeof loadSalesWarehouseData === 'function') {
+                    await loadSalesWarehouseData();
+                }
                 dataCache.setPageLoaded(pageName);
                 break;
         }

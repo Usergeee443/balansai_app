@@ -159,9 +159,18 @@ def index():
         user_id = get_user_id_from_request()
         if user_id:
             user = database.get_user(user_id)
-            if user and user.get('tariff') in ['BUSINESS', 'BIZNES']:
-                # Biznes foydalanuvchini biznes ilovasiga yo'naltirish
-                return redirect('/business')
+            if user:
+                tariff = user.get('tariff', 'FREE')
+
+                # EMPLOYEE tarifi uchun routing
+                if tariff == 'EMPLOYEE':
+                    return redirect('/employee')
+
+                # BUSINESS/BIZNES tarifi uchun routing
+                if tariff in ['BUSINESS', 'BIZNES']:
+                    return redirect('/business')
+
+                # FREE/PLUS tarifi uchun oddiy ilova
     except Exception as e:
         print(f"[DEBUG] Tarif tekshirishda xato: {e}")
 
@@ -1977,6 +1986,24 @@ def change_tariff():
     finally:
         if connection:
             connection.close()
+
+
+# EMPLOYEE ILOVASI SAHIFASI
+
+@app.route('/employee')
+def employee_app():
+    """Employee tarifi uchun asosiy ilova"""
+    user_id = get_user_id_from_request()
+
+    if not user_id:
+        return redirect('/')
+
+    # Foydalanuvchining tarifini tekshirish
+    user = database.get_user(user_id)
+    if not user or user.get('tariff') != 'EMPLOYEE':
+        return redirect('/')  # Faqat EMPLOYEE tarif uchun
+
+    return render_template('employee.html')
 
 
 # BIZNES ILOVASI SAHIFASI

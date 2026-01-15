@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Balans AI - Xodim Paneli</title>
+
+    <!-- Wallet Style CSS -->
+    <link rel="stylesheet" href="/static/css/wallet-style.css">
+
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <!-- ============================================
+         EMPLOYEE DASHBOARD
+         ============================================ -->
+    <div id="pageEmployeeDashboard" class="page active">
+        <!-- Header -->
+        <div class="wallet-header">
+            <div class="wallet-header-left">
+                <div class="wallet-avatar" id="userAvatar">X</div>
+                <span class="wallet-title">Xodim paneli</span>
+            </div>
+            <div class="wallet-header-right">
+                <div class="wallet-header-icon" onclick="showNotifications()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Employee Info -->
+        <div class="wallet-section" style="margin-top: 20px;">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">Mening ma'lumotlarim</h2>
+            </div>
+            <div class="wallet-card">
+                <div class="wallet-card-content">
+                    <div class="employee-info">
+                        <div class="info-row">
+                            <span class="info-label">F.I.O:</span>
+                            <span class="info-value" id="employeeName">Yuklanmoqda...</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Lavozim:</span>
+                            <span class="info-value" id="employeePosition">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Ish haqi:</span>
+                            <span class="info-value" id="employeeSalary">-</span>
+                        </div>
+                        <div class="info-row">
+                            <span class="info-label">Holat:</span>
+                            <span class="info-value" id="employeeStatus">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tasks Section -->
+        <div class="wallet-section">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">Mening vazifalarim</h2>
+            </div>
+            <div id="employeeTasksList">
+                <div style="padding: 40px 20px; text-align: center; color: var(--wallet-text-secondary);">
+                    Vazifalar yuklanmoqda...
+                </div>
+            </div>
+        </div>
+
+        <!-- Coming Soon -->
+        <div class="wallet-section">
+            <div class="wallet-info-card" style="background: rgba(94, 92, 230, 0.1); border-color: rgba(94, 92, 230, 0.2);">
+                <div class="wallet-info-icon" style="background: rgba(94, 92, 230, 0.15);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#5E5CE6" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                </div>
+                <div class="wallet-info-content">
+                    <div class="wallet-info-title">Xodim paneli - Rivojlanish jarayonida</div>
+                    <div class="wallet-info-subtitle">
+                        Tez orada yangi imkoniyatlar qo'shiladi: vazifalar, davomat, ish haqi, va boshqalar
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript -->
+    <script>
+        const tg = window.Telegram?.WebApp || null;
+
+        if (tg) {
+            tg.ready();
+            tg.expand();
+            tg.setHeaderColor('#1C1C1E');
+            tg.setBackgroundColor('#1C1C1E');
+        }
+
+        // Load employee data
+        async function loadEmployeeData() {
+            try {
+                const initData = tg?.initData || '';
+                const response = await fetch('/api/user', {
+                    headers: {
+                        'X-Telegram-Init-Data': initData
+                    }
+                });
+
+                if (!response.ok) throw new Error('User not found');
+
+                const user = await response.json();
+
+                // Update avatar
+                const avatar = document.getElementById('userAvatar');
+                if (avatar && user.name) {
+                    avatar.textContent = user.name.charAt(0).toUpperCase();
+                }
+
+                // Update employee info
+                document.getElementById('employeeName').textContent = user.name || user.first_name || 'Xodim';
+
+                // Load employee details from business API
+                // TODO: Implement employee details API endpoint
+
+                // For now, show placeholder
+                document.getElementById('employeePosition').textContent = 'Ma\'lumot yuklanmoqda...';
+                document.getElementById('employeeSalary').textContent = 'Ma\'lumot yuklanmoqda...';
+                document.getElementById('employeeStatus').textContent = 'Faol';
+
+                // Load tasks
+                loadEmployeeTasks();
+
+            } catch (error) {
+                console.error('Error loading employee data:', error);
+                document.getElementById('employeeName').textContent = 'Xatolik yuz berdi';
+            }
+        }
+
+        async function loadEmployeeTasks() {
+            const container = document.getElementById('employeeTasksList');
+
+            try {
+                // TODO: Implement employee tasks API endpoint
+                // const initData = tg?.initData || '';
+                // const response = await fetch('/api/business/my-tasks', {
+                //     headers: {
+                //         'X-Telegram-Init-Data': initData
+                //     }
+                // });
+
+                // For now, show placeholder
+                container.innerHTML = `
+                    <div style="padding: 40px 20px; text-align: center; color: var(--wallet-text-secondary);">
+                        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity: 0.3; margin-bottom: 16px;">
+                            <path d="M9 11l3 3L22 4"/>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                        <p style="font-size: 16px; margin: 0;">Hozircha vazifa yo'q</p>
+                    </div>
+                `;
+            } catch (error) {
+                console.error('Error loading tasks:', error);
+                container.innerHTML = `
+                    <div style="padding: 40px 20px; text-align: center; color: var(--wallet-text-secondary);">
+                        Yuklanmadi
+                    </div>
+                `;
+            }
+        }
+
+        function showNotifications() {
+            if (tg?.showAlert) {
+                tg.showAlert('Bildirishnomalar tez orada qo\'shiladi!');
+            } else {
+                alert('Bildirishnomalar tez orada qo\'shiladi!');
+            }
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            loadEmployeeData();
+        });
+    </script>
+
+    <style>
+        .employee-info {
+            padding: 8px 0;
+        }
+
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 0.5px solid var(--wallet-bg-tertiary);
+        }
+
+        .info-row:last-child {
+            border-bottom: none;
+        }
+
+        .info-label {
+            color: var(--wallet-text-secondary);
+            font-size: 14px;
+        }
+
+        .info-value {
+            color: var(--wallet-text-primary);
+            font-size: 14px;
+            font-weight: 500;
+        }
+    </style>
+</body>
+</html>
