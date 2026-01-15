@@ -57,13 +57,10 @@ async function loadWarehousePage(forceRefresh = false) {
         console.log('🔄 Ombor ma\'lumotlari API dan yuklanmoqda...');
 
         // Parallel yuklanish - tezroq
-        const [statsResponse, itemsResponse] = await Promise.all([
-            fetch('/api/business/statistics/warehouse'),
-            fetch('/api/business/warehouse?limit=100')
+        const [stats, items] = await Promise.all([
+            apiRequest('/api/business/statistics/warehouse'),
+            apiRequest('/api/business/warehouse?limit=100')
         ]);
-
-        const stats = await statsResponse.json();
-        const items = await itemsResponse.json();
 
         // Cache'ga saqlash
         setCache('warehouse', { stats, items });
@@ -202,13 +199,11 @@ async function showAddWarehouseModal() {
                     }
 
                     try {
-                        const response = await fetch('/api/business/warehouse', {
+                        const result = await apiRequest('/api/business/warehouse', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(data)
                         });
 
-                        const result = await response.json();
                         if (result.success) {
                             showToast('Mahsulot qo\'shildi', 'success');
                             clearCache('warehouse');
@@ -230,8 +225,7 @@ async function showAddWarehouseModal() {
 // Mahsulot tafsilotlari va tahrirlash
 async function showWarehouseItemDetails(itemId) {
     try {
-        const response = await fetch(`/api/business/warehouse/${itemId}`);
-        const item = await response.json();
+        const item = await apiRequest(`/api/business/warehouse/${itemId}`);
 
         if (!item || item.error) {
             showToast('Mahsulot topilmadi', 'error');
@@ -281,10 +275,9 @@ async function showWarehouseItemDetails(itemId) {
                     onClick: async () => {
                         if (confirm('Rostdan ham o\'chirmoqchimisiz?')) {
                             try {
-                                const response = await fetch(`/api/business/warehouse/${itemId}`, {
+                                const result = await apiRequest(`/api/business/warehouse/${itemId}`, {
                                     method: 'DELETE'
                                 });
-                                const result = await response.json();
                                 if (result.success) {
                                     showToast('Mahsulot o\'chirildi', 'success');
                                     clearCache('warehouse');
@@ -397,13 +390,11 @@ async function showEditWarehouseModal(item) {
                     }
 
                     try {
-                        const response = await fetch(`/api/business/warehouse/${item.id}`, {
+                        const result = await apiRequest(`/api/business/warehouse/${item.id}`, {
                             method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(data)
                         });
 
-                        const result = await response.json();
                         if (result.success) {
                             showToast('Mahsulot yangilandi', 'success');
                             clearCache('warehouse');
@@ -443,13 +434,10 @@ async function loadEmployeesPage(forceRefresh = false) {
         console.log('🔄 Xodimlar ma\'lumotlari API dan yuklanmoqda...');
 
         // Parallel yuklanish - tezroq
-        const [statsResponse, employeesResponse] = await Promise.all([
-            fetch('/api/business/statistics/employees'),
-            fetch('/api/business/employees?limit=100')
+        const [stats, employees] = await Promise.all([
+            apiRequest('/api/business/statistics/employees'),
+            apiRequest('/api/business/employees?limit=100')
         ]);
-
-        const stats = await statsResponse.json();
-        const employees = await employeesResponse.json();
 
         // Cache'ga saqlash
         setCache('employees', { stats, items: employees });
@@ -585,13 +573,11 @@ async function showAddEmployeeModal() {
                     }
 
                     try {
-                        const response = await fetch('/api/business/employees', {
+                        const result = await apiRequest('/api/business/employees', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(data)
                         });
 
-                        const result = await response.json();
                         if (result.success) {
                             showToast('Xodim qo\'shildi', 'success');
                             clearCache('employees');
@@ -613,8 +599,7 @@ async function showAddEmployeeModal() {
 // Xodim tafsilotlari
 async function showEmployeeDetails(employeeId) {
     try {
-        const response = await fetch(`/api/business/employees/${employeeId}`);
-        const employee = await response.json();
+        const employee = await apiRequest(`/api/business/employees/${employeeId}`);
 
         if (!employee || employee.error) {
             showToast('Xodim topilmadi', 'error');
@@ -666,10 +651,9 @@ async function showEmployeeDetails(employeeId) {
                     onClick: async () => {
                         if (confirm('Rostdan ham o\'chirmoqchimisiz?')) {
                             try {
-                                const response = await fetch(`/api/business/employees/${employeeId}`, {
+                                const result = await apiRequest(`/api/business/employees/${employeeId}`, {
                                     method: 'DELETE'
                                 });
-                                const result = await response.json();
                                 if (result.success) {
                                     showToast('Xodim o\'chirildi', 'success');
                                     clearCache('employees');
@@ -778,13 +762,11 @@ async function showEditEmployeeModal(employee) {
                     }
 
                     try {
-                        const response = await fetch(`/api/business/employees/${employee.id}`, {
+                        const result = await apiRequest(`/api/business/employees/${employee.id}`, {
                             method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(data)
                         });
 
-                        const result = await response.json();
                         if (result.success) {
                             showToast('Xodim yangilandi', 'success');
                             clearCache('employees');
@@ -825,13 +807,10 @@ async function loadTasksPage(forceRefresh = false) {
         console.log('🔄 Vazifalar ma\'lumotlari API dan yuklanmoqda...');
 
         // Parallel yuklanish - tezroq
-        const [statsResponse, tasksResponse] = await Promise.all([
-            fetch('/api/business/statistics/tasks'),
-            fetch('/api/business/tasks?limit=100')
+        const [stats, tasks] = await Promise.all([
+            apiRequest('/api/business/statistics/tasks'),
+            apiRequest('/api/business/tasks?limit=100')
         ]);
-
-        const stats = await statsResponse.json();
-        const tasks = await tasksResponse.json();
 
         // Cache'ga saqlash
         setCache('tasks', { stats, items: tasks });
@@ -925,8 +904,7 @@ async function showAddTaskModal() {
     // Xodimlarni yuklash
     let employees = [];
     try {
-        const response = await fetch('/api/business/employees?limit=100');
-        employees = await response.json();
+        employees = await apiRequest('/api/business/employees?limit=100');
     } catch (error) {
         console.error('Xodimlarni yuklashda xato:', error);
     }
@@ -991,13 +969,11 @@ async function showAddTaskModal() {
                     }
 
                     try {
-                        const response = await fetch('/api/business/tasks', {
+                        const result = await apiRequest('/api/business/tasks', {
                             method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(data)
                         });
 
-                        const result = await response.json();
                         if (result.success) {
                             showToast('Vazifa qo\'shildi', 'success');
                             clearCache('tasks');
@@ -1019,8 +995,7 @@ async function showAddTaskModal() {
 // Vazifa tafsilotlari
 async function showTaskDetails(taskId) {
     try {
-        const response = await fetch(`/api/business/tasks/${taskId}`);
-        const task = await response.json();
+        const task = await apiRequest(`/api/business/tasks/${taskId}`);
 
         if (!task || task.error) {
             showToast('Vazifa topilmadi', 'error');
@@ -1076,10 +1051,9 @@ async function showTaskDetails(taskId) {
                     onClick: async () => {
                         if (confirm('Rostdan ham o\'chirmoqchimisiz?')) {
                             try {
-                                const response = await fetch(`/api/business/tasks/${taskId}`, {
+                                const result = await apiRequest(`/api/business/tasks/${taskId}`, {
                                     method: 'DELETE'
                                 });
-                                const result = await response.json();
                                 if (result.success) {
                                     showToast('Vazifa o\'chirildi', 'success');
                                     clearCache('tasks');
@@ -1121,8 +1095,7 @@ async function showEditTaskModal(task) {
     // Xodimlarni yuklash
     let employees = [];
     try {
-        const response = await fetch('/api/business/employees?limit=100');
-        employees = await response.json();
+        employees = await apiRequest('/api/business/employees?limit=100');
     } catch (error) {
         console.error('Xodimlarni yuklashda xato:', error);
     }
@@ -1195,13 +1168,11 @@ async function showEditTaskModal(task) {
                     }
 
                     try {
-                        const response = await fetch(`/api/business/tasks/${task.id}`, {
+                        const result = await apiRequest(`/api/business/tasks/${task.id}`, {
                             method: 'PUT',
-                            headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify(data)
                         });
 
-                        const result = await response.json();
                         if (result.success) {
                             showToast('Vazifa yangilandi', 'success');
                             clearCache('tasks');
@@ -1368,9 +1339,8 @@ function openSalesWarehouse() {
 async function loadSalesWarehouseData() {
     try {
         // Sticky statistics yuklash
-        const stats = await fetch('/api/business/sales-warehouse/stats');
-        const statsData = await stats.json();
-        
+        const statsData = await apiRequest('/api/business/sales-warehouse/stats');
+
         updateStickyStats(statsData);
         
         // Hozirgi tab'ni yuklash
