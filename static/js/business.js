@@ -41,6 +41,14 @@ function clearCache(cacheKey) {
 // Ombor sahifasini yuklash (caching bilan)
 async function loadWarehousePage(forceRefresh = false) {
     try {
+        // Tariff tekshiruvi
+        const user = currentUser || await apiRequest('/api/user');
+        if (!user || (user.tariff !== 'BUSINESS' && user.tariff !== 'BIZNES')) {
+            showToast('Biznes tarifi kerak', 'error');
+            navigateTo('home');
+            return;
+        }
+
         // Agar cache valid bo'lsa va force refresh bo'lmasa, cache'dan ol
         if (!forceRefresh && isCacheValid('warehouse')) {
             console.log('✅ Ombor ma\'lumotlari cache\'dan olinmoqda...');
@@ -418,6 +426,14 @@ async function showEditWarehouseModal(item) {
 // Xodimlar sahifasini yuklash (caching bilan)
 async function loadEmployeesPage(forceRefresh = false) {
     try {
+        // Tariff tekshiruvi
+        const user = currentUser || await apiRequest('/api/user');
+        if (!user || (user.tariff !== 'BUSINESS' && user.tariff !== 'BIZNES')) {
+            showToast('Biznes tarifi kerak', 'error');
+            navigateTo('home');
+            return;
+        }
+
         // Agar cache valid bo'lsa va force refresh bo'lmasa, cache'dan ol
         if (!forceRefresh && isCacheValid('employees')) {
             console.log('✅ Xodimlar ma\'lumotlari cache\'dan olinmoqda...');
@@ -790,6 +806,14 @@ async function showEditEmployeeModal(employee) {
 // Vazifalar sahifasini yuklash (caching bilan)
 async function loadTasksPage(forceRefresh = false) {
     try {
+        // Tariff tekshiruvi
+        const user = currentUser || await apiRequest('/api/user');
+        if (!user || (user.tariff !== 'BUSINESS' && user.tariff !== 'BIZNES')) {
+            showToast('Biznes tarifi kerak', 'error');
+            navigateTo('home');
+            return;
+        }
+
         // Agar cache valid bo'lsa va force refresh bo'lmasa, cache'dan ol
         if (!forceRefresh && isCacheValid('tasks')) {
             console.log('✅ Vazifalar ma\'lumotlari cache\'dan olinmoqda...');
