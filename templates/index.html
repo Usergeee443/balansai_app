@@ -681,343 +681,262 @@
     </div>
 
     <!-- ============================================
-         SERVICES PAGE
+         SERVICES PAGE - Telegram Wallet Style
          ============================================ -->
     <div id="pageServices" class="page">
         <div class="wallet-page-header">
             <h1 class="wallet-page-title">Xizmatlar</h1>
         </div>
 
-        <!-- Services Grid -->
-        <div class="services-section">
-            <div class="services-section-title">Moliyaviy boshqaruv</div>
-            <div class="services-grid">
-                <div class="service-card" onclick="showSetLimitModal()">
-                    <div class="service-card-icon purple">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M12 6v6l4 2"/>
+        <!-- Telegram Wallet Style Services -->
+        <div style="padding: 0 16px 100px;">
+            <!-- Asosiy xizmatlar -->
+            <div class="wallet-card" style="margin-bottom: 16px; padding: 0; overflow: hidden;">
+                <div class="tg-services-list">
+                    <div class="tg-service-item" onclick="showSetLimitModal()">
+                        <div class="tg-service-icon" style="background: linear-gradient(135deg, #8B5CF6, #A78BFA);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 6v6l4 2"/>
+                            </svg>
+                        </div>
+                        <div class="tg-service-content">
+                            <span class="tg-service-title">Limit o'rnatish</span>
+                            <span class="tg-service-desc">Oylik xarajat limitini belgilang</span>
+                        </div>
+                        <svg class="tg-service-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"/>
                         </svg>
                     </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Limit</span>
-                        <span class="service-card-desc">Oylik limit o'rnating</span>
+                    
+                    <div class="tg-service-item" onclick="navigateTo('reminders')">
+                        <div class="tg-service-icon" style="background: linear-gradient(135deg, #FF9F0A, #FFB84D);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                            </svg>
+                        </div>
+                        <div class="tg-service-content">
+                            <span class="tg-service-title">Eslatmalar</span>
+                            <span class="tg-service-desc">To'lovlarni eslab qoling</span>
+                        </div>
+                        <svg class="tg-service-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </div>
+                    
+                    <div class="tg-service-item" onclick="navigateTo('debts')">
+                        <div class="tg-service-icon" style="background: linear-gradient(135deg, #FF453A, #FF6B6B);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                                <line x1="1" y1="10" x2="23" y2="10"/>
+                            </svg>
+                        </div>
+                        <div class="tg-service-content">
+                            <span class="tg-service-title">Qarzlar</span>
+                            <span class="tg-service-desc">Qarzlarni kuzating va boshqaring</span>
+                        </div>
+                        <svg class="tg-service-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </div>
+                    
+                    <div class="tg-service-item" onclick="navigateTo('topExpenses')">
+                        <div class="tg-service-icon" style="background: linear-gradient(135deg, #0A84FF, #5AC8FA);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                            </svg>
+                        </div>
+                        <div class="tg-service-content">
+                            <span class="tg-service-title">Top xarajatlar</span>
+                            <span class="tg-service-desc">Eng katta xarajatlarni ko'ring</span>
+                        </div>
+                        <svg class="tg-service-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </div>
+                    
+                    <div class="tg-service-item" onclick="showExportModal()">
+                        <div class="tg-service-icon" style="background: linear-gradient(135deg, #00C7BE, #4DD4CC);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                                <polyline points="7 10 12 15 17 10"/>
+                                <line x1="12" y1="15" x2="12" y2="3"/>
+                            </svg>
+                        </div>
+                        <div class="tg-service-content">
+                            <span class="tg-service-title">Eksport</span>
+                            <span class="tg-service-desc">Telegram'ga yuborish</span>
+                        </div>
+                        <svg class="tg-service-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
                     </div>
                 </div>
-                <div class="service-card" onclick="navigateTo('reminders')">
-                    <div class="service-card-icon orange">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
-                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
-                        </svg>
+            </div>
+
+            <!-- Tez kunda -->
+            <div style="margin-bottom: 12px; padding-left: 4px;">
+                <span style="font-size: 13px; font-weight: 600; color: var(--wallet-text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Tez kunda</span>
+            </div>
+            
+            <div class="wallet-card" style="padding: 0; overflow: hidden;">
+                <div class="tg-services-list">
+                    <div class="tg-service-item tg-service-soon" onclick="showSoonMessage('Maqsadlar')">
+                        <div class="tg-service-icon" style="background: linear-gradient(135deg, #30D158, #5AE07A); opacity: 0.6;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <circle cx="12" cy="12" r="6"/>
+                                <circle cx="12" cy="12" r="2"/>
+                            </svg>
+                        </div>
+                        <div class="tg-service-content">
+                            <span class="tg-service-title" style="opacity: 0.6;">Maqsadlar</span>
+                            <span class="tg-service-desc">Moliyaviy maqsadlar</span>
+                        </div>
+                        <span class="tg-soon-badge">Soon</span>
                     </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Eslatmalar</span>
-                        <span class="service-card-desc">To'lovlarni eslab qoling</span>
+                    
+                    <div class="tg-service-item tg-service-soon" onclick="showSoonMessage('Valyuta kurslari')">
+                        <div class="tg-service-icon" style="background: linear-gradient(135deg, #0A84FF, #5AC8FA); opacity: 0.6;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <line x1="2" y1="12" x2="22" y2="12"/>
+                                <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                            </svg>
+                        </div>
+                        <div class="tg-service-content">
+                            <span class="tg-service-title" style="opacity: 0.6;">Valyuta kurslari</span>
+                            <span class="tg-service-desc">Real vaqtda kurslar</span>
+                        </div>
+                        <span class="tg-soon-badge">Soon</span>
                     </div>
-                </div>
-                <div class="service-card" onclick="navigateTo('debts')">
-                    <div class="service-card-icon red">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
-                            <line x1="1" y1="10" x2="23" y2="10"/>
-                        </svg>
+                    
+                    <div class="tg-service-item tg-service-soon" onclick="showSoonMessage('Jamg\'arma')">
+                        <div class="tg-service-icon" style="background: linear-gradient(135deg, #30D158, #5AE07A); opacity: 0.6;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2V5z"/>
+                                <path d="M2 9v1c0 1.1.9 2 2 2h1"/>
+                            </svg>
+                        </div>
+                        <div class="tg-service-content">
+                            <span class="tg-service-title" style="opacity: 0.6;">Jamg'arma</span>
+                            <span class="tg-service-desc">Pul yig'ish</span>
+                        </div>
+                        <span class="tg-soon-badge">Soon</span>
                     </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Qarzlar</span>
-                        <span class="service-card-desc">Qarzlarni kuzating</span>
+                    
+                    <div class="tg-service-item tg-service-soon" onclick="showSoonMessage('AI maslahatchi')">
+                        <div class="tg-service-icon" style="background: linear-gradient(135deg, #8B5CF6, #A78BFA); opacity: 0.6;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
+                            </svg>
+                        </div>
+                        <div class="tg-service-content">
+                            <span class="tg-service-title" style="opacity: 0.6;">AI maslahatchi</span>
+                            <span class="tg-service-desc">Moliyaviy maslahatlar</span>
+                        </div>
+                        <span class="tg-soon-badge">Soon</span>
                     </div>
-                </div>
-                <div class="service-card" onclick="showAddGoalModal()">
-                    <div class="service-card-icon green">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <circle cx="12" cy="12" r="6"/>
-                            <circle cx="12" cy="12" r="2"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Maqsadlar</span>
-                        <span class="service-card-desc">Moliyaviy maqsadlar</span>
+                    
+                    <div class="tg-service-item tg-service-soon" onclick="showSoonMessage('Investitsiya')">
+                        <div class="tg-service-icon" style="background: linear-gradient(135deg, #FF9F0A, #FFB84D); opacity: 0.6;">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
+                                <polyline points="16 7 22 7 22 13"/>
+                            </svg>
+                        </div>
+                        <div class="tg-service-content">
+                            <span class="tg-service-title" style="opacity: 0.6;">Investitsiya</span>
+                            <span class="tg-service-desc">Investitsiya tahlili</span>
+                        </div>
+                        <span class="tg-soon-badge">Soon</span>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="services-section">
-            <div class="services-section-title">Hisobotlar</div>
-            <div class="services-grid">
-                <div class="service-card" onclick="navigateTo('statistics')">
-                    <div class="service-card-icon blue">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 20V10M12 20V4M6 20v-6"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Statistika</span>
-                        <span class="service-card-desc">Batafsil tahlil</span>
-                    </div>
-                </div>
-                <div class="service-card" onclick="openBusinessApp()">
-                    <div class="service-card-icon" style="background: rgba(139, 92, 246, 0.15); color: rgb(139, 92, 246);">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Biznes</span>
-                        <span class="service-card-desc">Biznes boshqaruvi</span>
-                    </div>
-                </div>
-                <div class="service-card" onclick="showExportModal()">
-                    <div class="service-card-icon cyan">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-                            <polyline points="7 10 12 15 17 10"/>
-                            <line x1="12" y1="15" x2="12" y2="3"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Eksport</span>
-                        <span class="service-card-desc">Telegram'ga yuborish</span>
-                    </div>
-                </div>
-                <div class="service-card" onclick="navigateTo('topExpenses')">
-                    <div class="service-card-icon orange">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Top xarajatlar</span>
-                        <span class="service-card-desc">Eng katta xarajatlar</span>
-                    </div>
-                </div>
-                <div class="service-card" onclick="navigateTo('profile')">
-                    <div class="service-card-icon gray">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="3"/>
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Sozlamalar</span>
-                        <span class="service-card-desc">Profil va sozlamalar</span>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <div class="services-section">
-            <div class="services-section-title">Qo'shimcha xizmatlar</div>
-            <div class="services-grid">
-                <div class="service-card service-card-soon" onclick="showSoonMessage('Valyuta kurslari')">
-                    <div class="service-card-icon blue">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <line x1="2" y1="12" x2="22" y2="12"/>
-                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Valyuta kurslari</span>
-                        <span class="service-card-desc">Tez kunda</span>
-                    </div>
-                    <span class="service-badge-soon">Soon</span>
-                </div>
-                <div class="service-card service-card-soon" onclick="showSoonMessage('Jamg\'arma')">
-                    <div class="service-card-icon green">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M19 5c-1.5 0-2.8 1.4-3 2-3.5-1.5-11-.3-11 5 0 1.8 0 3 2 4.5V20h4v-2h3v2h4v-4c1-.5 1.7-1 2-2h2v-4h-2c0-1-.5-1.5-1-2V5z"/>
-                            <path d="M2 9v1c0 1.1.9 2 2 2h1"/>
-                            <path d="M16 11h.01"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Jamg'arma</span>
-                        <span class="service-card-desc">Tez kunda</span>
-                    </div>
-                    <span class="service-badge-soon">Soon</span>
-                </div>
-                <div class="service-card service-card-soon" onclick="showSoonMessage('AI maslahatchi')">
-                    <div class="service-card-icon purple">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M12 2a2 2 0 0 1 2 2c0 .74-.4 1.39-1 1.73V7h1a7 7 0 0 1 7 7h1a1 1 0 0 1 1 1v3a1 1 0 0 1-1 1h-1v1a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-1H2a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h1a7 7 0 0 1 7-7h1V5.73c-.6-.34-1-.99-1-1.73a2 2 0 0 1 2-2z"/>
-                            <path d="M7.5 13a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
-                            <path d="M16.5 13a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3z"/>
-                            <path d="M8.5 17h7"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">AI maslahatchi</span>
-                        <span class="service-card-desc">Tez kunda</span>
-                    </div>
-                    <span class="service-badge-soon">Soon</span>
-                </div>
-                <div class="service-card service-card-soon" onclick="showSoonMessage('To\'lov rejasi')">
-                    <div class="service-card-icon cyan">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
-                            <line x1="16" y1="2" x2="16" y2="6"/>
-                            <line x1="8" y1="2" x2="8" y2="6"/>
-                            <line x1="3" y1="10" x2="21" y2="10"/>
-                            <path d="M8 14h.01"/>
-                            <path d="M12 14h.01"/>
-                            <path d="M16 14h.01"/>
-                            <path d="M8 18h.01"/>
-                            <path d="M12 18h.01"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">To'lov rejasi</span>
-                        <span class="service-card-desc">Tez kunda</span>
-                    </div>
-                    <span class="service-badge-soon">Soon</span>
-                </div>
-                <div class="service-card service-card-soon" onclick="showSoonMessage('Investitsiya')">
-                    <div class="service-card-icon orange">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/>
-                            <polyline points="16 7 22 7 22 13"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Investitsiya</span>
-                        <span class="service-card-desc">Tez kunda</span>
-                    </div>
-                    <span class="service-badge-soon">Soon</span>
-                </div>
-                <div class="service-card service-card-soon" onclick="showSoonMessage('Kredit kalkulyator')">
-                    <div class="service-card-icon red">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="4" y="2" width="16" height="20" rx="2"/>
-                            <line x1="8" y1="6" x2="16" y2="6"/>
-                            <line x1="8" y1="10" x2="16" y2="10"/>
-                            <line x1="8" y1="14" x2="12" y2="14"/>
-                            <line x1="8" y1="18" x2="10" y2="18"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Kredit kalkulyator</span>
-                        <span class="service-card-desc">Tez kunda</span>
-                    </div>
-                    <span class="service-badge-soon">Soon</span>
-                </div>
-                <div class="service-card service-card-soon" onclick="showSoonMessage('Daromad tahlili')">
-                    <div class="service-card-icon blue">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M3 3v18h18"/>
-                            <path d="M18.7 8l-5.1 5.2-2.8-2.7L7 14.3"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Daromad tahlili</span>
-                        <span class="service-card-desc">Tez kunda</span>
-                    </div>
-                    <span class="service-badge-soon">Soon</span>
-                </div>
-                <div class="service-card service-card-soon" onclick="showSoonMessage('Byudjet rejalashtirish')">
-                    <div class="service-card-icon green">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-                            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Byudjet rejalashtirish</span>
-                        <span class="service-card-desc">Tez kunda</span>
-                    </div>
-                    <span class="service-badge-soon">Soon</span>
-                </div>
-                <div class="service-card service-card-soon" onclick="showSoonMessage('Moliyaviy hisobotlar')">
-                    <div class="service-card-icon purple">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-                            <polyline points="14 2 14 8 20 8"/>
-                            <line x1="16" y1="13" x2="8" y2="13"/>
-                            <line x1="16" y1="17" x2="8" y2="17"/>
-                            <line x1="10" y1="9" x2="8" y2="9"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Moliyaviy hisobotlar</span>
-                        <span class="service-card-desc">Tez kunda</span>
-                    </div>
-                    <span class="service-badge-soon">Soon</span>
-                </div>
-                <div class="service-card service-card-soon" onclick="showSoonMessage('Xarajat optimallashtirish')">
-                    <div class="service-card-icon orange">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="10"/>
-                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
-                            <line x1="12" y1="17" x2="12.01" y2="17"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Xarajat optimallashtirish</span>
-                        <span class="service-card-desc">Tez kunda</span>
-                    </div>
-                    <span class="service-badge-soon">Soon</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Business Section (Hidden by default, shown only for BUSINESS tariff) -->
-        <div class="services-section" id="businessServicesSection" style="display: none;">
-            <div class="services-section-title">Biznes boshqaruvi 💼</div>
-            <div class="services-grid">
-                <div class="service-card" onclick="navigateTo('warehouse')">
-                    <div class="service-card-icon purple">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Ombor</span>
-                        <span class="service-card-desc">Mahsulotlar boshqaruvi</span>
-                    </div>
-                </div>
-                <div class="service-card" onclick="navigateTo('employees')">
-                    <div class="service-card-icon green">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                            <circle cx="9" cy="7" r="4"/>
-                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Xodimlar</span>
-                        <span class="service-card-desc">Xodimlar boshqaruvi</span>
-                    </div>
-                </div>
-                <div class="service-card" onclick="navigateTo('tasks')">
-                    <div class="service-card-icon blue">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M9 11l3 3L22 4"/>
-                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Vazifalar</span>
-                        <span class="service-card-desc">Vazifalar boshqaruvi</span>
-                    </div>
-                </div>
-                <div class="service-card" onclick="navigateTo('businessStats')">
-                    <div class="service-card-icon orange">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M18 20V10M12 20V4M6 20v-6"/>
-                        </svg>
-                    </div>
-                    <div class="service-card-content">
-                        <span class="service-card-title">Biznes statistika</span>
-                        <span class="service-card-desc">To'liq tahlil</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <style>
+            .tg-services-list {
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .tg-service-item {
+                display: flex;
+                align-items: center;
+                padding: 14px 16px;
+                gap: 14px;
+                cursor: pointer;
+                transition: background 0.2s;
+                border-bottom: 1px solid var(--wallet-border);
+            }
+            
+            .tg-service-item:last-child {
+                border-bottom: none;
+            }
+            
+            .tg-service-item:active {
+                background: var(--wallet-hover);
+            }
+            
+            .tg-service-item.tg-service-soon {
+                cursor: default;
+            }
+            
+            .tg-service-icon {
+                width: 42px;
+                height: 42px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+            
+            .tg-service-icon svg {
+                width: 22px;
+                height: 22px;
+            }
+            
+            .tg-service-content {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .tg-service-title {
+                display: block;
+                font-size: 16px;
+                font-weight: 500;
+                color: var(--wallet-text-primary);
+                margin-bottom: 2px;
+            }
+            
+            .tg-service-desc {
+                display: block;
+                font-size: 13px;
+                color: var(--wallet-text-secondary);
+            }
+            
+            .tg-service-arrow {
+                width: 20px;
+                height: 20px;
+                color: var(--wallet-text-tertiary);
+                flex-shrink: 0;
+            }
+            
+            .tg-soon-badge {
+                background: rgba(255, 159, 10, 0.15);
+                color: #FF9F0A;
+                font-size: 11px;
+                font-weight: 600;
+                padding: 4px 10px;
+                border-radius: 20px;
+                flex-shrink: 0;
+            }
+        </style>
     </div>
+
 
     <!-- ============================================
          PROFILE PAGE
@@ -1482,7 +1401,16 @@
             <h1 class="wallet-page-title">Top xarajatlar</h1>
         </div>
         
-        <div id="topExpensesContent" style="padding: 0 16px;">
+        <!-- Skeleton Loading -->
+        <div id="topExpensesSkeleton" class="skeleton-list" style="padding: 0 16px;">
+            <div class="skeleton-item"></div>
+            <div class="skeleton-item"></div>
+            <div class="skeleton-item"></div>
+            <div class="skeleton-item"></div>
+            <div class="skeleton-item"></div>
+        </div>
+        
+        <div id="topExpensesContent" style="padding: 0 16px; display: none;">
             <!-- Loaded via JavaScript -->
         </div>
     </div>

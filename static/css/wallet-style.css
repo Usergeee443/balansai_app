@@ -1510,6 +1510,39 @@ body {
     100% { background-position: -200% 0; }
 }
 
+/* Skeleton List */
+.skeleton-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.skeleton-item {
+    background: var(--wallet-bg-secondary);
+    border-radius: 12px;
+    padding: 16px;
+    height: 72px;
+    background: linear-gradient(
+        90deg,
+        var(--wallet-bg-secondary) 0%,
+        var(--wallet-bg-tertiary) 50%,
+        var(--wallet-bg-secondary) 100%
+    );
+    background-size: 200% 100%;
+    animation: skeleton-loading 1.5s ease-in-out infinite;
+}
+
+/* Light Mode Skeleton */
+body.light-mode .skeleton-item {
+    background: linear-gradient(
+        90deg,
+        #F2F2F7 0%,
+        #E5E5EA 50%,
+        #F2F2F7 100%
+    );
+    background-size: 200% 100%;
+}
+
 /* ========================================
    DATE GROUP HEADER
    ======================================== */
@@ -3708,4 +3741,120 @@ body:not(.light-mode) .hr-tab:hover {
 body:not(.light-mode) .hr-tab.active {
     background: var(--wallet-accent-blue, #0A84FF);
     color: white;
+}
+
+/* ==================== XIZMATLAR SAHIFASI ==================== */
+
+/* Services Section */
+.services-section {
+    padding: 0 16px;
+    margin-bottom: 24px;
+}
+
+.services-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--wallet-text-secondary);
+    margin-bottom: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* Services Grid */
+.services-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+/* Service Card */
+.service-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 8px;
+    background: var(--wallet-bg-secondary);
+    border-radius: 16px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    position: relative;
+    text-align: center;
+}
+
+.service-card:active {
+    transform: scale(0.95);
+}
+
+.service-card-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 8px;
+}
+
+.service-card-icon svg {
+    width: 22px;
+    height: 22px;
+}
+
+/* Icon Colors */
+.service-card-icon.purple { background: rgba(191, 90, 242, 0.15); color: #BF5AF2; }
+.service-card-icon.orange { background: rgba(255, 159, 10, 0.15); color: #FF9F0A; }
+.service-card-icon.red { background: rgba(255, 69, 58, 0.15); color: #FF453A; }
+.service-card-icon.green { background: rgba(48, 209, 88, 0.15); color: #30D158; }
+.service-card-icon.blue { background: rgba(10, 132, 255, 0.15); color: #0A84FF; }
+.service-card-icon.cyan { background: rgba(100, 210, 255, 0.15); color: #64D2FF; }
+.service-card-icon.gold { background: rgba(255, 214, 10, 0.15); color: #FFD60A; }
+.service-card-icon.teal { background: rgba(0, 199, 190, 0.15); color: #00C7BE; }
+.service-card-icon.emerald { background: rgba(52, 199, 89, 0.15); color: #34C759; }
+.service-card-icon.rose { background: rgba(255, 55, 95, 0.15); color: #FF375F; }
+.service-card-icon.indigo { background: rgba(94, 92, 230, 0.15); color: #5E5CE6; }
+
+/* Service Card Content */
+.service-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.service-card-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--wallet-text-primary);
+}
+
+.service-card-desc {
+    font-size: 10px;
+    color: var(--wallet-text-secondary);
+}
+
+/* Soon Badge */
+.service-badge-soon {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    font-size: 8px;
+    font-weight: 700;
+    color: #FFD60A;
+    background: rgba(255, 214, 10, 0.2);
+    padding: 2px 5px;
+    border-radius: 4px;
+    text-transform: uppercase;
+}
+
+/* Coming Soon Cards */
+.service-card-soon {
+    opacity: 0.6;
+}
+
+.service-card-soon .service-card-title {
+    color: var(--wallet-text-secondary);
+}
+
+/* Light Mode */
+body.light-mode .service-card {
+    background: #F2F2F7;
 }

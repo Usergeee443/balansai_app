@@ -1526,10 +1526,12 @@ def api_get_employees():
     offset = request.args.get('offset', 0, type=int)
 
     # Eski employees tizimidan
-    old_employees = database.get_employees(user_id, status, limit, offset)
+    old_employees_data = database.get_employees(user_id, status, limit, offset)
+    # Tuple bo'lsa list ga o'tkazish
+    old_employees = list(old_employees_data) if old_employees_data else []
 
     # Yangi employee_links tizimidan (QR orqali qo'shilganlar)
-    employee_links = database.get_business_employees(user_id)
+    employee_links = database.get_business_employees(user_id) or []
 
     # Employee_links'ni eski format'ga o'tkazish
     for link in employee_links:
@@ -2259,6 +2261,103 @@ def business_app():
         return redirect('/')  # Oddiy ilovaga yo'naltirish
 
     return render_template('business.html')
+
+
+# XODIM ILOVASI SAHIFASI
+
+@app.route('/employee')
+def employee_app():
+    """Xodim tarifi uchun asosiy ilova"""
+    user_id = get_user_id_from_request()
+
+    # Agar header dan topilmasa, query param dan olish
+    if not user_id or user_id == 123456789:
+        init_data = request.args.get('initData')
+        if init_data:
+            try:
+                # initData dan user_id ni parse qilish
+                pairs = init_data.split('&')
+                for pair in pairs:
+                    if pair.startswith('user='):
+                        import urllib.parse
+                        user_json = urllib.parse.unquote(pair.split('=', 1)[1])
+                        user_data = json.loads(user_json)
+                        user_id = user_data.get('id')
+                        break
+            except Exception as e:
+                print(f"[DEBUG] Query param dan user_id parse qilishda xato: {e}")
+
+    if not user_id:
+        return redirect('/')
+
+    # Xodim ekanligini tekshirish
+    employee_link = database.get_employee_link(user_id)
+    if not employee_link:
+        return redirect('/')  # Oddiy ilovaga yo'naltirish
+
+    return render_template('employee.html')
+
+
+@app.route('/api/employee/tasks', methods=['GET'])
+def get_employee_tasks():
+    """Xodimga tayinlangan vazifalarni olish"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+        # Xodim ekanligini tekshirish
+        employee_link = database.get_employee_link(user_id)
+        if not employee_link:
+            return jsonify({'success': False, 'message': 'Xodim topilmadi'}), 404
+
+        # Biznes user_id dan vazifalarni olish
+        business_user_id = employee_link['business_user_id']
+        
+        # Xodimga tayinlangan vazifalarni olish
+        tasks = database.get_employee_assigned_tasks(business_user_id, user_id)
+
+        return jsonify({
+            'success': True,
+            'tasks': tasks
+        }), 200
+
+    except Exception as e:
+        print(f"Get employee tasks error: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Serverda xatolik yuz berdi'
+        }), 500
+
+
+@app.route('/api/employee/tasks/<int:task_id>/status', methods=['PUT'])
+def update_employee_task_status(task_id):
+    """Xodim vazifa holatini yangilash"""
+    try:
+        user_id = get_user_id_from_request()
+        if not user_id:
+            return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+        data = request.get_json()
+        new_status = data.get('status')
+
+        if not new_status:
+            return jsonify({'success': False, 'message': 'Status kerak'}), 400
+
+        # Vazifani yangilash
+        success = database.update_task(task_id, status=new_status)
+
+        if success:
+            return jsonify({'success': True}), 200
+        else:
+            return jsonify({'success': False, 'message': 'Yangilashda xatolik'}), 500
+
+    except Exception as e:
+        print(f"Update employee task status error: {e}")
+        return jsonify({
+            'success': False,
+            'message': 'Serverda xatolik yuz berdi'
+        }), 500
 
 
 if __name__ == '__main__':

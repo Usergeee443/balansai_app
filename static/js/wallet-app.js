@@ -302,6 +302,14 @@ async function loadPageData(pageName) {
                 // Business stats page - coming soon
                 dataCache.setPageLoaded(pageName);
                 break;
+            case 'desktop':
+                // Desktop page - static page, no data loading needed
+                dataCache.setPageLoaded(pageName);
+                break;
+            case 'services':
+                // Services page - static page, no data loading needed
+                dataCache.setPageLoaded(pageName);
+                break;
         }
     } catch (error) {
         console.error(`Error loading ${pageName}:`, error);
@@ -1553,8 +1561,13 @@ async function loadProfilePage() {
 // ============================================
 
 async function loadTopExpensesPage() {
+    const skeleton = document.getElementById('topExpensesSkeleton');
     const container = document.getElementById('topExpensesContent');
     if (!container) return;
+
+    // Show skeleton, hide content
+    if (skeleton) skeleton.style.display = 'block';
+    container.style.display = 'none';
 
     try {
         const categories = await apiRequest('/api/statistics/top-categories?limit=10&days=30');
@@ -1565,26 +1578,37 @@ async function loadTopExpensesPage() {
                     <div class="wallet-empty-title">Ma'lumot yo'q</div>
                 </div>
             `;
-            return;
+        } else {
+            const colors = ['#FF453A', '#FF9F0A', '#FFD60A', '#30D158', '#0A84FF', '#5E5CE6', '#BF5AF2', '#FF375F'];
+
+            container.innerHTML = categories.map((cat, i) => `
+                <div style="background: var(--wallet-bg-secondary); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px;">
+                    <div style="width: 40px; height: 40px; border-radius: 10px; background: ${colors[i % colors.length]}20; display: flex; align-items: center; justify-content: center; color: ${colors[i % colors.length]}; font-weight: 700;">
+                        ${i + 1}
+                    </div>
+                    <div style="flex: 1;">
+                        <div style="font-weight: 600; color: var(--wallet-text-primary);">${cat.category}</div>
+                        <div style="font-size: 13px; color: var(--wallet-text-secondary);">${cat.count || ''} tranzaksiya</div>
+                    </div>
+                    <div style="font-weight: 700; color: var(--wallet-accent-red);">${formatCurrency(cat.amount)}</div>
+                </div>
+            `).join('');
         }
 
-        const colors = ['#FF453A', '#FF9F0A', '#FFD60A', '#30D158', '#0A84FF', '#5E5CE6', '#BF5AF2', '#FF375F'];
-
-        container.innerHTML = categories.map((cat, i) => `
-            <div style="background: var(--wallet-bg-secondary); border-radius: 12px; padding: 16px; margin-bottom: 12px; display: flex; align-items: center; gap: 16px;">
-                <div style="width: 40px; height: 40px; border-radius: 10px; background: ${colors[i % colors.length]}20; display: flex; align-items: center; justify-content: center; color: ${colors[i % colors.length]}; font-weight: 700;">
-                    ${i + 1}
-                </div>
-                <div style="flex: 1;">
-                    <div style="font-weight: 600; color: var(--wallet-text-primary);">${cat.category}</div>
-                    <div style="font-size: 13px; color: var(--wallet-text-secondary);">${cat.count || ''} tranzaksiya</div>
-                </div>
-                <div style="font-weight: 700; color: var(--wallet-accent-red);">${formatCurrency(cat.amount)}</div>
-            </div>
-        `).join('');
+        // Hide skeleton, show content
+        if (skeleton) skeleton.style.display = 'none';
+        container.style.display = 'block';
 
     } catch (error) {
         console.error('Top expenses error:', error);
+        container.innerHTML = `
+            <div style="padding: 40px 20px; text-align: center; color: var(--wallet-text-secondary);">
+                Yuklanmadi
+            </div>
+        `;
+        // Hide skeleton, show content even on error
+        if (skeleton) skeleton.style.display = 'none';
+        container.style.display = 'block';
     }
 }
 
@@ -2034,10 +2058,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         const userResponse = await apiRequest('/api/user');
         console.log('[DEBUG] User response:', userResponse);
 
-        // Agar xodim bo'lsa, xodim interfeysini ko'rsatish
+        // Agar xodim bo'lsa, xodim sahifasiga yo'naltirish
         if (userResponse && userResponse.is_employee) {
-            console.log('[DEBUG] User is employee, showing employee interface...');
-            await loadEmployeeInterface(userResponse);
+            console.log('[DEBUG] User is employee, redirecting to employee app...');
+            const initData = getInitData();
+            if (initData) {
+                window.location.href = `/employee?initData=${encodeURIComponent(initData)}`;
+            } else {
+                window.location.href = '/employee';
+            }
             return;
         }
 

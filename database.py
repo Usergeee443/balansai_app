@@ -2297,6 +2297,51 @@ def get_task(task_id):
         connection.close()
 
 
+def get_employee_assigned_tasks(business_user_id, employee_user_id):
+    """Xodimga tayinlangan vazifalarni olish (employee_links orqali)"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Avval employee_links dan employee_user_id ga mos keluvchi
+            # employee_id ni topamiz (agar tasks jadvalidagi assigned_to employee_user_id bilan bog'langan bo'lsa)
+            # Yoki to'g'ridan-to'g'ri employee_user_id ga tayinlangan vazifalarni olamiz
+            
+            # Variant 1: tasks jadvalida assigned_to_user_id ustuni bo'lsa
+            # Variant 2: employee_links dan employee_user_id orqali
+            
+            # Hozircha barcha vazifalarni qaytaramiz (biznes uchun)
+            # Keyinchalik xodimga tayinlangan vazifalarni filter qilish kerak
+            cursor.execute("""
+                SELECT t.id, t.title, t.description, t.priority, t.status, 
+                       t.due_date, t.created_at, t.completed_at
+                FROM tasks t
+                WHERE t.user_id = %s
+                ORDER BY 
+                    CASE t.priority 
+                        WHEN 'high' THEN 1 
+                        WHEN 'medium' THEN 2 
+                        WHEN 'low' THEN 3 
+                    END,
+                    t.due_date ASC,
+                    t.created_at DESC
+            """, (business_user_id,))
+            
+            tasks = cursor.fetchall()
+            
+            # Convert datetime objects to strings
+            for task in tasks:
+                if task.get('due_date'):
+                    task['due_date'] = str(task['due_date'])
+                if task.get('created_at'):
+                    task['created_at'] = str(task['created_at'])
+                if task.get('completed_at'):
+                    task['completed_at'] = str(task['completed_at'])
+            
+            return tasks
+    finally:
+        connection.close()
+
+
 def add_task(user_id, title, description=None, assigned_to=None,
             priority='medium', status='pending', due_date=None):
     """Yangi vazifa qo'shish"""

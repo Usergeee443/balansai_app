@@ -1723,7 +1723,7 @@ window.showAddCreditModal = showAddCreditModal;
 
 // ==================== HR BO'LIMI (XODIMLAR BOSHQARUVI) ====================
 
-// Temporary data storage (will be replaced with backend API)
+// Data storage (loaded from backend API)
 let hrEmployees = [];
 let hrTasks = [];
 let hrVacations = [];
@@ -1737,6 +1737,53 @@ function openHR() {
 // HR ma'lumotlarini yuklash
 async function loadHRData() {
     try {
+        // API dan xodimlarni yuklash
+        const initData = getInitData();
+        
+        // Xodimlarni yuklash
+        const employeesResponse = await fetch('/api/business/employees?limit=100', {
+            headers: {
+                'X-Telegram-Init-Data': initData
+            }
+        });
+        const employeesData = await employeesResponse.json();
+        
+        if (Array.isArray(employeesData)) {
+            // API dan kelgan ma'lumotlarni hrEmployees formatiga o'tkazish
+            hrEmployees = employeesData.map(emp => ({
+                id: emp.id || emp.employee_user_id,
+                name: emp.full_name || `${emp.first_name || ''} ${emp.last_name || ''}`.trim() || emp.username || 'Noma\'lum',
+                position: emp.position || 'Xodim',
+                department: emp.department || 'Umumiy',
+                salary: emp.salary || 0,
+                phone: emp.phone || '',
+                status: emp.status || 'active',
+                is_employee_link: emp.is_employee_link || false,
+                employee_user_id: emp.employee_user_id
+            }));
+        }
+        
+        // Vazifalarni yuklash
+        const tasksResponse = await fetch('/api/business/tasks?limit=100', {
+            headers: {
+                'X-Telegram-Init-Data': initData
+            }
+        });
+        const tasksData = await tasksResponse.json();
+        
+        if (Array.isArray(tasksData)) {
+            hrTasks = tasksData.map(task => ({
+                id: task.id,
+                title: task.title,
+                description: task.description,
+                assignedTo: task.assigned_to,
+                assigneeName: task.employee_name || 'Tayinlanmagan',
+                priority: task.priority || 'medium',
+                status: task.status || 'pending',
+                dueDate: task.due_date
+            }));
+        }
+        
         // Load sticky statistics
         updateHRStickyStats();
 

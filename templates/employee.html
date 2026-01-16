@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Balans AI - Xodim</title>
+    
+    <!-- Wallet Style CSS -->
+    <link rel="stylesheet" href="/static/css/wallet-style.css">
+    
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" style="position: fixed; inset: 0; background: var(--wallet-bg-primary, #0a0a0a); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 9999;">
+        <div style="width: 60px; height: 60px; border: 3px solid rgba(10, 132, 255, 0.2); border-top-color: #0A84FF; border-radius: 50%; animation: spin 1s linear infinite;"></div>
+        <p style="margin-top: 20px; color: var(--wallet-text-secondary, #8E8E93); font-size: 14px;">Yuklanmoqda...</p>
+    </div>
+
+    <style>
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+
+    <!-- ============================================
+         HOME PAGE - Telegram Wallet Style
+         ============================================ -->
+    <div id="pageHome" class="page active">
+        <!-- Header -->
+        <div class="wallet-header">
+            <div class="wallet-header-left">
+                <div class="wallet-avatar" id="userAvatar">X</div>
+                <span class="wallet-title">Balans AI <span style="font-size: 12px; opacity: 0.7;">Xodim</span></span>
+            </div>
+            <div class="wallet-header-right">
+                <div class="wallet-header-icon" id="themeToggleBtn" onclick="toggleTheme()" title="Rejimni o'zgartirish">
+                    <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path id="moonIcon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        <g id="sunIcon" style="display: none;">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3"/>
+                            <line x1="12" y1="21" x2="12" y2="23"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                            <line x1="1" y1="12" x2="3" y2="12"/>
+                            <line x1="21" y1="12" x2="23" y2="12"/>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                        </g>
+                    </svg>
+                </div>
+            </div>
+        </div>
+
+        <!-- Balance Section - Telegram Wallet Style -->
+        <div class="tg-balance-section">
+            <div class="tg-balance-gauge">
+                <svg class="tg-gauge-svg" viewBox="0 0 300 180">
+                    <defs>
+                        <linearGradient id="gaugeGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                            <stop offset="0%" style="stop-color:#0A84FF"/>
+                            <stop offset="50%" style="stop-color:#5AC8FA"/>
+                            <stop offset="100%" style="stop-color:#0A84FF"/>
+                        </linearGradient>
+                        <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+                            <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
+                            <feMerge>
+                                <feMergeNode in="coloredBlur"/>
+                                <feMergeNode in="SourceGraphic"/>
+                            </feMerge>
+                        </filter>
+                    </defs>
+                    <path class="tg-gauge-bg" d="M 25 155 A 125 125 0 0 1 275 155" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="20" stroke-linecap="round"/>
+                    <path class="tg-gauge-fill" id="taskGaugeFill" d="M 25 155 A 125 125 0 0 1 275 155" fill="none" stroke="url(#gaugeGradient)" stroke-width="20" stroke-linecap="round" stroke-dasharray="393" stroke-dashoffset="196.5" filter="url(#glow)"/>
+                </svg>
+
+                <div class="tg-balance-info">
+                    <div class="tg-balance-label">Vazifalar</div>
+                    <div class="tg-balance-amount" id="taskProgress">0 / 0</div>
+                </div>
+            </div>
+
+            <div style="text-align: center; margin-bottom: 16px;">
+                <div style="font-size: 14px; color: var(--wallet-text-secondary);" id="businessNameDisplay">Biznes nomi</div>
+            </div>
+        </div>
+
+        <!-- Stats Grid -->
+        <div class="wallet-actions">
+            <div class="wallet-action-item" onclick="navigateTo('pageTasks')">
+                <div class="wallet-action-icon" style="background: rgba(10, 132, 255, 0.15);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#0A84FF" stroke-width="2">
+                        <path d="M9 11l3 3L22 4"/>
+                        <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                    </svg>
+                </div>
+                <span class="wallet-action-label">Jami</span>
+                <span style="font-size: 18px; font-weight: 700; color: var(--wallet-text-primary);" id="totalTasks">0</span>
+            </div>
+            <div class="wallet-action-item">
+                <div class="wallet-action-icon orange">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <polyline points="12 6 12 12 16 14"/>
+                    </svg>
+                </div>
+                <span class="wallet-action-label">Kutilmoqda</span>
+                <span style="font-size: 18px; font-weight: 700; color: var(--wallet-text-primary);" id="pendingTasks">0</span>
+            </div>
+            <div class="wallet-action-item">
+                <div class="wallet-action-icon green">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                        <polyline points="22 4 12 14.01 9 11.01"/>
+                    </svg>
+                </div>
+                <span class="wallet-action-label">Bajarilgan</span>
+                <span style="font-size: 18px; font-weight: 700; color: var(--wallet-text-primary);" id="completedTasks">0</span>
+            </div>
+            <div class="wallet-action-item">
+                <div class="wallet-action-icon" style="background: rgba(255, 69, 58, 0.15);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="#FF453A" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/>
+                        <line x1="12" y1="8" x2="12" y2="12"/>
+                        <line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                </div>
+                <span class="wallet-action-label">Shoshilinch</span>
+                <span style="font-size: 18px; font-weight: 700; color: var(--wallet-text-primary);" id="urgentTasks">0</span>
+            </div>
+        </div>
+
+        <!-- Recent Tasks -->
+        <div class="wallet-section" style="padding: 0 16px 120px;">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">So'nggi vazifalar</h2>
+                <button class="wallet-section-action" onclick="navigateTo('pageTasks')">Barchasi</button>
+            </div>
+            <div id="recentTasksList">
+                <!-- Tasks will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         TASKS PAGE
+         ============================================ -->
+    <div id="pageTasks" class="page">
+        <div class="wallet-page-header">
+            <h1 class="wallet-page-title">Vazifalar</h1>
+        </div>
+
+        <!-- Task Filters -->
+        <div style="padding: 16px; display: flex; gap: 8px; overflow-x: auto;">
+            <button class="wallet-filter-btn active" data-filter="all" onclick="filterTasks('all', this)">Barchasi</button>
+            <button class="wallet-filter-btn" data-filter="pending" onclick="filterTasks('pending', this)">Kutilmoqda</button>
+            <button class="wallet-filter-btn" data-filter="in_progress" onclick="filterTasks('in_progress', this)">Jarayonda</button>
+            <button class="wallet-filter-btn" data-filter="completed" onclick="filterTasks('completed', this)">Bajarilgan</button>
+        </div>
+
+        <div style="padding: 0 16px 120px;">
+            <div id="allTasksList">
+                <!-- All tasks will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         SERVICES PAGE - Telegram Wallet Style
+         ============================================ -->
+    <div id="pageServices" class="page">
+        <div class="wallet-page-header">
+            <h1 class="wallet-page-title">Xizmatlar</h1>
+        </div>
+
+        <div style="padding: 0 16px 120px;">
+            <div class="wallet-card" style="margin-bottom: 16px; padding: 0; overflow: hidden;">
+                <div class="tg-service-item" onclick="navigateTo('pageSettings')">
+                    <div class="tg-service-icon" style="background: linear-gradient(135deg, #8B5CF6, #A78BFA);">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"/>
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                        </svg>
+                    </div>
+                    <div class="tg-service-content">
+                        <span class="tg-service-title">Sozlamalar</span>
+                        <span class="tg-service-desc">Biznes va tema sozlamalari</span>
+                    </div>
+                    <svg class="tg-service-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 12px; padding-left: 4px;">
+                <span style="font-size: 13px; font-weight: 600; color: var(--wallet-text-secondary); text-transform: uppercase; letter-spacing: 0.5px;">Tez kunda</span>
+            </div>
+            
+            <div class="wallet-card" style="padding: 0; overflow: hidden;">
+                <div class="tg-service-item tg-service-soon" onclick="showToast('Tez kunda...', 'info')">
+                    <div class="tg-service-icon" style="background: linear-gradient(135deg, #0A84FF, #5AC8FA); opacity: 0.6;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+                            <line x1="16" y1="2" x2="16" y2="6"/>
+                            <line x1="8" y1="2" x2="8" y2="6"/>
+                            <line x1="3" y1="10" x2="21" y2="10"/>
+                        </svg>
+                    </div>
+                    <div class="tg-service-content">
+                        <span class="tg-service-title" style="opacity: 0.6;">Kalendar</span>
+                        <span class="tg-service-desc">Ish jadvali</span>
+                    </div>
+                    <span class="tg-soon-badge">Soon</span>
+                </div>
+                
+                <div class="tg-service-item tg-service-soon" onclick="showToast('Tez kunda...', 'info')">
+                    <div class="tg-service-icon" style="background: linear-gradient(135deg, #30D158, #5AE07A); opacity: 0.6;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                            <line x1="16" y1="13" x2="8" y2="13"/>
+                            <line x1="16" y1="17" x2="8" y2="17"/>
+                        </svg>
+                    </div>
+                    <div class="tg-service-content">
+                        <span class="tg-service-title" style="opacity: 0.6;">Hisobotlar</span>
+                        <span class="tg-service-desc">Ish hisobotlari</span>
+                    </div>
+                    <span class="tg-soon-badge">Soon</span>
+                </div>
+                
+                <div class="tg-service-item tg-service-soon" onclick="showToast('Tez kunda...', 'info')">
+                    <div class="tg-service-icon" style="background: linear-gradient(135deg, #FF9F0A, #FFB84D); opacity: 0.6;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+                        </svg>
+                    </div>
+                    <div class="tg-service-content">
+                        <span class="tg-service-title" style="opacity: 0.6;">Xabarlar</span>
+                        <span class="tg-service-desc">Biznes bilan aloqa</span>
+                    </div>
+                    <span class="tg-soon-badge">Soon</span>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            .tg-service-item {
+                display: flex;
+                align-items: center;
+                padding: 14px 16px;
+                gap: 14px;
+                cursor: pointer;
+                transition: background 0.2s;
+                border-bottom: 1px solid var(--wallet-border);
+            }
+            
+            .tg-service-item:last-child {
+                border-bottom: none;
+            }
+            
+            .tg-service-item:active {
+                background: var(--wallet-hover);
+            }
+            
+            .tg-service-item.tg-service-soon {
+                cursor: default;
+            }
+            
+            .tg-service-icon {
+                width: 42px;
+                height: 42px;
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+            }
+            
+            .tg-service-icon svg {
+                width: 22px;
+                height: 22px;
+            }
+            
+            .tg-service-content {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .tg-service-title {
+                display: block;
+                font-size: 16px;
+                font-weight: 500;
+                color: var(--wallet-text-primary);
+                margin-bottom: 2px;
+            }
+            
+            .tg-service-desc {
+                display: block;
+                font-size: 13px;
+                color: var(--wallet-text-secondary);
+            }
+            
+            .tg-service-arrow {
+                width: 20px;
+                height: 20px;
+                color: var(--wallet-text-tertiary);
+                flex-shrink: 0;
+            }
+            
+            .tg-soon-badge {
+                background: rgba(255, 159, 10, 0.15);
+                color: #FF9F0A;
+                font-size: 11px;
+                font-weight: 600;
+                padding: 4px 10px;
+                border-radius: 20px;
+                flex-shrink: 0;
+            }
+            
+            .wallet-filter-btn {
+                padding: 8px 16px;
+                border-radius: 20px;
+                border: none;
+                background: var(--wallet-card-bg);
+                color: var(--wallet-text-secondary);
+                font-size: 14px;
+                font-weight: 500;
+                cursor: pointer;
+                white-space: nowrap;
+                transition: all 0.2s;
+            }
+            
+            .wallet-filter-btn.active {
+                background: var(--wallet-accent-blue);
+                color: white;
+            }
+        </style>
+    </div>
+
+    <!-- ============================================
+         SETTINGS PAGE
+         ============================================ -->
+    <div id="pageSettings" class="page">
+        <div class="wallet-page-header" style="display: flex; align-items: center; gap: 12px;">
+            <button class="wallet-icon-btn" onclick="navigateTo('pageServices')">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h1 class="wallet-page-title" style="margin: 0;">Sozlamalar</h1>
+        </div>
+
+        <div style="padding: 0 16px 120px;">
+            <div class="wallet-card" style="padding: 0; overflow: hidden;">
+                <div style="padding: 16px; border-bottom: 1px solid var(--wallet-border);">
+                    <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Biznes</div>
+                    <div style="font-size: 16px; font-weight: 500; color: var(--wallet-text-primary);" id="settingsBusinessName">-</div>
+                </div>
+                <div style="padding: 16px; display: flex; align-items: center; justify-content: space-between;">
+                    <span style="font-size: 16px; color: var(--wallet-text-primary);">Tun rejimi</span>
+                    <div class="theme-toggle" id="settingsThemeToggle" onclick="toggleTheme()">
+                        <div class="theme-toggle-thumb"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <style>
+            .theme-toggle {
+                width: 51px;
+                height: 31px;
+                background: var(--wallet-border);
+                border-radius: 16px;
+                position: relative;
+                cursor: pointer;
+                transition: background 0.3s;
+            }
+            
+            .theme-toggle.active {
+                background: #0A84FF;
+            }
+            
+            .theme-toggle-thumb {
+                position: absolute;
+                width: 27px;
+                height: 27px;
+                background: white;
+                border-radius: 50%;
+                top: 2px;
+                left: 2px;
+                transition: transform 0.3s;
+            }
+            
+            .theme-toggle.active .theme-toggle-thumb {
+                transform: translateX(20px);
+            }
+        </style>
+    </div>
+
+    <!-- Bottom Navigation - Telegram Wallet Style -->
+    <nav class="tg-wallet-nav" id="employeeNav">
+        <button class="tg-wallet-nav-item active" data-page="pageHome" onclick="navigateTo('pageHome')">
+            <div class="tg-wallet-nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+            </div>
+            <span class="tg-wallet-nav-label">Asosiy</span>
+        </button>
+        <button class="tg-wallet-nav-item" data-page="pageTasks" onclick="navigateTo('pageTasks')">
+            <div class="tg-wallet-nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M9 11l3 3L22 4"/>
+                    <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                </svg>
+            </div>
+            <span class="tg-wallet-nav-label">Vazifalar</span>
+        </button>
+        <button class="tg-wallet-nav-item" data-page="pageServices" onclick="navigateTo('pageServices')">
+            <div class="tg-wallet-nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="3" width="7" height="7"/>
+                    <rect x="14" y="3" width="7" height="7"/>
+                    <rect x="14" y="14" width="7" height="7"/>
+                    <rect x="3" y="14" width="7" height="7"/>
+                </svg>
+            </div>
+            <span class="tg-wallet-nav-label">Xizmatlar</span>
+        </button>
+    </nav>
+
+    <!-- Toast Container -->
+    <div id="toastContainer" style="position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 10000;"></div>
+
+    <script>
+        // Global variables
+        let employeeData = null;
+        let employeeTasks = [];
+        let currentFilter = 'all';
+        let currentTheme = 'dark';
+        
+        // Get initData
+        function getInitData() {
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+                return window.Telegram.WebApp.initData;
+            }
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('initData') || '';
+        }
+        
+        // API Request helper
+        async function apiRequest(endpoint, options = {}) {
+            const initData = getInitData();
+            const defaultOptions = {
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Telegram-Init-Data': initData
+                }
+            };
+            
+            const response = await fetch(endpoint, { ...defaultOptions, ...options });
+            return response.json();
+        }
+        
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Initialize Telegram WebApp
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.ready();
+                window.Telegram.WebApp.expand();
+            }
+            
+            // Load theme
+            loadTheme();
+            
+            // Load employee data
+            await loadEmployeeData();
+            
+            // Hide loading screen
+            document.getElementById('loadingScreen').style.display = 'none';
+        });
+        
+        // Load employee data
+        async function loadEmployeeData() {
+            try {
+                const userData = await apiRequest('/api/user');
+                
+                if (userData.error) {
+                    showToast('Ma\'lumotlarni yuklashda xatolik', 'error');
+                    return;
+                }
+                
+                employeeData = userData;
+                
+                // Update UI
+                const firstName = userData.first_name || userData.name || 'Xodim';
+                document.getElementById('userAvatar').textContent = firstName.charAt(0).toUpperCase();
+                
+                const businessName = userData.employee_data?.business_name || 'Biznes';
+                document.getElementById('businessNameDisplay').textContent = businessName;
+                document.getElementById('settingsBusinessName').textContent = businessName;
+                
+                // Load tasks
+                await loadEmployeeTasks();
+                
+            } catch (error) {
+                console.error('Employee data yuklashda xato:', error);
+                showToast('Ma\'lumotlarni yuklashda xatolik', 'error');
+            }
+        }
+        
+        // Load employee tasks
+        async function loadEmployeeTasks() {
+            try {
+                const tasksData = await apiRequest('/api/employee/tasks');
+                
+                if (tasksData.success && tasksData.tasks) {
+                    employeeTasks = tasksData.tasks;
+                } else {
+                    employeeTasks = [];
+                }
+                
+                updateTaskStats();
+                renderRecentTasks();
+                renderAllTasks();
+                
+            } catch (error) {
+                console.error('Tasks yuklashda xato:', error);
+                employeeTasks = [];
+            }
+        }
+        
+        // Update task statistics
+        function updateTaskStats() {
+            const total = employeeTasks.length;
+            const pending = employeeTasks.filter(t => t.status === 'pending').length;
+            const inProgress = employeeTasks.filter(t => t.status === 'in_progress').length;
+            const completed = employeeTasks.filter(t => t.status === 'completed').length;
+            const urgent = employeeTasks.filter(t => t.priority === 'high').length;
+            
+            document.getElementById('totalTasks').textContent = total;
+            document.getElementById('pendingTasks').textContent = pending + inProgress;
+            document.getElementById('completedTasks').textContent = completed;
+            document.getElementById('urgentTasks').textContent = urgent;
+            document.getElementById('taskProgress').textContent = `${completed} / ${total}`;
+            
+            // Update gauge
+            const percentage = total > 0 ? (completed / total) : 0;
+            const maxOffset = 393;
+            const offset = maxOffset - (percentage * maxOffset);
+            const gauge = document.getElementById('taskGaugeFill');
+            if (gauge) {
+                gauge.style.strokeDashoffset = offset;
+            }
+        }
+        
+        // Render recent tasks (max 5)
+        function renderRecentTasks() {
+            const container = document.getElementById('recentTasksList');
+            const recentTasks = employeeTasks.slice(0, 5);
+            
+            if (recentTasks.length === 0) {
+                container.innerHTML = `
+                    <div class="wallet-card" style="text-align: center; padding: 40px 20px;">
+                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="var(--wallet-text-tertiary)" stroke-width="1.5" style="margin: 0 auto 16px;">
+                            <path d="M9 11l3 3L22 4"/>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                        <p style="color: var(--wallet-text-secondary); margin: 0;">Hozircha vazifalar yo'q</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = recentTasks.map(task => renderTaskCard(task)).join('');
+        }
+        
+        // Render all tasks
+        function renderAllTasks() {
+            const container = document.getElementById('allTasksList');
+            let filteredTasks = employeeTasks;
+            
+            if (currentFilter !== 'all') {
+                filteredTasks = employeeTasks.filter(t => t.status === currentFilter);
+            }
+            
+            if (filteredTasks.length === 0) {
+                container.innerHTML = `
+                    <div class="wallet-card" style="text-align: center; padding: 40px 20px;">
+                        <svg width="60" height="60" viewBox="0 0 24 24" fill="none" stroke="var(--wallet-text-tertiary)" stroke-width="1.5" style="margin: 0 auto 16px;">
+                            <path d="M9 11l3 3L22 4"/>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                        <p style="color: var(--wallet-text-secondary); margin: 0;">Bu filtrda vazifalar yo'q</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = filteredTasks.map(task => renderTaskCard(task)).join('');
+        }
+        
+        // Render single task card
+        function renderTaskCard(task) {
+            const priorityColors = {
+                'high': '#FF453A',
+                'medium': '#FF9F0A',
+                'low': '#30D158'
+            };
+            const statusText = {
+                'pending': 'Kutilmoqda',
+                'in_progress': 'Jarayonda',
+                'completed': 'Bajarilgan'
+            };
+            const statusColors = {
+                'pending': 'rgba(255, 159, 10, 0.15)',
+                'in_progress': 'rgba(10, 132, 255, 0.15)',
+                'completed': 'rgba(48, 209, 88, 0.15)'
+            };
+            const statusTextColors = {
+                'pending': '#FF9F0A',
+                'in_progress': '#0A84FF',
+                'completed': '#30D158'
+            };
+            
+            const dueDate = task.due_date ? new Date(task.due_date).toLocaleDateString('uz-UZ') : '';
+            
+            return `
+                <div class="wallet-card" style="margin-bottom: 12px; cursor: pointer;" onclick="showTaskDetails(${task.id})">
+                    <div style="display: flex; align-items: flex-start; gap: 12px;">
+                        <div style="width: 10px; height: 10px; border-radius: 50%; background: ${priorityColors[task.priority] || priorityColors.medium}; margin-top: 6px; flex-shrink: 0;"></div>
+                        <div style="flex: 1; min-width: 0;">
+                            <div style="font-size: 15px; font-weight: 600; color: var(--wallet-text-primary); margin-bottom: 6px;">${task.title}</div>
+                            <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                                ${dueDate ? `<span style="font-size: 12px; color: var(--wallet-text-secondary);">📅 ${dueDate}</span>` : ''}
+                                <span style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: ${statusColors[task.status]}; color: ${statusTextColors[task.status]};">${statusText[task.status] || task.status}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Filter tasks
+        function filterTasks(filter, button) {
+            currentFilter = filter;
+            
+            document.querySelectorAll('.wallet-filter-btn').forEach(btn => btn.classList.remove('active'));
+            button.classList.add('active');
+            
+            renderAllTasks();
+        }
+        
+        // Show task details
+        function showTaskDetails(taskId) {
+            const task = employeeTasks.find(t => t.id === taskId);
+            if (!task) return;
+            
+            const priorityText = { 'high': 'Yuqori', 'medium': 'O\'rta', 'low': 'Past' };
+            const statusText = { 'pending': 'Kutilmoqda', 'in_progress': 'Jarayonda', 'completed': 'Bajarilgan' };
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.style.cssText = 'position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: flex-end; justify-content: center; z-index: 1000;';
+            
+            modal.innerHTML = `
+                <div style="background: var(--wallet-card-bg); border-radius: 20px 20px 0 0; width: 100%; max-width: 500px; padding: 24px; max-height: 80vh; overflow-y: auto;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h3 style="margin: 0; font-size: 20px; color: var(--wallet-text-primary);">${task.title}</h3>
+                        <button onclick="this.closest('.modal-overlay').remove()" style="background: none; border: none; color: var(--wallet-text-secondary); font-size: 24px; cursor: pointer;">&times;</button>
+                    </div>
+                    
+                    ${task.description ? `
+                        <div style="margin-bottom: 16px;">
+                            <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Tavsif</div>
+                            <div style="color: var(--wallet-text-primary);">${task.description}</div>
+                        </div>
+                    ` : ''}
+                    
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px;">
+                        <div>
+                            <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Muhimlik</div>
+                            <div style="color: var(--wallet-text-primary); font-weight: 600;">${priorityText[task.priority] || task.priority}</div>
+                        </div>
+                        <div>
+                            <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Holat</div>
+                            <div style="color: var(--wallet-text-primary); font-weight: 600;">${statusText[task.status] || task.status}</div>
+                        </div>
+                        ${task.due_date ? `
+                            <div>
+                                <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 4px;">Muddat</div>
+                                <div style="color: var(--wallet-text-primary); font-weight: 600;">${new Date(task.due_date).toLocaleDateString('uz-UZ')}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                    
+                    ${task.status !== 'completed' ? `
+                        <button onclick="updateTaskStatus(${task.id}, 'completed'); this.closest('.modal-overlay').remove();" class="wallet-btn-primary" style="width: 100%;">
+                            ✓ Bajarildi deb belgilash
+                        </button>
+                    ` : ''}
+                </div>
+            `;
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.remove();
+            });
+            
+            document.body.appendChild(modal);
+        }
+        
+        // Update task status
+        async function updateTaskStatus(taskId, newStatus) {
+            try {
+                const response = await apiRequest(`/api/employee/tasks/${taskId}/status`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ status: newStatus })
+                });
+                
+                if (response.success) {
+                    const task = employeeTasks.find(t => t.id === taskId);
+                    if (task) task.status = newStatus;
+                    
+                    updateTaskStats();
+                    renderRecentTasks();
+                    renderAllTasks();
+                    
+                    showToast('Vazifa holati yangilandi', 'success');
+                } else {
+                    showToast('Xatolik yuz berdi', 'error');
+                }
+            } catch (error) {
+                console.error('Task status update error:', error);
+                showToast('Xatolik yuz berdi', 'error');
+            }
+        }
+        
+        // Navigation
+        function navigateTo(pageId) {
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            document.getElementById(pageId).classList.add('active');
+            
+            document.querySelectorAll('.tg-wallet-nav-item').forEach(item => {
+                item.classList.remove('active');
+                if (item.dataset.page === pageId) {
+                    item.classList.add('active');
+                }
+            });
+            
+            // Show/hide nav for settings
+            const nav = document.getElementById('employeeNav');
+            if (pageId === 'pageSettings') {
+                nav.style.display = 'none';
+            } else {
+                nav.style.display = 'flex';
+            }
+        }
+        
+        // Theme functions
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'dark';
+            currentTheme = savedTheme;
+            applyTheme(savedTheme);
+        }
+        
+        function applyTheme(theme) {
+            document.body.setAttribute('data-theme', theme);
+            
+            const moonIcon = document.getElementById('moonIcon');
+            const sunIcon = document.getElementById('sunIcon');
+            const settingsToggle = document.getElementById('settingsThemeToggle');
+            
+            if (theme === 'dark') {
+                if (moonIcon) moonIcon.style.display = 'block';
+                if (sunIcon) sunIcon.style.display = 'none';
+                if (settingsToggle) settingsToggle.classList.add('active');
+            } else {
+                if (moonIcon) moonIcon.style.display = 'none';
+                if (sunIcon) sunIcon.style.display = 'block';
+                if (settingsToggle) settingsToggle.classList.remove('active');
+            }
+        }
+        
+        function toggleTheme() {
+            currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            localStorage.setItem('theme', currentTheme);
+            applyTheme(currentTheme);
+            
+            apiRequest('/api/user/theme', {
+                method: 'POST',
+                body: JSON.stringify({ theme: currentTheme })
+            });
+        }
+        
+        // Toast notification
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            
+            const bgColor = type === 'success' ? '#30D158' : type === 'error' ? '#FF453A' : '#0A84FF';
+            
+            toast.style.cssText = `
+                background: ${bgColor};
+                color: white;
+                padding: 12px 24px;
+                border-radius: 12px;
+                font-size: 14px;
+                font-weight: 500;
+                margin-bottom: 8px;
+                animation: slideIn 0.3s ease;
+            `;
+            toast.textContent = message;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+    </script>
+    
+    <style>
+        @keyframes slideIn {
+            from { transform: translateY(-20px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateY(0); opacity: 1; }
+            to { transform: translateY(-20px); opacity: 0; }
+        }
+    </style>
+</body>
+</html>
