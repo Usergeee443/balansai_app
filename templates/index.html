@@ -16,6 +16,294 @@
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
 
+    <!-- Custom Transaction Modal Styles - Telegram Bottom Sheet -->
+    <style>
+        /* Transaction Modal - Full Screen */
+        .txn-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 99999;
+            display: none;
+            background: #1C1C1E;
+        }
+        
+        .txn-modal.active {
+            display: block;
+        }
+        
+        .txn-modal-overlay {
+            display: none;
+        }
+        
+        .txn-modal-sheet {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--wallet-bg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        /* Header */
+        .txn-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            border-bottom: 0.5px solid var(--wallet-border);
+        }
+        
+        .txn-header-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--wallet-text-primary);
+        }
+        
+        .txn-close-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--wallet-bg-tertiary);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        
+        .txn-close-btn:active {
+            transform: scale(0.9);
+            background: var(--wallet-bg-secondary);
+        }
+        
+        .txn-close-btn svg {
+            width: 14px;
+            height: 14px;
+            stroke: var(--wallet-text-secondary);
+            stroke-width: 2.5;
+        }
+        
+        /* Content */
+        .txn-content {
+            padding: 16px;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+            overflow-y: auto;
+        }
+        
+        /* Type Switcher - Telegram Style */
+        .txn-type-switcher {
+            display: flex;
+            background: var(--wallet-bg-secondary);
+            border-radius: 10px;
+            padding: 2px;
+            margin-bottom: 20px;
+        }
+        
+        .txn-type-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--wallet-text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        
+        .txn-type-btn.active[data-type="expense"] {
+            background: #FF453A;
+            color: white;
+        }
+        
+        .txn-type-btn.active[data-type="income"] {
+            background: #34C759;
+            color: white;
+        }
+        
+        .txn-type-btn svg {
+            stroke: currentColor;
+        }
+        
+        /* Amount Display */
+        .txn-amount-display {
+            text-align: center;
+            padding: 12px 0 20px;
+        }
+        
+        .txn-amount-value {
+            font-size: 48px;
+            font-weight: 400;
+            color: var(--wallet-text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            letter-spacing: -1px;
+        }
+        
+        .txn-amount-currency {
+            font-size: 20px;
+            color: var(--wallet-text-secondary);
+            margin-left: 4px;
+            font-weight: 400;
+        }
+        
+        /* Category Grid - Telegram Style */
+        .txn-category-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .txn-category-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 8px;
+            background: var(--wallet-bg-secondary);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        
+        .txn-category-item:active {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+        
+        .txn-category-item.selected {
+            background: rgba(10, 132, 255, 0.15);
+        }
+        
+        .txn-category-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--wallet-bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .txn-category-item.selected .txn-category-icon {
+            background: #0A84FF;
+        }
+        
+        .txn-category-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--wallet-text-secondary);
+        }
+        
+        .txn-category-item.selected .txn-category-icon svg {
+            stroke: white;
+        }
+        
+        .txn-category-item span {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--wallet-text-secondary);
+            text-align: center;
+            line-height: 1.2;
+        }
+        
+        .txn-category-item.selected span {
+            color: #0A84FF;
+        }
+        
+        /* Custom Keyboard - Telegram Style */
+        .txn-keyboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .txn-key {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--wallet-bg-secondary);
+            border: none;
+            border-radius: 12px;
+            font-size: 28px;
+            font-weight: 400;
+            color: var(--wallet-text-primary);
+            cursor: pointer;
+            transition: all 0.1s ease;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            height: 56px;
+        }
+        
+        .txn-key:active {
+            background: var(--wallet-bg-tertiary);
+            transform: scale(0.95);
+        }
+        
+        .txn-key-backspace {
+            background: var(--wallet-bg-secondary);
+        }
+        
+        .txn-key-backspace svg {
+            width: 26px;
+            height: 26px;
+            stroke: var(--wallet-text-secondary);
+        }
+        
+        /* Submit Button - Telegram Style */
+        .txn-submit-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 16px;
+            background: #0A84FF;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: inherit;
+        }
+        
+        .txn-submit-btn:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+        
+        .txn-submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .txn-submit-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: white;
+        }
+    </style>
+
     <!-- QR Code Scanner -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 </head>
@@ -1497,62 +1785,129 @@
          MODALS
          ============================================ -->
 
-    <!-- Add Transaction Modal -->
-    <div id="addTransactionModal" class="wallet-modal">
-        <div class="wallet-modal-content">
-            <div class="wallet-modal-handle"></div>
-            <div class="wallet-modal-header">
-                <span class="wallet-modal-title">Tranzaksiya qo'shish</span>
-                <button class="wallet-modal-close" onclick="closeAddTransactionModal()">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+    <!-- Add Transaction Modal - Full Screen -->
+    <div id="addTransactionModal" class="txn-modal">
+        <div class="txn-modal-sheet">
+            <!-- Header with Close Button -->
+            <div class="txn-header">
+                <span class="txn-header-title">Tranzaksiya</span>
+                <button type="button" class="txn-close-btn" onclick="closeAddTransactionModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
                         <path d="M18 6L6 18M6 6l12 12"/>
                     </svg>
                 </button>
             </div>
-            <form id="addTransactionForm" onsubmit="handleAddTransaction(event)">
-                <div class="wallet-form-group">
-                    <label class="wallet-form-label">Turi</label>
-                    <select class="wallet-form-select" id="transactionType" required>
-                        <option value="expense">Chiqim</option>
-                        <option value="income">Kirim</option>
-                    </select>
+            
+            <!-- Content -->
+            <div class="txn-content">
+                <!-- Type Switcher -->
+                <div class="txn-type-switcher">
+                    <button type="button" class="txn-type-btn active" data-type="expense" onclick="setTransactionType('expense')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M12 5v14M5 12l7 7 7-7"/>
+                        </svg>
+                        Chiqim
+                    </button>
+                    <button type="button" class="txn-type-btn" data-type="income" onclick="setTransactionType('income')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M12 19V5M5 12l7-7 7 7"/>
+                        </svg>
+                        Kirim
+                    </button>
                 </div>
-                <div class="wallet-form-group">
-                    <label class="wallet-form-label">Summa</label>
-                    <input type="number" class="wallet-form-input" id="transactionAmount" placeholder="0" required>
+                
+                <!-- Amount Display -->
+                <div class="txn-amount-display">
+                    <span class="txn-amount-value" id="txnAmountDisplay">0</span>
+                    <span class="txn-amount-currency">so'm</span>
                 </div>
-                <div class="wallet-form-group">
-                    <label class="wallet-form-label">Valyuta</label>
-                    <select class="wallet-form-select" id="transactionCurrency">
-                        <option value="UZS">UZS - O'zbek so'mi</option>
-                        <option value="USD">USD - Dollar</option>
-                        <option value="EUR">EUR - Yevro</option>
-                        <option value="RUB">RUB - Rubl</option>
-                    </select>
+                
+                <!-- Category Grid -->
+                <div class="txn-category-grid" id="txnCategoryGrid">
+                    <div class="txn-category-item" data-category="Berilgan pul" onclick="selectTxnCategory('Berilgan pul', this)">
+                        <div class="txn-category-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 8v8M8 12h8"/>
+                            </svg>
+                        </div>
+                        <span>Berilgan pul</span>
+                    </div>
+                    <div class="txn-category-item selected" data-category="Oziq-ovqat" onclick="selectTxnCategory('Oziq-ovqat', this)">
+                        <div class="txn-category-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                        </div>
+                        <span>Oziq-ovqat</span>
+                    </div>
+                    <div class="txn-category-item" data-category="Transport" onclick="selectTxnCategory('Transport', this)">
+                        <div class="txn-category-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="1" y="3" width="15" height="13" rx="2"/>
+                                <path d="M16 8h4l3 3v5h-7V8z"/>
+                                <circle cx="5.5" cy="18.5" r="2.5"/>
+                                <circle cx="18.5" cy="18.5" r="2.5"/>
+                            </svg>
+                        </div>
+                        <span>Transport</span>
+                    </div>
+                    <div class="txn-category-item" data-category="Kommunal" onclick="selectTxnCategory('Kommunal', this)">
+                        <div class="txn-category-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                            </svg>
+                        </div>
+                        <span>Kommunal</span>
+                    </div>
+                    <div class="txn-category-item" data-category="Kiyim-kechak" onclick="selectTxnCategory('Kiyim-kechak', this)">
+                        <div class="txn-category-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z"/>
+                            </svg>
+                        </div>
+                        <span>Kiyim-kechak</span>
+                    </div>
+                    <div class="txn-category-item" data-category="Sog'liq" onclick="selectTxnCategory('Sog\'liq', this)">
+                        <div class="txn-category-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+                            </svg>
+                        </div>
+                        <span>Sog'liq</span>
+                    </div>
                 </div>
-                <div class="wallet-form-group">
-                    <label class="wallet-form-label">Kategoriya</label>
-                    <select class="wallet-form-select" id="transactionCategory">
-                        <option value="Oziq-ovqat">Oziq-ovqat</option>
-                        <option value="Transport">Transport</option>
-                        <option value="Uy-joy">Uy-joy</option>
-                        <option value="Kommunal">Kommunal</option>
-                        <option value="Sog'liq">Sog'liq</option>
-                        <option value="Ta'lim">Ta'lim</option>
-                        <option value="Ko'ngilochar">Ko'ngilochar</option>
-                        <option value="Kiyim">Kiyim</option>
-                        <option value="Ish haqi">Ish haqi</option>
-                        <option value="Biznes">Biznes</option>
-                        <option value="Investitsiya">Investitsiya</option>
-                        <option value="Boshqa">Boshqa</option>
-                    </select>
+                
+                <!-- Custom Numeric Keyboard - Grid -->
+                <div class="txn-keyboard">
+                    <button type="button" class="txn-key" onclick="txnKeyPress('1')">1</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('2')">2</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('3')">3</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('4')">4</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('5')">5</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('6')">6</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('7')">7</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('8')">8</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('9')">9</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('.')">.</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('0')">0</button>
+                    <button type="button" class="txn-key txn-key-backspace" onclick="txnKeyPress('backspace')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/>
+                            <line x1="18" y1="9" x2="12" y2="15"/>
+                            <line x1="12" y1="9" x2="18" y2="15"/>
+                        </svg>
+                    </button>
                 </div>
-                <div class="wallet-form-group">
-                    <label class="wallet-form-label">Izoh (ixtiyoriy)</label>
-                    <input type="text" class="wallet-form-input" id="transactionDescription" placeholder="Tranzaksiya haqida">
-                </div>
-                <button type="submit" class="wallet-form-btn">Qo'shish</button>
-            </form>
+                
+                <!-- Submit Button -->
+                <button type="button" class="txn-submit-btn" onclick="submitTransaction()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    Saqlash
+                </button>
+            </div>
         </div>
     </div>
     
@@ -1686,7 +2041,7 @@
     <!-- Loading Screen -->
     <div id="loadingScreen" class="wallet-loading" style="display: none;">
         <div class="wallet-spinner"></div>
-    </div>
+        </div>
 
     <!-- Quick Access Settings Modal -->
     <div id="quickAccessModal" class="wallet-modal">

@@ -1693,14 +1693,37 @@ async function loadTopExpensesPage() {
 // MODALS
 // ============================================
 
+// Transaction Modal State
+let txnModalState = {
+    type: 'expense',
+    amount: '0',
+    category: 'Oziq-ovqat'
+};
+
 function showAddTransactionModal(type = null) {
     hapticFeedback('light');
     const modal = document.getElementById('addTransactionModal');
     if (modal) {
+        // Reset state
+        txnModalState = {
+            type: type || 'expense',
+            amount: '0',
+            category: 'Oziq-ovqat'
+        };
+        
+        // Update UI
+        updateTxnAmountDisplay();
+        setTransactionType(txnModalState.type);
+        
+        // Reset category selection
+        document.querySelectorAll('.txn-category-item').forEach(item => {
+            item.classList.remove('selected');
+            if (item.dataset.category === 'Oziq-ovqat') {
+                item.classList.add('selected');
+            }
+        });
+        
         modal.classList.add('active');
-        if (type) {
-            document.getElementById('transactionType').value = type;
-        }
     }
 }
 
@@ -1709,31 +1732,114 @@ function closeAddTransactionModal() {
     const modal = document.getElementById('addTransactionModal');
     if (modal) {
         modal.classList.remove('active');
-        document.getElementById('addTransactionForm')?.reset();
     }
 }
 
-async function handleAddTransaction(event) {
-    event.preventDefault();
+// Set transaction type (expense/income)
+function setTransactionType(type) {
+    txnModalState.type = type;
+    
+    document.querySelectorAll('.txn-type-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.type === type) {
+            btn.classList.add('active');
+        }
+    });
+    
+    hapticFeedback('light');
+}
+
+// Select category
+function selectTxnCategory(category, element) {
+    txnModalState.category = category;
+    
+    document.querySelectorAll('.txn-category-item').forEach(item => {
+        item.classList.remove('selected');
+    });
+    element.classList.add('selected');
+    
+    hapticFeedback('light');
+}
+
+// Keyboard press handler
+function txnKeyPress(key) {
+    hapticFeedback('light');
+    
+    if (key === 'backspace') {
+        if (txnModalState.amount.length > 1) {
+            txnModalState.amount = txnModalState.amount.slice(0, -1);
+        } else {
+            txnModalState.amount = '0';
+        }
+    } else if (key === '.') {
+        if (!txnModalState.amount.includes('.')) {
+            txnModalState.amount += '.';
+        }
+    } else {
+        // Number key
+        if (txnModalState.amount === '0') {
+            txnModalState.amount = key;
+        } else {
+            // Limit to reasonable length
+            if (txnModalState.amount.length < 15) {
+                txnModalState.amount += key;
+            }
+        }
+    }
+    
+    updateTxnAmountDisplay();
+}
+
+// Update amount display
+function updateTxnAmountDisplay() {
+    const display = document.getElementById('txnAmountDisplay');
+    if (display) {
+        const amount = parseFloat(txnModalState.amount) || 0;
+        display.textContent = formatNumber(amount);
+    }
+}
+
+// Format number with spaces
+function formatNumber(num) {
+    if (num === 0) return '0';
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ' ');
+}
+
+// Submit transaction
+async function submitTransaction() {
+    const amount = parseFloat(txnModalState.amount);
+    
+    if (!amount || amount <= 0) {
+        hapticFeedback('error');
+        return;
+    }
+    
     hapticFeedback('medium');
-
+    
     const data = {
-        transaction_type: document.getElementById('transactionType').value,
-        amount: parseFloat(document.getElementById('transactionAmount').value),
-        currency: document.getElementById('transactionCurrency').value,
-        category: document.getElementById('transactionCategory').value,
-        description: document.getElementById('transactionDescription').value || null
+        transaction_type: txnModalState.type,
+        amount: amount,
+        currency: 'UZS',
+        category: txnModalState.category,
+        description: null
     };
-
+    
+    // Disable button
+    const submitBtn = document.querySelector('.txn-submit-btn');
+    if (submitBtn) {
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = '<div class="btn-loader" style="width:20px;height:20px;border:2px solid rgba(255,255,255,0.3);border-top-color:white;border-radius:50%;animation:spin 0.8s linear infinite;"></div> Saqlanmoqda...';
+    }
+    
     try {
         await apiRequest('/api/transactions', {
             method: 'POST',
             body: JSON.stringify(data)
         });
-
+        
         // Clear cache after adding transaction
         dataCache.clear();
-
+        
         hapticFeedback('success');
         closeAddTransactionModal();
         await loadHomePage();
@@ -1743,7 +1849,19 @@ async function handleAddTransaction(event) {
     } catch (error) {
         hapticFeedback('error');
         alert('Xatolik: ' + error.message);
+    } finally {
+        // Re-enable button
+        if (submitBtn) {
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = '<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Saqlash';
+        }
     }
+}
+
+// Legacy function for compatibility
+async function handleAddTransaction(event) {
+    event.preventDefault();
+    await submitTransaction();
 }
 
 function showAddReminderModal() {
@@ -2180,6 +2298,10 @@ window.setDebtFilter = setDebtFilter;
 window.showAddTransactionModal = showAddTransactionModal;
 window.closeAddTransactionModal = closeAddTransactionModal;
 window.handleAddTransaction = handleAddTransaction;
+window.setTransactionType = setTransactionType;
+window.selectTxnCategory = selectTxnCategory;
+window.txnKeyPress = txnKeyPress;
+window.submitTransaction = submitTransaction;
 window.showAddReminderModal = showAddReminderModal;
 window.closeAddReminderModal = closeAddReminderModal;
 window.handleAddReminder = handleAddReminder;

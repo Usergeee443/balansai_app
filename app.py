@@ -1155,6 +1155,74 @@ def save_onboarding(user_id):
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
+@app.route('/api/send-registration-notification', methods=['POST'])
+def send_registration_notification():
+    """Ro'yxatdan o'tgandan keyin botga xabar yuborish"""
+    try:
+        import requests
+        
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Ma\'lumotlar topilmadi'}), 400
+        
+        user_id = data.get('user_id')
+        name = data.get('name', 'Foydalanuvchi')
+        tariff = data.get('tariff', 'FREE')
+        
+        if not user_id:
+            return jsonify({'error': 'User ID topilmadi'}), 400
+        
+        bot_token = Config.TELEGRAM_BOT_TOKEN
+        if not bot_token:
+            return jsonify({'success': True, 'message': 'Bot token yo\'q'})
+        
+        # Tarif nomini o'zbekchaga o'girish
+        tariff_names = {
+            'FREE': 'Bepul',
+            'PLUS': 'Plus',
+            'PRO': 'Plus',
+            'BUSINESS': 'Biznes',
+            'BIZNES': 'Biznes'
+        }
+        tariff_name = tariff_names.get(tariff.upper(), tariff)
+        
+        # Xabar matni
+        message = f"""🎉 <b>Tabriklaymiz, {name}!</b>
+
+Siz Balans AI'da muvaffaqiyatli ro'yxatdan o'tdingiz!
+
+📊 <b>Tanlangan tarif:</b> {tariff_name}
+
+Endi moliyaviy hisoblaringizni oson boshqarishingiz mumkin.
+
+👇 Ilovani ochish uchun quyidagi tugmani bosing:"""
+
+        # Inline keyboard
+        keyboard = {
+            "inline_keyboard": [[
+                {"text": "📱 Ilovani ochish", "web_app": {"url": "https://balansai-app.onrender.com/"}}
+            ]]
+        }
+        
+        # Telegram API ga so'rov yuborish
+        url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
+        response = requests.post(url, json={
+            'chat_id': user_id,
+            'text': message,
+            'parse_mode': 'HTML',
+            'reply_markup': keyboard
+        })
+        
+        if response.status_code == 200:
+            return jsonify({'success': True, 'message': 'Xabar yuborildi'})
+        else:
+            print(f"[BOT] Xabar yuborishda xato: {response.text}")
+            return jsonify({'success': False, 'error': response.text}), 500
+            
+    except Exception as e:
+        print(f"[BOT] Xatolik: {e}")
+        return jsonify({'error': str(e)}), 500
+
 @app.route('/api/user/<int:user_id>/tariff', methods=['POST'])
 def set_tariff(user_id):
     """Tarif tanlash (konfiguratsiya asosida sinov muddati bilan)"""
