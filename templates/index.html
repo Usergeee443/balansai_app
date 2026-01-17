@@ -2187,7 +2187,48 @@
     </style>
 
     <!-- Scripts -->
-    <script src="/static/js/wallet-app.js?v=1.6.2"></script>
+    <script src="/static/js/wallet-app.js?v=1.6.3"></script>
     <script src="/static/js/business.js?v=1.6.0"></script>
+    
+    <!-- Index Page Tariff Check - Redirect to correct page -->
+    <script>
+        // Asosiy sahifada tarif tekshiruvi
+        (async function checkUserAccess() {
+            const tg = window.Telegram?.WebApp;
+            if (!tg || !tg.initData) {
+                console.log('[INDEX] Telegram WebApp mavjud emas');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/user', {
+                    headers: {
+                        'X-Telegram-Init-Data': tg.initData
+                    }
+                });
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    console.log('[INDEX] User tariff:', user.tariff, 'is_employee:', user.is_employee);
+                    
+                    // Xodim bo'lsa, xodim sahifasiga yo'naltirish
+                    if (user.is_employee) {
+                        console.log('[INDEX] User is employee, redirecting to /employee');
+                        window.location.href = '/employee';
+                        return;
+                    }
+                    
+                    // Biznes tarifi bo'lsa, biznes sahifasiga yo'naltirish
+                    if (user.tariff && ['BUSINESS', 'BIZNES'].includes(user.tariff.toUpperCase())) {
+                        console.log('[INDEX] User is BUSINESS, redirecting to /business');
+                        window.location.href = '/business';
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error('[INDEX] Access check error:', error);
+            }
+        })();
+    </script>
 </body>
 </html>

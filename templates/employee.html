@@ -839,5 +839,46 @@
             to { transform: translateY(-20px); opacity: 0; }
         }
     </style>
+    
+    <!-- Employee Page Access Check -->
+    <script>
+        // Xodim sahifasida kirish tekshiruvi
+        (async function checkEmployeeAccess() {
+            const tg = window.Telegram?.WebApp;
+            if (!tg || !tg.initData) {
+                console.log('[EMPLOYEE] Telegram WebApp mavjud emas');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/user', {
+                    headers: {
+                        'X-Telegram-Init-Data': tg.initData
+                    }
+                });
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    console.log('[EMPLOYEE] User is_employee:', user.is_employee, 'tariff:', user.tariff);
+                    
+                    // Agar xodim bo'lmasa
+                    if (!user.is_employee) {
+                        // Biznes tarifi bo'lsa, biznes sahifasiga
+                        if (user.tariff && ['BUSINESS', 'BIZNES'].includes(user.tariff.toUpperCase())) {
+                            console.log('[EMPLOYEE] User is BUSINESS, redirecting to /business');
+                            window.location.href = '/business';
+                            return;
+                        }
+                        // Boshqa holatda asosiy sahifaga
+                        console.log('[EMPLOYEE] User is not employee, redirecting to /');
+                        window.location.href = '/';
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error('[EMPLOYEE] Access check error:', error);
+            }
+        })();
+    </script>
 </body>
 </html>

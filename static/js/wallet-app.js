@@ -2237,55 +2237,13 @@ function getInitData() {
 
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Wallet App initialized');
-
-    // Check if we're on business or employee page
+    
+    // Sahifa yuklanganida home page ni yuklash
+    // Tarif tekshiruvi har bir sahifaning o'zida inline script orqali amalga oshiriladi
     const currentPath = window.location.pathname;
-    const pageType = document.body.dataset.pageType;
-    console.log('[DEBUG] Current path:', currentPath, 'Page type:', pageType);
-
-    // Business va Employee sahifalarida yo'naltirish qilmaslik
-    if (currentPath === '/business' || currentPath === '/employee' || pageType === 'business' || pageType === 'employee') {
-        console.log('[DEBUG] On business/employee page, loading home page without redirect');
-        await loadHomePage();
-        return;
-    }
-
-    // User tarifini tekshirish va kerakli sahifaga yo'naltirish (faqat index.html uchun)
-    try {
-        const initData = getInitData();
-        if (initData) {
-            console.log('[DEBUG] Checking user tariff for redirect...');
-            const response = await fetch('/api/user', {
-                headers: {
-                    'X-Telegram-Init-Data': initData
-                }
-            });
-            
-            if (response.ok) {
-                const user = await response.json();
-                console.log('[DEBUG] User tariff:', user.tariff, 'is_employee:', user.is_employee);
-                
-                // Xodim bo'lsa employee sahifasiga yo'naltirish
-                if (user.is_employee) {
-                    console.log('[DEBUG] Redirecting to employee page...');
-                    window.location.href = `/employee?initData=${encodeURIComponent(initData)}`;
-                    return;
-                }
-                
-                // Biznes tarifi bo'lsa business sahifasiga yo'naltirish
-                if (user.tariff === 'BUSINESS' || user.tariff === 'BIZNES') {
-                    console.log('[DEBUG] Redirecting to business page...');
-                    window.location.href = `/business?initData=${encodeURIComponent(initData)}`;
-                    return;
-                }
-            }
-        }
-    } catch (error) {
-        console.error('[DEBUG] Error checking user tariff:', error);
-    }
-
-    // Oddiy user uchun home sahifasini yuklash
-    console.log('[DEBUG] Loading home page for regular user...');
+    console.log('[DEBUG] Current path:', currentPath);
+    
+    // Home sahifasini yuklash
     await loadHomePage();
 });
 

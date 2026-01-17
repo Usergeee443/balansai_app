@@ -2497,14 +2497,18 @@ def update_employee_permissions_endpoint():
 @app.route('/business')
 def business_app():
     """Biznes tarifi uchun asosiy ilova - to'g'ridan-to'g'ri kirish"""
+    # Telegram Mini App dan kelganda initData header orqali keladi
+    # Agar header yo'q bo'lsa, sahifani yuklash va JavaScript orqali tekshirish
+    # Bu Telegram WebApp ichida ishlaydi
+    
     user_id = get_user_id_from_request()
+    print(f"[DEBUG] /business route: user_id = {user_id}")
 
     # Agar header dan topilmasa, query param dan olish
     if not user_id or user_id == 123456789:
         init_data = request.args.get('initData')
         if init_data:
             try:
-                # initData dan user_id ni parse qilish
                 pairs = init_data.split('&')
                 for pair in pairs:
                     if pair.startswith('user='):
@@ -2513,25 +2517,33 @@ def business_app():
                         import json
                         user_data = json.loads(user_json)
                         user_id = user_data.get('id')
+                        print(f"[DEBUG] /business: Query param dan user_id olindi: {user_id}")
                         break
             except Exception as e:
                 print(f"[DEBUG] Query param dan user_id parse qilishda xato: {e}")
 
-    if not user_id:
-        return redirect('/')
+    # Agar user_id topilmasa yoki test user bo'lsa, sahifani yuklash
+    # JavaScript orqali Telegram WebApp dan initData olinadi va tekshiriladi
+    if not user_id or user_id == 123456789:
+        print("[DEBUG] /business: user_id topilmadi yoki test user, sahifa yuklanmoqda (JS tekshiradi)")
+        return render_template('business.html')
 
     # Foydalanuvchining tarifini tekshirish
     user = database.get_user(user_id)
+    print(f"[DEBUG] /business: User tariff = {user.get('tariff') if user else 'None'}")
     
     # Xodim bo'lsa, xodim sahifasiga yo'naltirish
     employee_link = database.get_employee_link(user_id)
     if employee_link:
+        print(f"[DEBUG] /business: User is employee, redirecting to /employee")
         return redirect('/employee')
     
     # Biznes tarifi yo'q bo'lsa, asosiy sahifaga yo'naltirish
     if not user or user.get('tariff') not in ['BUSINESS', 'BIZNES']:
+        print(f"[DEBUG] /business: User tariff is not BUSINESS, redirecting to /")
         return redirect('/')
 
+    print("[DEBUG] /business: business.html yuklanmoqda")
     return render_template('business.html')
 
 
@@ -2541,13 +2553,13 @@ def business_app():
 def employee_app():
     """Xodim tarifi uchun asosiy ilova - to'g'ridan-to'g'ri kirish"""
     user_id = get_user_id_from_request()
+    print(f"[DEBUG] /employee route: user_id = {user_id}")
 
     # Agar header dan topilmasa, query param dan olish
     if not user_id or user_id == 123456789:
         init_data = request.args.get('initData')
         if init_data:
             try:
-                # initData dan user_id ni parse qilish
                 pairs = init_data.split('&')
                 for pair in pairs:
                     if pair.startswith('user='):
@@ -2555,22 +2567,28 @@ def employee_app():
                         user_json = urllib.parse.unquote(pair.split('=', 1)[1])
                         user_data = json.loads(user_json)
                         user_id = user_data.get('id')
+                        print(f"[DEBUG] /employee: Query param dan user_id olindi: {user_id}")
                         break
             except Exception as e:
                 print(f"[DEBUG] Query param dan user_id parse qilishda xato: {e}")
 
-    if not user_id:
-        return redirect('/')
+    # Agar user_id topilmasa yoki test user bo'lsa, sahifani yuklash
+    # JavaScript orqali Telegram WebApp dan initData olinadi va tekshiriladi
+    if not user_id or user_id == 123456789:
+        print("[DEBUG] /employee: user_id topilmadi yoki test user, sahifa yuklanmoqda (JS tekshiradi)")
+        return render_template('employee.html')
 
     # Xodim ekanligini tekshirish
     employee_link = database.get_employee_link(user_id)
     if not employee_link:
         # Xodim emas - tarifga qarab yo'naltirish
         user = database.get_user(user_id)
+        print(f"[DEBUG] /employee: User is not employee, tariff = {user.get('tariff') if user else 'None'}")
         if user and user.get('tariff') in ['BUSINESS', 'BIZNES']:
             return redirect('/business')
         return redirect('/')
 
+    print("[DEBUG] /employee: employee.html yuklanmoqda")
     return render_template('employee.html')
 
 
