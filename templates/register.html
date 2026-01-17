@@ -7,441 +7,1192 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Ro'yxatdan o'tish - Balans AI</title>
     
-    <!-- Styles -->
-    <link rel="stylesheet" href="/static/css/register.css">
+    <!-- Wallet Style CSS -->
+    <link rel="stylesheet" href="/static/css/wallet-style.css">
     
-    <!-- Scripts -->
+    <!-- Telegram WebApp SDK -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    
+    <style>
+        /* Register Page Specific Styles */
+        .register-container {
+            min-height: 100vh;
+            background: var(--wallet-bg);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* Progress Bar */
+        .register-progress {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: var(--wallet-bg);
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--wallet-border);
+        }
+        
+        .progress-bar {
+            height: 4px;
+            background: var(--wallet-bg-tertiary);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #0A84FF 0%, #BF5AF2 100%);
+            border-radius: 2px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .progress-text {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 8px;
+            font-size: 13px;
+            color: var(--wallet-text-secondary);
+        }
+        
+        /* Step Container */
+        .register-step {
+            display: none;
+            padding: 24px 20px;
+            animation: fadeSlideIn 0.4s ease;
+        }
+        
+        .register-step.active {
+            display: block;
+        }
+        
+        @keyframes fadeSlideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        /* Step Header */
+        .step-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .step-emoji {
+            font-size: 64px;
+            margin-bottom: 16px;
+            display: block;
+        }
+        
+        .step-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--wallet-text-primary);
+            margin-bottom: 8px;
+            letter-spacing: -0.5px;
+        }
+        
+        .step-subtitle {
+            font-size: 16px;
+            color: var(--wallet-text-secondary);
+            line-height: 1.5;
+        }
+        
+        /* Input Styles */
+        .register-input-group {
+            margin-bottom: 20px;
+        }
+        
+        .register-input-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--wallet-text-secondary);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .register-input {
+            width: 100%;
+            padding: 16px 20px;
+            background: var(--wallet-card-bg);
+            border: 2px solid var(--wallet-border);
+            border-radius: 16px;
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--wallet-text-primary);
+            outline: none;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        
+        .register-input::placeholder {
+            color: var(--wallet-text-tertiary);
+        }
+        
+        .register-input:focus {
+            border-color: #0A84FF;
+            background: rgba(10, 132, 255, 0.05);
+        }
+        
+        .register-input.large {
+            font-size: 24px;
+            text-align: center;
+            padding: 20px;
+        }
+        
+        .register-input.error {
+            border-color: #FF453A;
+            background: rgba(255, 69, 58, 0.05);
+        }
+        
+        .input-error {
+            font-size: 13px;
+            color: #FF453A;
+            margin-top: 8px;
+            display: none;
+        }
+        
+        .input-error.show {
+            display: block;
+        }
+        
+        /* Option Cards */
+        .option-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .option-card {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 16px 20px;
+            background: var(--wallet-card-bg);
+            border: 2px solid var(--wallet-border);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .option-card:active {
+            transform: scale(0.98);
+        }
+        
+        .option-card.selected {
+            border-color: #0A84FF;
+            background: rgba(10, 132, 255, 0.1);
+        }
+        
+        .option-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: var(--wallet-bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        
+        .option-card.selected .option-card-icon {
+            background: rgba(10, 132, 255, 0.2);
+        }
+        
+        .option-card-content {
+            flex: 1;
+        }
+        
+        .option-card-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--wallet-text-primary);
+            margin-bottom: 2px;
+        }
+        
+        .option-card-desc {
+            font-size: 14px;
+            color: var(--wallet-text-secondary);
+        }
+        
+        .option-card-check {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            border: 2px solid var(--wallet-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.2s ease;
+        }
+        
+        .option-card.selected .option-card-check {
+            background: #0A84FF;
+            border-color: #0A84FF;
+        }
+        
+        .option-card-check svg {
+            width: 14px;
+            height: 14px;
+            stroke: white;
+            opacity: 0;
+            transition: opacity 0.2s ease;
+        }
+        
+        .option-card.selected .option-card-check svg {
+            opacity: 1;
+        }
+        
+        /* Balance Cards */
+        .balance-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .balance-card {
+            background: var(--wallet-card-bg);
+            border: 2px solid var(--wallet-border);
+            border-radius: 20px;
+            padding: 20px;
+            transition: all 0.2s ease;
+        }
+        
+        .balance-card:focus-within {
+            border-color: #0A84FF;
+        }
+        
+        .balance-card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .balance-card-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+        
+        .balance-card-icon.cash {
+            background: rgba(52, 199, 89, 0.15);
+        }
+        
+        .balance-card-icon.card {
+            background: rgba(10, 132, 255, 0.15);
+        }
+        
+        .balance-card-label {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--wallet-text-primary);
+        }
+        
+        .balance-card-input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--wallet-text-primary);
+            outline: none;
+            font-family: inherit;
+        }
+        
+        .balance-card-input::placeholder {
+            color: var(--wallet-text-tertiary);
+        }
+        
+        .balance-card-currency {
+            font-size: 16px;
+            color: var(--wallet-text-secondary);
+            margin-top: 4px;
+        }
+        
+        /* Tariff Cards */
+        .tariff-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+        
+        .tariff-card {
+            background: var(--wallet-card-bg);
+            border: 2px solid var(--wallet-border);
+            border-radius: 20px;
+            padding: 24px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .tariff-card:active {
+            transform: scale(0.98);
+        }
+        
+        .tariff-card.popular {
+            border-color: #0A84FF;
+            background: linear-gradient(135deg, rgba(10, 132, 255, 0.1) 0%, rgba(191, 90, 242, 0.1) 100%);
+        }
+        
+        .tariff-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: linear-gradient(90deg, #0A84FF 0%, #BF5AF2 100%);
+            color: white;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 4px 10px;
+            border-radius: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .tariff-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+        
+        .tariff-icon {
+            width: 56px;
+            height: 56px;
+            border-radius: 16px;
+            background: var(--wallet-bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+        
+        .tariff-info {
+            flex: 1;
+        }
+        
+        .tariff-name {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--wallet-text-primary);
+            margin-bottom: 2px;
+        }
+        
+        .tariff-price {
+            font-size: 15px;
+            color: var(--wallet-text-secondary);
+        }
+        
+        .tariff-features {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .tariff-feature {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 15px;
+            color: var(--wallet-text-secondary);
+        }
+        
+        .tariff-feature svg {
+            width: 18px;
+            height: 18px;
+            stroke: #30D158;
+            flex-shrink: 0;
+        }
+        
+        .tariff-btn {
+            width: 100%;
+            padding: 14px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            background: var(--wallet-bg-tertiary);
+            color: var(--wallet-text-primary);
+        }
+        
+        .tariff-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .tariff-card.popular .tariff-btn {
+            background: linear-gradient(90deg, #0A84FF 0%, #BF5AF2 100%);
+            color: white;
+        }
+        
+        /* Review Card */
+        .review-card {
+            background: var(--wallet-card-bg);
+            border-radius: 20px;
+            overflow: hidden;
+        }
+        
+        .review-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--wallet-border);
+        }
+        
+        .review-item:last-child {
+            border-bottom: none;
+        }
+        
+        .review-label {
+            font-size: 15px;
+            color: var(--wallet-text-secondary);
+        }
+        
+        .review-value {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--wallet-text-primary);
+        }
+        
+        /* Info Box */
+        .info-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            padding: 16px;
+            background: rgba(10, 132, 255, 0.1);
+            border-radius: 16px;
+            margin-top: 16px;
+        }
+        
+        .info-box svg {
+            width: 20px;
+            height: 20px;
+            stroke: #0A84FF;
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        .info-box p {
+            font-size: 14px;
+            color: var(--wallet-text-secondary);
+            line-height: 1.5;
+        }
+        
+        /* Fixed Footer */
+        .register-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 16px 20px;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+            background: var(--wallet-bg);
+            border-top: 1px solid var(--wallet-border);
+            display: flex;
+            gap: 12px;
+            z-index: 100;
+        }
+        
+        .register-btn {
+            flex: 1;
+            padding: 16px 24px;
+            border-radius: 14px;
+            font-size: 17px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+        
+        .register-btn:active {
+            transform: scale(0.98);
+        }
+        
+        .register-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .register-btn.primary {
+            background: linear-gradient(90deg, #0A84FF 0%, #5E5CE6 100%);
+            color: white;
+        }
+        
+        .register-btn.secondary {
+            background: var(--wallet-card-bg);
+            color: var(--wallet-text-primary);
+        }
+        
+        .register-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        /* Loader */
+        .btn-loader {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Success Screen */
+        .success-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--wallet-bg);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .success-screen.show {
+            display: flex;
+        }
+        
+        .success-icon {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #30D158 0%, #34C759 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 24px;
+            animation: scaleIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        @keyframes scaleIn {
+            from { transform: scale(0); }
+            to { transform: scale(1); }
+        }
+        
+        .success-icon svg {
+            width: 50px;
+            height: 50px;
+            stroke: white;
+            stroke-width: 3;
+        }
+        
+        .success-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--wallet-text-primary);
+            margin-bottom: 12px;
+        }
+        
+        .success-message {
+            font-size: 16px;
+            color: var(--wallet-text-secondary);
+            line-height: 1.5;
+            max-width: 300px;
+        }
+        
+        /* Loading Screen */
+        .loading-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--wallet-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .loading-screen.hide {
+            display: none;
+        }
+        
+        .loading-spinner {
+            width: 48px;
+            height: 48px;
+            border: 3px solid var(--wallet-border);
+            border-top-color: #0A84FF;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-bottom: 16px;
+        }
+        
+        .loading-text {
+            font-size: 15px;
+            color: var(--wallet-text-secondary);
+        }
+        
+        /* Debts Section */
+        .debts-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .debt-item {
+            background: var(--wallet-card-bg);
+            border: 1px solid var(--wallet-border);
+            border-radius: 16px;
+            padding: 16px;
+        }
+        
+        .debt-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+        
+        .debt-item-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--wallet-text-primary);
+        }
+        
+        .debt-remove-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: rgba(255, 69, 58, 0.15);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .debt-remove-btn svg {
+            width: 16px;
+            height: 16px;
+            stroke: #FF453A;
+        }
+        
+        .debt-inputs {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .debt-input {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--wallet-bg);
+            border: 1px solid var(--wallet-border);
+            border-radius: 12px;
+            font-size: 15px;
+            color: var(--wallet-text-primary);
+            outline: none;
+            font-family: inherit;
+        }
+        
+        .debt-input:focus {
+            border-color: #0A84FF;
+        }
+        
+        .debt-select {
+            width: 100%;
+            padding: 12px 16px;
+            background: var(--wallet-bg);
+            border: 1px solid var(--wallet-border);
+            border-radius: 12px;
+            font-size: 15px;
+            color: var(--wallet-text-primary);
+            outline: none;
+            font-family: inherit;
+            appearance: none;
+            cursor: pointer;
+        }
+        
+        .add-debt-btn {
+            width: 100%;
+            padding: 14px;
+            background: transparent;
+            border: 2px dashed var(--wallet-border);
+            border-radius: 14px;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--wallet-text-secondary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.2s ease;
+        }
+        
+        .add-debt-btn:hover {
+            border-color: #0A84FF;
+            color: #0A84FF;
+        }
+        
+        .add-debt-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+        
+        /* Content padding for fixed footer */
+        .step-content {
+            padding-bottom: 100px;
+        }
+        
+        /* Already Registered */
+        .already-registered {
+            position: fixed;
+            inset: 0;
+            background: var(--wallet-bg);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1500;
+            padding: 40px;
+            text-align: center;
+        }
+        
+        .already-registered.show {
+            display: flex;
+        }
+    </style>
 </head>
 <body>
-    <div class="register-app">
-        <!-- Loading Screen -->
-        <div id="loadingScreen" class="loading-screen">
-            <div class="loading-content">
-                <div class="loading-spinner">
-                    <div class="spinner-ring"></div>
-                    <div class="spinner-ring"></div>
-                    <div class="spinner-ring"></div>
-                </div>
-                <p class="loading-text">Yuklanmoqda...</p>
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="loading-screen">
+        <div class="loading-spinner"></div>
+        <p class="loading-text">Yuklanmoqda...</p>
+    </div>
+    
+    <!-- Already Registered Screen -->
+    <div id="alreadyRegistered" class="already-registered">
+        <div class="success-icon">
+            <svg viewBox="0 0 24 24" fill="none">
+                <polyline points="20 6 9 17 4 12"/>
+            </svg>
+        </div>
+        <h2 class="success-title">Siz ro'yxatdan o'tgansiz! ✅</h2>
+        <p class="success-message">Ma'lumotlaringiz saqlangan. Asosiy sahifaga yo'naltirilmoqdasiz...</p>
+    </div>
+    
+    <!-- Success Screen -->
+    <div id="successScreen" class="success-screen">
+        <div class="success-icon">
+            <svg viewBox="0 0 24 24" fill="none">
+                <polyline points="20 6 9 17 4 12"/>
+            </svg>
+        </div>
+        <h2 class="success-title">Muvaffaqiyatli! 🎉</h2>
+        <p class="success-message">Ro'yxatdan o'tish yakunlandi. Balans AI'dan foydalanishni boshlashingiz mumkin.</p>
+    </div>
+    
+    <!-- Main Container -->
+    <div class="register-container">
+        <!-- Progress Bar -->
+        <div class="register-progress">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progressFill" style="width: 14.28%"></div>
+            </div>
+            <div class="progress-text">
+                <span id="stepText">1 / 7</span>
+                <span id="stepName">Ism</span>
             </div>
         </div>
-
-        <!-- Already Registered Screen -->
-        <div id="alreadyRegistered" class="already-registered-screen" style="display: none;">
-            <div class="already-registered-content">
-                <div class="check-icon-wrapper">
-                    <div class="check-icon">✓</div>
-                </div>
-                <h2 class="already-registered-title">Siz allaqachon ro'yxatdan o'tgansiz! ✅</h2>
-                <p class="already-registered-message">Ma'lumotlaringiz saqlangan. Botdan foydalanishni boshlashingiz mumkin.</p>
-                <button type="button" class="btn-primary" onclick="closeApp()">
-                    Yopish
-                </button>
-            </div>
-        </div>
-
-        <!-- Header -->
-        <header class="app-header">
-            <div class="header-content">
-                <div class="progress-dots">
-                    <div class="dot active" data-step="1"></div>
-                    <div class="dot" data-step="2"></div>
-                    <div class="dot" data-step="3"></div>
-                    <div class="dot" data-step="4"></div>
-                    <div class="dot" data-step="5"></div>
-                    <div class="dot" data-step="6"></div>
-                    <div class="dot" data-step="7"></div>
-                </div>
-            </div>
-        </header>
-
-        <!-- Form Container -->
-        <div class="form-container">
-            <!-- Step 1: Ism -->
-            <div class="form-step active" id="step1">
+        
+        <!-- Step 1: Name -->
+        <div class="register-step active" id="step1">
+            <div class="step-content">
                 <div class="step-header">
-                    <h1 class="step-title">Salom! 👋</h1>
+                    <span class="step-emoji">👋</span>
+                    <h1 class="step-title">Salom!</h1>
                     <p class="step-subtitle">Ismingizni kiriting</p>
                 </div>
-
-                <div class="form-content">
-                    <div class="input-group">
-                        <input 
-                            type="text" 
-                            id="name" 
-                            class="input-field large-input"
-                            placeholder="Ismingiz"
-                            autocomplete="name"
-                            required
-                            autofocus
-                        >
-                        <span class="error-message" id="nameError"></span>
-                    </div>
-                </div>
-
-                <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-primary" onclick="nextStep(2)">
-                        Davom etish
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
+                
+                <div class="register-input-group">
+                    <input 
+                        type="text" 
+                        id="inputName" 
+                        class="register-input large" 
+                        placeholder="Ismingiz"
+                        autocomplete="name"
+                        autofocus
+                    >
+                    <p class="input-error" id="nameError">Iltimos, ismingizni kiriting</p>
                 </div>
             </div>
-
-            <!-- Step 2: Manba -->
-            <div class="form-step" id="step2">
+        </div>
+        
+        <!-- Step 2: Source -->
+        <div class="register-step" id="step2">
+            <div class="step-content">
                 <div class="step-header">
-                    <button class="back-button" onclick="prevStep(1)">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
-                    <h1 class="step-title">Bizni qayerdan eshitdingiz?</h1>
-                    <p class="step-subtitle">Birini tanlang</p>
+                    <span class="step-emoji">📱</span>
+                    <h1 class="step-title">Qayerdan topdingiz?</h1>
+                    <p class="step-subtitle">Bizni qayerdan eshitdingiz</p>
                 </div>
-
-                <div class="form-content">
-                    <div class="select-options">
-                        <label class="select-option">
-                            <input type="radio" name="source" value="telegram" required>
-                            <div class="select-option-content">
-                                <div class="select-option-icon">📱</div>
-                                <div class="select-option-text">Telegram</div>
-                            </div>
-                        </label>
-                        <label class="select-option">
-                            <input type="radio" name="source" value="instagram" required>
-                            <div class="select-option-content">
-                                <div class="select-option-icon">📷</div>
-                                <div class="select-option-text">Instagram</div>
-                            </div>
-                        </label>
-                        <label class="select-option">
-                            <input type="radio" name="source" value="youtube" required>
-                            <div class="select-option-content">
-                                <div class="select-option-icon">📺</div>
-                                <div class="select-option-text">YouTube</div>
-                            </div>
-                        </label>
-                        <label class="select-option">
-                            <input type="radio" name="source" value="tanish" required>
-                            <div class="select-option-content">
-                                <div class="select-option-icon">👥</div>
-                                <div class="select-option-text">Tanish orqali</div>
-                            </div>
-                        </label>
-                        <label class="select-option">
-                            <input type="radio" name="source" value="boshqa" required>
-                            <div class="select-option-content">
-                                <div class="select-option-icon">🔗</div>
-                                <div class="select-option-text">Boshqa</div>
-                            </div>
-                        </label>
+                
+                <div class="option-cards" id="sourceOptions">
+                    <div class="option-card" data-value="telegram" onclick="selectOption('source', 'telegram', this)">
+                        <div class="option-card-icon">📱</div>
+                        <div class="option-card-content">
+                            <div class="option-card-title">Telegram</div>
+                            <div class="option-card-desc">Telegram kanal yoki guruh</div>
+                        </div>
+                        <div class="option-card-check">
+                            <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
                     </div>
-                    <span class="error-message" id="sourceError"></span>
-                </div>
-
-                <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-primary" onclick="nextStep(3)">
-                        Davom etish
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
+                    <div class="option-card" data-value="instagram" onclick="selectOption('source', 'instagram', this)">
+                        <div class="option-card-icon">📷</div>
+                        <div class="option-card-content">
+                            <div class="option-card-title">Instagram</div>
+                            <div class="option-card-desc">Instagram sahifa</div>
+                        </div>
+                        <div class="option-card-check">
+                            <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                    </div>
+                    <div class="option-card" data-value="youtube" onclick="selectOption('source', 'youtube', this)">
+                        <div class="option-card-icon">📺</div>
+                        <div class="option-card-content">
+                            <div class="option-card-title">YouTube</div>
+                            <div class="option-card-desc">YouTube video</div>
+                        </div>
+                        <div class="option-card-check">
+                            <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                    </div>
+                    <div class="option-card" data-value="tanish" onclick="selectOption('source', 'tanish', this)">
+                        <div class="option-card-icon">👥</div>
+                        <div class="option-card-content">
+                            <div class="option-card-title">Tanish orqali</div>
+                            <div class="option-card-desc">Do'st yoki tanish tavsiyasi</div>
+                        </div>
+                        <div class="option-card-check">
+                            <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                    </div>
+                    <div class="option-card" data-value="boshqa" onclick="selectOption('source', 'boshqa', this)">
+                        <div class="option-card-icon">🔗</div>
+                        <div class="option-card-content">
+                            <div class="option-card-title">Boshqa</div>
+                            <div class="option-card-desc">Boshqa manbalar</div>
+                        </div>
+                        <div class="option-card-check">
+                            <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <!-- Step 3: Hisob turi -->
-            <div class="form-step" id="step3">
+        </div>
+        
+        <!-- Step 3: Account Type -->
+        <div class="register-step" id="step3">
+            <div class="step-content">
                 <div class="step-header">
-                    <button class="back-button" onclick="prevStep(2)">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
+                    <span class="step-emoji">💼</span>
                     <h1 class="step-title">Hisob turi</h1>
-                    <p class="step-subtitle">Birini tanlang</p>
+                    <p class="step-subtitle">Qanday maqsadda foydalanasiz?</p>
                 </div>
-
-                <div class="form-content">
-                    <div class="radio-group">
-                        <label class="radio-option">
-                            <input type="radio" name="account_type" value="SHI" required>
-                            <div class="radio-content">
-                                <div class="radio-icon">👤</div>
-                                <div class="radio-text">
-                                    <div class="radio-title">Shaxsiy</div>
-                                    <div class="radio-subtitle">Shaxsiy moliyaviy boshqaruv</div>
-                                </div>
-                            </div>
-                        </label>
-                        <label class="radio-option">
-                            <input type="radio" name="account_type" value="BIZNES" required>
-                            <div class="radio-content">
-                                <div class="radio-icon">💼</div>
-                                <div class="radio-text">
-                                    <div class="radio-title">Biznes</div>
-                                    <div class="radio-subtitle">Biznes moliyaviy boshqaruv</div>
-                                </div>
-                            </div>
-                        </label>
+                
+                <div class="option-cards" id="accountTypeOptions">
+                    <div class="option-card" data-value="SHI" onclick="selectOption('account_type', 'SHI', this)">
+                        <div class="option-card-icon">👤</div>
+                        <div class="option-card-content">
+                            <div class="option-card-title">Shaxsiy</div>
+                            <div class="option-card-desc">Shaxsiy moliyaviy boshqaruv</div>
+                        </div>
+                        <div class="option-card-check">
+                            <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
                     </div>
-                    <span class="error-message" id="accountTypeError"></span>
-                </div>
-
-                <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-primary" onclick="nextStep(4)">
-                        Davom etish
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
+                    <div class="option-card" data-value="BIZNES" onclick="selectOption('account_type', 'BIZNES', this)">
+                        <div class="option-card-icon">💼</div>
+                        <div class="option-card-content">
+                            <div class="option-card-title">Biznes</div>
+                            <div class="option-card-desc">Biznes moliyaviy boshqaruv</div>
+                        </div>
+                        <div class="option-card-check">
+                            <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                        </div>
+                    </div>
                 </div>
             </div>
-
-            <!-- Step 4: Boshlang'ich balans -->
-            <div class="form-step" id="step4">
+        </div>
+        
+        <!-- Step 4: Initial Balance -->
+        <div class="register-step" id="step4">
+            <div class="step-content">
                 <div class="step-header">
-                    <button class="back-button" onclick="prevStep(1)">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
+                    <span class="step-emoji">💰</span>
                     <h1 class="step-title">Boshlang'ich balans</h1>
                     <p class="step-subtitle">Mavjud mablag'laringizni kiriting</p>
                 </div>
-
-                <div class="form-content">
+                
+                <div class="balance-cards">
                     <div class="balance-card">
-                        <div class="balance-icon">💵</div>
-                        <div class="balance-info">
-                            <label class="balance-label">Naqd pul</label>
-                            <input 
-                                type="number" 
-                                id="cash_balance" 
-                                class="balance-input"
-                                placeholder="0"
-                                min="0"
-                                step="1000"
-                            >
+                        <div class="balance-card-header">
+                            <div class="balance-card-icon cash">💵</div>
+                            <div class="balance-card-label">Naqd pul</div>
                         </div>
+                        <input 
+                            type="number" 
+                            id="inputCash" 
+                            class="balance-card-input" 
+                            placeholder="0"
+                            min="0"
+                            step="1000"
+                        >
+                        <div class="balance-card-currency">so'm</div>
                     </div>
-
+                    
                     <div class="balance-card">
-                        <div class="balance-icon">💳</div>
-                        <div class="balance-info">
-                            <label class="balance-label">Karta balansi</label>
-                            <input 
-                                type="number" 
-                                id="card_balance" 
-                                class="balance-input"
-                                placeholder="0"
-                                min="0"
-                                step="1000"
-                            >
+                        <div class="balance-card-header">
+                            <div class="balance-card-icon card">💳</div>
+                            <div class="balance-card-label">Karta balansi</div>
                         </div>
-                    </div>
-
-                    <div class="info-box">
-                        <svg class="info-icon" viewBox="0 0 24 24" fill="none">
-                            <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="2"/>
-                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        <p>Agar mablag'ingiz bo'lmasa, 0 qoldirishingiz mumkin</p>
+                        <input 
+                            type="number" 
+                            id="inputCard" 
+                            class="balance-card-input" 
+                            placeholder="0"
+                            min="0"
+                            step="1000"
+                        >
+                        <div class="balance-card-currency">so'm</div>
                     </div>
                 </div>
-
-                <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-primary" onclick="nextStep(5)">
-                        Davom etish
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
+                
+                <div class="info-box">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 16v-4M12 8h.01"/>
+                    </svg>
+                    <p>Agar mablag'ingiz bo'lmasa, 0 qoldirishingiz mumkin. Keyinroq ham o'zgartirish mumkin.</p>
                 </div>
             </div>
-
-            <!-- Step 5: Qarzlar -->
-            <div class="form-step" id="step5">
+        </div>
+        
+        <!-- Step 5: Debts -->
+        <div class="register-step" id="step5">
+            <div class="step-content">
                 <div class="step-header">
-                    <button class="back-button" onclick="prevStep(2)">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
+                    <span class="step-emoji">📋</span>
                     <h1 class="step-title">Qarzlar</h1>
                     <p class="step-subtitle">Agar qarzingiz bo'lsa, qo'shing (ixtiyoriy)</p>
                 </div>
-
-                <div class="form-content">
-                    <div id="debtsContainer" class="debts-container">
-                        <!-- Qarzlar JavaScript orqali qo'shiladi -->
-                    </div>
-
-                    <button type="button" class="btn-add" onclick="addDebtField()">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                        Qarz qo'shish
-                    </button>
+                
+                <div class="debts-list" id="debtsList">
+                    <!-- Debts will be added here -->
                 </div>
-
-                <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-secondary" onclick="prevStep(4)">Orqaga</button>
-                    <button type="button" class="btn-primary" onclick="nextStep(6)">
-                        Davom etish
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M5 12h14M12 5l7 7-7 7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
+                
+                <button type="button" class="add-debt-btn" onclick="addDebt()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"/>
+                        <line x1="5" y1="12" x2="19" y2="12"/>
+                    </svg>
+                    Qarz qo'shish
+                </button>
+                
+                <div class="info-box">
+                    <svg viewBox="0 0 24 24" fill="none">
+                        <circle cx="12" cy="12" r="10"/>
+                        <path d="M12 16v-4M12 8h.01"/>
+                    </svg>
+                    <p>Bu qadam ixtiyoriy. Qarzlaringizni keyinroq ham qo'shishingiz mumkin.</p>
                 </div>
             </div>
-
-            <!-- Step 6: Tarif tanlash -->
-            <div class="form-step" id="step6">
+        </div>
+        
+        <!-- Step 6: Tariff -->
+        <div class="register-step" id="step6">
+            <div class="step-content">
                 <div class="step-header">
-                    <button class="back-button" onclick="prevStep(5)">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
+                    <span class="step-emoji">⭐</span>
                     <h1 class="step-title">Tarif tanlang</h1>
                     <p class="step-subtitle">O'zingizga mos tarifni tanlang</p>
                 </div>
-
-                <div class="form-content">
-                    <div class="tariff-cards">
-                        <!-- FREE Tariff -->
-                        <div class="tariff-card" id="tariffFree">
-                            <div class="tariff-card-header">
-                                <div class="tariff-card-icon">🆓</div>
-                                <div class="tariff-card-title">Bepul</div>
-                                <div class="tariff-card-price">0 so'm</div>
+                
+                <div class="tariff-cards">
+                    <!-- FREE -->
+                    <div class="tariff-card" onclick="selectTariff('FREE')">
+                        <div class="tariff-header">
+                            <div class="tariff-icon">🆓</div>
+                            <div class="tariff-info">
+                                <div class="tariff-name">Bepul</div>
+                                <div class="tariff-price">0 so'm / abadiy</div>
                             </div>
-                            <div class="tariff-card-features">
-                                <div class="tariff-card-feature">✓ Asosiy funksiyalar</div>
-                                <div class="tariff-card-feature">✓ Cheklovli statistika</div>
-                                <div class="tariff-card-feature">✓ 2-3 ta tahlil</div>
-                            </div>
-                            <button type="button" class="tariff-card-btn" onclick="selectTariff('FREE')">
-                                Davom etish
-                            </button>
                         </div>
-
-                        <!-- PLUS Tariff -->
-                        <div class="tariff-card tariff-card-popular" id="tariffPlus">
-                            <div class="tariff-card-badge">Ommabop</div>
-                            <div class="tariff-card-header">
-                                <div class="tariff-card-icon">⭐</div>
-                                <div class="tariff-card-title">Plus</div>
-                                <div class="tariff-card-price">Premium</div>
+                        <div class="tariff-features">
+                            <div class="tariff-feature">
+                                <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                                Asosiy funksiyalar
                             </div>
-                            <div class="tariff-card-features">
-                                <div class="tariff-card-feature">✓ Barcha funksiyalar</div>
-                                <div class="tariff-card-feature">✓ To'liq statistika</div>
-                                <div class="tariff-card-feature">✓ Premium qo'llab-quvvatlash</div>
-                                <div class="tariff-card-feature">✓ <span id="plusTrialDays">7</span> kunlik bepul sinov</div>
+                            <div class="tariff-feature">
+                                <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                                Cheklovli statistika
                             </div>
-                            <button type="button" class="tariff-card-btn tariff-card-btn-primary" onclick="selectTariff('PLUS')">
-                                <span id="plusBtnText"><span id="plusTrialDaysBtn">7</span> kun sinash</span>
-                            </button>
+                            <div class="tariff-feature">
+                                <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                                2-3 ta AI tahlil
+                            </div>
                         </div>
-
-                        <!-- BUSINESS Tariff -->
-                        <div class="tariff-card" id="tariffBusiness">
-                            <div class="tariff-card-header">
-                                <div class="tariff-card-icon">💼</div>
-                                <div class="tariff-card-title">Biznes</div>
-                                <div class="tariff-card-price">Professional</div>
-                            </div>
-                            <div class="tariff-card-features">
-                                <div class="tariff-card-feature">✓ Plus funksiyalar</div>
-                                <div class="tariff-card-feature">✓ Biznes tahlillar</div>
-                                <div class="tariff-card-feature">✓ Ko'p foydalanuvchi</div>
-                                <div class="tariff-card-feature">✓ <span id="businessTrialDays">7</span> kunlik bepul sinov</div>
-                            </div>
-                            <button type="button" class="tariff-card-btn" onclick="selectTariff('BUSINESS')">
-                                <span id="businessBtnText"><span id="businessTrialDaysBtn">7</span> kun sinash</span>
-                            </button>
-                        </div>
+                        <button type="button" class="tariff-btn">Davom etish</button>
                     </div>
-                    <span class="error-message" id="tariffError"></span>
+                    
+                    <!-- PLUS -->
+                    <div class="tariff-card popular" onclick="selectTariff('PLUS')">
+                        <div class="tariff-badge">Ommabop</div>
+                        <div class="tariff-header">
+                            <div class="tariff-icon">⭐</div>
+                            <div class="tariff-info">
+                                <div class="tariff-name">Plus</div>
+                                <div class="tariff-price">Premium imkoniyatlar</div>
+                            </div>
+                        </div>
+                        <div class="tariff-features">
+                            <div class="tariff-feature">
+                                <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                                Barcha funksiyalar
+                            </div>
+                            <div class="tariff-feature">
+                                <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                                To'liq statistika va grafiklar
+                            </div>
+                            <div class="tariff-feature">
+                                <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                                Cheksiz AI tahlil
+                            </div>
+                            <div class="tariff-feature">
+                                <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span id="plusTrialText">7 kunlik bepul sinov</span>
+                            </div>
+                        </div>
+                        <button type="button" class="tariff-btn" id="plusBtn">7 kun sinash</button>
+                    </div>
+                    
+                    <!-- BUSINESS -->
+                    <div class="tariff-card" onclick="selectTariff('BUSINESS')">
+                        <div class="tariff-header">
+                            <div class="tariff-icon">💼</div>
+                            <div class="tariff-info">
+                                <div class="tariff-name">Biznes</div>
+                                <div class="tariff-price">Professional imkoniyatlar</div>
+                            </div>
+                        </div>
+                        <div class="tariff-features">
+                            <div class="tariff-feature">
+                                <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                                Plus tarifning barcha imkoniyatlari
+                            </div>
+                            <div class="tariff-feature">
+                                <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                                Biznes tahlillar va hisobotlar
+                            </div>
+                            <div class="tariff-feature">
+                                <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                                Xodimlar boshqaruvi (HR)
+                            </div>
+                            <div class="tariff-feature">
+                                <svg viewBox="0 0 24 24" fill="none"><polyline points="20 6 9 17 4 12"/></svg>
+                                <span id="businessTrialText">7 kunlik bepul sinov</span>
+                            </div>
+                        </div>
+                        <button type="button" class="tariff-btn" id="businessBtn">7 kun sinash</button>
+                    </div>
                 </div>
             </div>
-
-            <!-- Step 7: Tasdiqlash -->
-            <div class="form-step" id="step7">
+        </div>
+        
+        <!-- Step 7: Review -->
+        <div class="register-step" id="step7">
+            <div class="step-content">
                 <div class="step-header">
-                    <button class="back-button" onclick="prevStep(6)">
-                        <svg viewBox="0 0 24 24" fill="none">
-                            <path d="M19 12H5M12 19l-7-7 7-7" stroke="currentColor" stroke-width="2"/>
-                        </svg>
-                    </button>
+                    <span class="step-emoji">✅</span>
                     <h1 class="step-title">Tasdiqlash</h1>
                     <p class="step-subtitle">Ma'lumotlaringizni tekshiring</p>
                 </div>
-
-                <div class="form-content">
-                    <div class="review-card">
-                        <div class="review-item">
-                            <span class="review-label">Ism</span>
-                            <span class="review-value" id="reviewName">-</span>
-                        </div>
-                        <div class="review-item">
-                            <span class="review-label">Manba</span>
-                            <span class="review-value" id="reviewSource">-</span>
-                        </div>
-                        <div class="review-item">
-                            <span class="review-label">Hisob turi</span>
-                            <span class="review-value" id="reviewAccountType">-</span>
-                        </div>
-                        <div class="review-item">
-                            <span class="review-label">Tarif</span>
-                            <span class="review-value" id="reviewTariff">-</span>
-                        </div>
-                        <div class="review-item">
-                            <span class="review-label">Naqd pul</span>
-                            <span class="review-value" id="reviewCash">-</span>
-                        </div>
-                        <div class="review-item">
-                            <span class="review-label">Karta balansi</span>
-                            <span class="review-value" id="reviewCard">-</span>
-                        </div>
-                        <div class="review-item" id="reviewDebts" style="display: none;">
-                            <span class="review-label">Qarzlar</span>
-                            <span class="review-value" id="reviewDebtsValue">-</span>
-                        </div>
+                
+                <div class="review-card">
+                    <div class="review-item">
+                        <span class="review-label">Ism</span>
+                        <span class="review-value" id="reviewName">-</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Manba</span>
+                        <span class="review-value" id="reviewSource">-</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Hisob turi</span>
+                        <span class="review-value" id="reviewAccountType">-</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Tarif</span>
+                        <span class="review-value" id="reviewTariff">-</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Naqd pul</span>
+                        <span class="review-value" id="reviewCash">0 so'm</span>
+                    </div>
+                    <div class="review-item">
+                        <span class="review-label">Karta balansi</span>
+                        <span class="review-value" id="reviewCard">0 so'm</span>
+                    </div>
+                    <div class="review-item" id="reviewDebtsRow" style="display: none;">
+                        <span class="review-label">Qarzlar</span>
+                        <span class="review-value" id="reviewDebts">0 ta</span>
                     </div>
                 </div>
-
-                <div class="step-footer fixed-footer">
-                    <button type="button" class="btn-secondary" onclick="prevStep(6)">Orqaga</button>
-                    <button type="submit" class="btn-primary" id="submitBtn" form="registrationForm">
-                        <span id="submitText">Saqlash</span>
-                        <span id="submitLoader" class="loader" style="display: none;"></span>
-                    </button>
-                </div>
             </div>
         </div>
-
-        <!-- Success Screen -->
-        <div id="successScreen" class="success-screen" style="display: none;">
-            <div class="success-content">
-                <div class="success-icon-wrapper">
-                    <div class="success-icon">✓</div>
-                </div>
-                <h2 class="success-title">Muvaffaqiyatli! 🎉</h2>
-                <p class="success-message">Ma'lumotlaringiz saqlandi. Botdan foydalanishni boshlashingiz mumkin.</p>
-            </div>
+        
+        <!-- Footer -->
+        <div class="register-footer" id="registerFooter">
+            <button type="button" class="register-btn secondary" id="backBtn" onclick="prevStep()" style="display: none;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+                Orqaga
+            </button>
+            <button type="button" class="register-btn primary" id="nextBtn" onclick="nextStep()">
+                <span id="nextBtnText">Davom etish</span>
+                <svg id="nextBtnIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                </svg>
+                <div class="btn-loader" id="nextBtnLoader" style="display: none;"></div>
+            </button>
         </div>
     </div>
-
-    <!-- Hidden Form for Submission -->
-    <form id="registrationForm" style="display: none;"></form>
-
-    <!-- Main JavaScript -->
-    <script src="/static/js/register.js"></script>
+    
+    <!-- JavaScript -->
+    <script src="/static/js/register.js?v=2.0.0"></script>
 </body>
 </html>

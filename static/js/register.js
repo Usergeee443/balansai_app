@@ -1,5 +1,5 @@
 /**
- * Registration Page JavaScript
+ * Registration Page JavaScript - Wallet Style v2.0
  */
 
 const tg = window.Telegram?.WebApp || null;
@@ -19,373 +19,196 @@ let trialConfig = {
     plus: 7,
     biznes: 7
 };
+let debtCounter = 0;
+
+// Step names for progress
+const stepNames = {
+    1: 'Ism',
+    2: 'Manba',
+    3: 'Hisob turi',
+    4: 'Balans',
+    5: 'Qarzlar',
+    6: 'Tarif',
+    7: 'Tasdiqlash'
+};
 
 // Telegram Web App initialization
 if (tg) {
     tg.ready();
-    
-    // To'liq ekran qilish
-    function ensureFullscreen() {
-        if (!tg.isExpanded) {
             tg.expand();
-        }
-    }
     
-    // Dastlabki fullscreen
-    ensureFullscreen();
-    
-    // Viewport balandligini sozlash
-    if (tg.viewportStableHeight !== undefined) {
-        tg.viewportStableHeight = window.innerHeight;
-    }
-    
-    // Pull-to-close'ni bloklash (scroll'ni bloklamasdan)
+    // Disable vertical swipes (pull-to-close)
     if (tg.disableVerticalSwipes) {
         tg.disableVerticalSwipes();
     }
     
-    // BackButton'ni yashirish
+    // Hide back button
     if (tg.BackButton) {
         tg.BackButton.hide();
     }
     
-    // Chiqishni tasdiqlash
+    // Enable closing confirmation
     tg.enableClosingConfirmation();
     
-    // Scroll'ni yoqish va pull-to-close'ni to'liq bloklash
-    // CSS orqali overscroll-behavior: none qo'shilgan
-    // JavaScript orqali ham qo'shimcha himoya
-    document.body.style.overscrollBehavior = 'none';
-    document.body.style.overscrollBehaviorY = 'none';
-    document.documentElement.style.overscrollBehavior = 'none';
-    document.documentElement.style.overscrollBehaviorY = 'none';
-    
-    // Touch event'larni boshqarish (pull-to-close'ni oldini olish, lekin scroll'ni bloklamasdan)
-    let touchStartY = 0;
-    let touchStartTime = 0;
-    let lastTouchY = 0;
-    
-    document.addEventListener('touchstart', (e) => {
-        touchStartY = e.touches[0].clientY;
-        lastTouchY = touchStartY;
-        touchStartTime = Date.now();
-    }, { passive: true });
-    
-    document.addEventListener('touchmove', (e) => {
-        const touchY = e.touches[0].clientY;
-        const deltaY = touchY - touchStartY;
-        const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-        const scrollHeight = document.documentElement.scrollHeight;
-        const clientHeight = document.documentElement.clientHeight;
-        const isAtTop = scrollTop <= 5; // Kichik margin
-        const isAtBottom = scrollTop + clientHeight >= scrollHeight - 5; // Kichik margin
-        
-        // Agar yuqoriga harakat qilmoqchi bo'lsa (pastga scroll) va sahifa tepada bo'lsa
-        if (deltaY > 0 && isAtTop) {
-            // Pull-to-close'ni bloklash
-            e.preventDefault();
-            return;
-        }
-        
-        // Agar pastga harakat qilmoqchi bo'lsa (yuqoriga scroll) va sahifa pastda bo'lsa
-        if (deltaY < 0 && isAtBottom) {
-            // Pull-to-close'ni bloklash
-            e.preventDefault();
-            return;
-        }
-        
-        lastTouchY = touchY;
-    }, { passive: false });
-    
-    document.addEventListener('touchend', () => {
-        // Touch tugaganda hech narsa qilmaymiz
-    }, { passive: true });
-    
-    // Header va background ranglari
+    // Set colors
     tg.setHeaderColor('#000000');
     tg.setBackgroundColor('#000000');
-    
-    // Viewport o'zgarganda fullscreen'ni saqlash
-    window.addEventListener('resize', () => {
-        ensureFullscreen();
-    });
-    
-    // Scroll event'ida ham tekshirish
-    let scrollCheckTimeout;
-    window.addEventListener('scroll', () => {
-        clearTimeout(scrollCheckTimeout);
-        scrollCheckTimeout = setTimeout(() => {
-            ensureFullscreen();
-        }, 100);
-    });
-    
-    // Ilova ochilganda fullscreen'ni ta'minlash
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            ensureFullscreen();
-        }, 100);
-    });
-    
-    // DOMContentLoaded'da ham tekshirish
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-            setTimeout(() => {
-                ensureFullscreen();
-            }, 50);
-        });
-    } else {
-        setTimeout(() => {
-            ensureFullscreen();
-        }, 50);
-    }
-    
-    // Periodic check
-    setInterval(() => {
-        ensureFullscreen();
-    }, 500);
-}
-
-// Show loading screen
-function showLoading() {
-    const loadingScreen = document.getElementById('loadingScreen');
-    if (loadingScreen) {
-        loadingScreen.classList.remove('hide');
-        loadingScreen.style.display = 'flex';
-    }
-}
-
-// Hide loading screen
-function hideLoading() {
-    const loadingScreen = document.getElementById('loadingScreen');
-    if (loadingScreen) {
-        loadingScreen.classList.add('hide');
-        setTimeout(() => {
-            loadingScreen.style.display = 'none';
-        }, 300);
-    }
 }
 
 // Initialize
-document.addEventListener('DOMContentLoaded', () => {
-    console.log('Registration page loaded');
-
-    // Show loading screen
-    showLoading();
-
-    // Load trial configuration
-    loadTrialConfig();
-
-    // Check if user is already registered
-    checkRegistrationStatus();
-
-    // Setup form validation
-    setupFormValidation();
-
-    // Setup form submission
-    document.getElementById('registrationForm').addEventListener('submit', handleSubmit);
-
-    // Auto-focus on input
-    const nameInput = document.getElementById('name');
-    if (nameInput && !nameInput.value) {
-        setTimeout(() => nameInput.focus(), 300);
-    }
+document.addEventListener('DOMContentLoaded', async () => {
+    console.log('[REGISTER] Page loaded');
+    
+    // Load trial config
+    await loadTrialConfig();
+    
+    // Check registration status
+    await checkRegistrationStatus();
+    
+    // Setup input listeners
+    setupInputListeners();
+    
+    // Hide loading
+    hideLoading();
 });
 
-// Load trial configuration from API
+// Load trial configuration
 async function loadTrialConfig() {
     try {
         const response = await fetch('/api/config');
         if (response.ok) {
             const config = await response.json();
             trialConfig = config.trial_days || { free: 0, plus: 7, biznes: 7 };
-            updateTrialDaysUI();
+            updateTrialUI();
         }
     } catch (error) {
-        console.error('Error loading trial config:', error);
+        console.error('[REGISTER] Error loading trial config:', error);
     }
 }
 
 // Update trial days in UI
-function updateTrialDaysUI() {
-    // Plus trial days
-    const plusTrialDaysElements = document.querySelectorAll('#plusTrialDays, #plusTrialDaysBtn');
-    plusTrialDaysElements.forEach(el => {
-        el.textContent = trialConfig.plus;
-    });
-
-    // Business trial days
-    const businessTrialDaysElements = document.querySelectorAll('#businessTrialDays, #businessTrialDaysBtn');
-    businessTrialDaysElements.forEach(el => {
-        el.textContent = trialConfig.biznes;
-    });
-
-    // Update button text based on trial days
-    if (trialConfig.plus === 0) {
-        document.getElementById('plusBtnText').textContent = 'Sotib olish';
-    }
-    if (trialConfig.biznes === 0) {
-        document.getElementById('businessBtnText').textContent = 'Sotib olish';
-    }
-}
-
-// Select tariff
-function selectTariff(tariff) {
-    formData.tariff = tariff;
-
-    // Move to next step if FREE, otherwise go to review
-    if (tariff === 'FREE') {
-        nextStep(7);
+function updateTrialUI() {
+    const plusTrialText = document.getElementById('plusTrialText');
+    const plusBtn = document.getElementById('plusBtn');
+    const businessTrialText = document.getElementById('businessTrialText');
+    const businessBtn = document.getElementById('businessBtn');
+    
+    if (trialConfig.plus > 0) {
+        if (plusTrialText) plusTrialText.textContent = `${trialConfig.plus} kunlik bepul sinov`;
+        if (plusBtn) plusBtn.textContent = `${trialConfig.plus} kun sinash`;
     } else {
-        // For Plus and Business, go to review
-        nextStep(7);
+        if (plusTrialText) plusTrialText.textContent = 'Premium imkoniyatlar';
+        if (plusBtn) plusBtn.textContent = 'Sotib olish';
+    }
+    
+    if (trialConfig.biznes > 0) {
+        if (businessTrialText) businessTrialText.textContent = `${trialConfig.biznes} kunlik bepul sinov`;
+        if (businessBtn) businessBtn.textContent = `${trialConfig.biznes} kun sinash`;
+    } else {
+        if (businessTrialText) businessTrialText.textContent = 'Professional imkoniyatlar';
+        if (businessBtn) businessBtn.textContent = 'Sotib olish';
     }
 }
 
-// Check if user is already registered
+// Check registration status
 async function checkRegistrationStatus() {
     try {
         const userId = getUserId();
-        console.log('[REGISTER] Checking registration status for user:', userId);
+        console.log('[REGISTER] Checking status for user:', userId);
 
         if (!userId) {
-            console.error('[REGISTER] User ID topilmadi');
-            hideLoading();
+            console.log('[REGISTER] No user ID found');
             return;
         }
 
         const response = await fetch(`/api/user/${userId}`);
-        console.log('[REGISTER] API response status:', response.status);
 
         if (response.ok) {
             const user = await response.json();
-            console.log('[REGISTER] User data received:', user);
-
-            // Check if user exists and registration is complete
-            const isComplete = checkRegistrationComplete(user);
-            console.log('[REGISTER] Registration complete:', isComplete);
-
-            if (isComplete) {
-                // User allaqachon ro'yxatdan o'tgan - asosiy sahifaga yuborish
-                console.log('[REGISTER] User allaqachon ro\'yxatdan o\'tgan, asosiy sahifaga yuborilmoqda...');
-
-                // Kichik kechikish (UI ko'rinishi uchun)
-                await new Promise(resolve => setTimeout(resolve, 300));
-
-                // Asosiy sahifaga yuborish
-                // Telegram Web App'da window.location ishlatish yaxshiroq
-                const baseUrl = window.location.origin;
-                console.log('[REGISTER] Redirecting to:', baseUrl + '/');
-
-                // window.location.href ishlatish (Telegram Web App'da ishlaydi)
-                window.location.href = baseUrl + '/';
+            console.log('[REGISTER] User data:', user);
+            
+            // Check if registration is complete
+            if (isRegistrationComplete(user)) {
+                console.log('[REGISTER] User already registered, redirecting...');
+                showAlreadyRegistered();
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
                 return;
             }
 
-            // Hide loading screen va registration form'ni ko'rsatish
-            hideLoading();
-
-            // Fill form with existing data if partially filled
-            console.log('[REGISTER] Registration not complete, filling form with existing data');
-            if (user.name && user.name !== 'Xojayin') {
-                document.getElementById('name').value = user.name;
-                formData.name = user.name;
-                // Skip to next step if name is filled
-                if (user.source && user.account_type) {
-                    currentStep = 4; // Skip to balance step
-                    showStep(4);
-                } else if (user.source) {
-                    currentStep = 3; // Skip to account type step
-                    showStep(3);
-                } else {
-                    currentStep = 2; // Skip to source step
-                    showStep(2);
-                }
-            }
-
-            if (user.source) {
-                const sourceRadio = document.querySelector(`input[name="source"][value="${user.source}"]`);
-                if (sourceRadio) {
-                    sourceRadio.checked = true;
-                }
-                formData.source = user.source;
-            }
-
-            if (user.account_type) {
-                const accountRadio = document.querySelector(`input[name="account_type"][value="${user.account_type}"]`);
-                if (accountRadio) {
-                    accountRadio.checked = true;
-                }
-                formData.account_type = user.account_type;
-            }
-
-            updateProgress();
-        } else if (response.status === 404) {
-            // User topilmadi - yangi user, registration davom etadi
-            console.log('[REGISTER] Yangi user, registration davom etadi');
-            hideLoading();
-        } else {
-            console.error('[REGISTER] API error:', response.status, response.statusText);
-            hideLoading();
+            // Pre-fill form with existing data
+            prefillForm(user);
         }
     } catch (error) {
-        console.error('[REGISTER] Error checking registration status:', error);
-        hideLoading();
+        console.error('[REGISTER] Error checking status:', error);
     }
 }
 
 // Check if registration is complete
-function checkRegistrationComplete(user) {
-    console.log('Checking registration complete for user:', user);
-    
-    // Use backend's registration_complete flag if available
+function isRegistrationComplete(user) {
     if (user.registration_complete !== undefined) {
-        console.log('Using backend registration_complete flag:', user.registration_complete);
         return user.registration_complete;
     }
     
-    // Fallback: Check if all required fields are filled
     const hasName = user.name && user.name !== 'Xojayin' && user.name !== '';
     const hasSource = user.source && user.source !== '';
     const hasAccountType = user.account_type && user.account_type !== '';
     const hasPhone = user.phone && user.phone !== '';
     
-    console.log('Registration check:', {
-        hasName,
-        hasSource,
-        hasAccountType,
-        hasPhone
+    return hasPhone && hasName && hasSource && hasAccountType;
+}
+
+// Pre-fill form with existing data
+function prefillForm(user) {
+    if (user.name && user.name !== 'Xojayin') {
+        document.getElementById('inputName').value = user.name;
+        formData.name = user.name;
+    }
+    
+    if (user.source) {
+        formData.source = user.source;
+        const sourceCard = document.querySelector(`#sourceOptions .option-card[data-value="${user.source}"]`);
+        if (sourceCard) sourceCard.classList.add('selected');
+    }
+    
+    if (user.account_type) {
+        formData.account_type = user.account_type;
+        const accountCard = document.querySelector(`#accountTypeOptions .option-card[data-value="${user.account_type}"]`);
+        if (accountCard) accountCard.classList.add('selected');
+    }
+}
+
+// Setup input listeners
+function setupInputListeners() {
+    const nameInput = document.getElementById('inputName');
+    
+    nameInput.addEventListener('input', () => {
+        const error = document.getElementById('nameError');
+        if (nameInput.value.trim()) {
+            error.classList.remove('show');
+            nameInput.classList.remove('error');
+        }
     });
     
-    // Agar phone bo'lsa va asosiy maydonlar to'liq bo'lsa, complete deb hisoblaymiz
-    if (hasPhone && hasName && hasSource && hasAccountType) {
-        console.log('Registration complete (phone + all fields)');
-        return true;
-    }
-    
-    return false;
+    nameInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            nextStep();
+        }
+    });
 }
 
-// Close app
-function closeApp() {
-    if (tg && tg.close) {
-        tg.close();
-    } else {
-        window.close();
-    }
-}
-
-// Get user ID from Telegram Web App
+// Get user ID
 function getUserId() {
     if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user) {
         return tg.initDataUnsafe.user.id;
     }
     
-    // Fallback: get from URL params
     const params = new URLSearchParams(window.location.search);
     const userId = params.get('user_id');
     if (userId) return parseInt(userId);
     
-    // DEBUG mode: try to parse from initData
     if (tg && tg.initData) {
         try {
             const initData = new URLSearchParams(tg.initData);
@@ -395,233 +218,128 @@ function getUserId() {
                 return user.id;
             }
         } catch (e) {
-            console.error('Error parsing initData:', e);
+            console.error('[REGISTER] Error parsing initData:', e);
         }
     }
     
     return null;
 }
 
-// Get init data for API requests
+// Get init data
 function getInitData() {
     if (tg && tg.initData) return tg.initData;
     return '';
 }
 
-// Setup form validation
-function setupFormValidation() {
-    const nameInput = document.getElementById('name');
-    const sourceRadios = document.querySelectorAll('input[name="source"]');
-    const accountTypeRadios = document.querySelectorAll('input[name="account_type"]');
-    
-    nameInput.addEventListener('input', () => {
-        const nameError = document.getElementById('nameError');
-        if (nameInput.value.trim()) {
-            nameError.textContent = '';
-        }
-    });
-    
-    nameInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            e.preventDefault();
-            nextStep(2);
-        }
-    });
-    
-    sourceRadios.forEach(radio => {
-        radio.addEventListener('change', () => {
-            const sourceError = document.getElementById('sourceError');
-            if (radio.checked) {
-                sourceError.textContent = '';
-                // Auto proceed after selection
-                setTimeout(() => nextStep(3), 300);
-            }
-        });
-    });
-    
-    accountTypeRadios.forEach(radio => {
-        radio.addEventListener('change', () => {
-            const accountTypeError = document.getElementById('accountTypeError');
-            if (radio.checked) {
-                accountTypeError.textContent = '';
-                // Auto proceed after selection
-                setTimeout(() => nextStep(4), 300);
-            }
-        });
-    });
-    
-    // Note: Tariff selection is now handled by selectTariff() function
+// Show/Hide loading
+function showLoading() {
+    document.getElementById('loadingScreen').classList.remove('hide');
 }
 
-// Validate field
-function validateField(fieldName, value) {
-    const errorElement = document.getElementById(`${fieldName}Error`);
-    
-    if (!value || (typeof value === 'string' && value.trim() === '')) {
-        if (errorElement) {
-            errorElement.textContent = 'Bu maydon majburiy';
-        }
-        return false;
-    }
-    
-    if (fieldName === 'name' && value === 'Xojayin') {
-        if (errorElement) {
-            errorElement.textContent = 'Iltimos, to\'g\'ri ismingizni kiriting';
-        }
-        return false;
-    }
-    
-    if (errorElement) {
-        errorElement.textContent = '';
-    }
-    return true;
+function hideLoading() {
+    document.getElementById('loadingScreen').classList.add('hide');
 }
 
-// Next step
-function nextStep(step) {
-    // Validate and save current step data
-    if (currentStep === 1) {
-        const name = document.getElementById('name').value.trim();
-        if (!validateField('name', name)) {
-            return;
-        }
-        formData.name = name;
-    } else if (currentStep === 2) {
-        const source = document.querySelector('input[name="source"]:checked')?.value;
-        if (!validateField('source', source)) {
-            return;
-        }
-        formData.source = source;
-    } else if (currentStep === 3) {
-        const accountType = document.querySelector('input[name="account_type"]:checked')?.value;
-        if (!validateField('account_type', accountType)) {
-            return;
-        }
-        formData.account_type = accountType;
-    } else if (currentStep === 4) {
-        formData.cash_balance = parseFloat(document.getElementById('cash_balance').value) || 0;
-        formData.card_balance = parseFloat(document.getElementById('card_balance').value) || 0;
-    } else if (currentStep === 5) {
-        // Collect debts
-        formData.debts = collectDebts();
-    } else if (currentStep === 6) {
-        // Tariff validation (already selected via button)
-        if (!formData.tariff) {
-            const tariffError = document.getElementById('tariffError');
-            if (tariffError) {
-                tariffError.textContent = 'Iltimos, tarifni tanlang';
-            }
-            return;
-        }
-    }
-    
-    // Show next step
-    showStep(step);
+// Show already registered
+function showAlreadyRegistered() {
+    document.getElementById('alreadyRegistered').classList.add('show');
 }
 
-// Previous step
-function prevStep(step) {
-    showStep(step);
-    // Auto-focus on input
+// Show success
+function showSuccess() {
+    document.getElementById('successScreen').classList.add('show');
+}
+
+// Haptic feedback
+function haptic(type = 'light') {
+    if (tg && tg.HapticFeedback) {
+        if (type === 'success') {
+            tg.HapticFeedback.notificationOccurred('success');
+        } else if (type === 'error') {
+            tg.HapticFeedback.notificationOccurred('error');
+        } else {
+            tg.HapticFeedback.impactOccurred(type);
+        }
+    }
+}
+
+// Select option (source, account_type)
+function selectOption(field, value, element) {
+    haptic('light');
+    
+    // Remove selected from siblings
+    const parent = element.parentElement;
+    parent.querySelectorAll('.option-card').forEach(card => {
+        card.classList.remove('selected');
+    });
+    
+    // Add selected to clicked
+    element.classList.add('selected');
+    
+    // Save value
+    formData[field] = value;
+    
+    // Auto-advance after short delay
     setTimeout(() => {
-        const stepElement = document.getElementById(`step${step}`);
-        const input = stepElement?.querySelector('input, select');
-        if (input) input.focus();
+        nextStep();
     }, 300);
 }
 
-// Show step
-function showStep(step) {
-    // Hide all steps
-    document.querySelectorAll('.form-step').forEach(stepEl => {
-        stepEl.classList.remove('active');
-    });
-    
-    // Show current step
-    const stepElement = document.getElementById(`step${step}`);
-    stepElement.classList.add('active');
-    currentStep = step;
-    
-    // Update progress
-    updateProgress();
-    
-    // Update review if step 4
-    if (step === 4) {
-        updateReview();
-    }
-    
-    // Scroll to top
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+// Select tariff
+function selectTariff(tariff) {
+    haptic('light');
+    formData.tariff = tariff;
+    nextStep();
 }
 
-// Update progress bar
-function updateProgress() {
-    // Update dots
-    document.querySelectorAll('.dot').forEach((dot, index) => {
-        if (index + 1 <= currentStep) {
-            dot.classList.add('active');
-        } else {
-            dot.classList.remove('active');
-        }
-    });
-}
-
-// Add debt field
-function addDebtField() {
-    const container = document.getElementById('debtsContainer');
-    const debtId = Date.now();
+// Add debt
+function addDebt() {
+    haptic('light');
+    debtCounter++;
     
+    const debtsList = document.getElementById('debtsList');
     const debtHtml = `
-        <div class="debt-item" data-debt-id="${debtId}">
+        <div class="debt-item" data-debt-id="${debtCounter}">
             <div class="debt-item-header">
-                <span class="debt-item-title">Qarz #${container.children.length + 1}</span>
-                <button type="button" class="btn-remove-debt" onclick="removeDebt(${debtId})">
+                <span class="debt-item-title">Qarz #${debtCounter}</span>
+                <button type="button" class="debt-remove-btn" onclick="removeDebt(${debtCounter})">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M18 6L6 18M6 6l12 12"/>
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
                     </svg>
                 </button>
             </div>
-            <div class="input-group">
-                <label class="input-label">Kimga/Kimdan</label>
-                <input type="text" class="input-field debt-person" placeholder="Ism" data-field="person_name">
-            </div>
-            <div class="input-group">
-                <label class="input-label">Summa (so'm)</label>
-                <input type="number" class="input-field debt-amount" placeholder="0" min="0" step="1000" data-field="amount">
-            </div>
-            <div class="input-group">
-                <label class="input-label">Qarz turi</label>
-                <div class="select-wrapper">
-                    <select class="select-field debt-direction" data-field="direction">
-                        <option value="lent">Qarz berdim</option>
-                        <option value="borrowed">Qarz oldim</option>
+            <div class="debt-inputs">
+                <input type="text" class="debt-input debt-person" placeholder="Kimga/Kimdan" data-field="person_name">
+                <input type="number" class="debt-input debt-amount" placeholder="Summa (so'm)" min="0" step="1000" data-field="amount">
+                <select class="debt-select debt-direction" data-field="direction">
+                    <option value="lent">Qarz berdim (menga qaytarishadi)</option>
+                    <option value="borrowed">Qarz oldim (men qaytaraman)</option>
                     </select>
-                    <svg class="select-arrow" viewBox="0 0 24 24" fill="none">
-                        <path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2"/>
-                    </svg>
-                </div>
-            </div>
-            <div class="input-group">
-                <label class="input-label">Qaytarish sanasi (ixtiyoriy)</label>
-                <input type="date" class="input-field debt-due-date" data-field="due_date">
+                <input type="date" class="debt-input debt-due-date" data-field="due_date" placeholder="Qaytarish sanasi">
             </div>
         </div>
     `;
     
-    container.insertAdjacentHTML('beforeend', debtHtml);
+    debtsList.insertAdjacentHTML('beforeend', debtHtml);
 }
 
 // Remove debt
-function removeDebt(debtId) {
-    const debtItem = document.querySelector(`[data-debt-id="${debtId}"]`);
+function removeDebt(id) {
+    haptic('light');
+    const debtItem = document.querySelector(`.debt-item[data-debt-id="${id}"]`);
     if (debtItem) {
         debtItem.remove();
+        renumberDebts();
+    }
+}
+
         // Renumber debts
+function renumberDebts() {
         const debts = document.querySelectorAll('.debt-item');
         debts.forEach((debt, index) => {
             debt.querySelector('.debt-item-title').textContent = `Qarz #${index + 1}`;
         });
-    }
 }
 
 // Collect debts
@@ -646,6 +364,124 @@ function collectDebts() {
     });
     
     return debts;
+}
+
+// Validate current step
+function validateStep() {
+    if (currentStep === 1) {
+        const name = document.getElementById('inputName').value.trim();
+        if (!name || name === 'Xojayin') {
+            document.getElementById('nameError').classList.add('show');
+            document.getElementById('inputName').classList.add('error');
+            haptic('error');
+            return false;
+        }
+        formData.name = name;
+    } else if (currentStep === 2) {
+        if (!formData.source) {
+            haptic('error');
+            return false;
+        }
+    } else if (currentStep === 3) {
+        if (!formData.account_type) {
+            haptic('error');
+            return false;
+        }
+    } else if (currentStep === 4) {
+        formData.cash_balance = parseFloat(document.getElementById('inputCash').value) || 0;
+        formData.card_balance = parseFloat(document.getElementById('inputCard').value) || 0;
+    } else if (currentStep === 5) {
+        formData.debts = collectDebts();
+    } else if (currentStep === 6) {
+        if (!formData.tariff) {
+            haptic('error');
+            return false;
+        }
+    }
+    
+    return true;
+}
+
+// Next step
+function nextStep() {
+    if (!validateStep()) return;
+    
+    haptic('light');
+    
+    if (currentStep === 7) {
+        // Submit form
+        submitForm();
+        return;
+    }
+    
+    // Hide current step
+    document.getElementById(`step${currentStep}`).classList.remove('active');
+    
+    // Show next step
+    currentStep++;
+    document.getElementById(`step${currentStep}`).classList.add('active');
+    
+    // Update progress
+    updateProgress();
+    
+    // Update review if on step 7
+    if (currentStep === 7) {
+        updateReview();
+    }
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Previous step
+function prevStep() {
+    if (currentStep <= 1) return;
+    
+    haptic('light');
+    
+    // Hide current step
+    document.getElementById(`step${currentStep}`).classList.remove('active');
+    
+    // Show previous step
+    currentStep--;
+    document.getElementById(`step${currentStep}`).classList.add('active');
+    
+    // Update progress
+    updateProgress();
+    
+    // Scroll to top
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+// Update progress
+function updateProgress() {
+    const progress = (currentStep / totalSteps) * 100;
+    document.getElementById('progressFill').style.width = `${progress}%`;
+    document.getElementById('stepText').textContent = `${currentStep} / ${totalSteps}`;
+    document.getElementById('stepName').textContent = stepNames[currentStep];
+    
+    // Update buttons
+    const backBtn = document.getElementById('backBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const nextBtnText = document.getElementById('nextBtnText');
+    const nextBtnIcon = document.getElementById('nextBtnIcon');
+    
+    // Show/hide back button
+    backBtn.style.display = currentStep > 1 ? 'flex' : 'none';
+    
+    // Update next button text
+    if (currentStep === 6) {
+        // Tariff step - hide next button (tariff cards have their own buttons)
+        nextBtn.style.display = 'none';
+    } else if (currentStep === 7) {
+        nextBtn.style.display = 'flex';
+        nextBtnText.textContent = 'Saqlash';
+        nextBtnIcon.style.display = 'none';
+    } else {
+        nextBtn.style.display = 'flex';
+        nextBtnText.textContent = 'Davom etish';
+        nextBtnIcon.style.display = 'block';
+    }
 }
 
 // Update review
@@ -680,10 +516,10 @@ function updateReview() {
     document.getElementById('reviewCard').textContent = formatCurrency(formData.card_balance);
     
     if (formData.debts && formData.debts.length > 0) {
-        document.getElementById('reviewDebts').style.display = 'flex';
-        document.getElementById('reviewDebtsValue').textContent = `${formData.debts.length} ta qarz`;
+        document.getElementById('reviewDebtsRow').style.display = 'flex';
+        document.getElementById('reviewDebts').textContent = `${formData.debts.length} ta`;
     } else {
-        document.getElementById('reviewDebts').style.display = 'none';
+        document.getElementById('reviewDebtsRow').style.display = 'none';
     }
 }
 
@@ -693,18 +529,16 @@ function formatCurrency(amount) {
     return new Intl.NumberFormat('uz-UZ').format(amount) + ' so\'m';
 }
 
-// Handle form submission
-async function handleSubmit(e) {
-    e.preventDefault();
-    
-    const submitBtn = document.getElementById('submitBtn');
-    const submitText = document.getElementById('submitText');
-    const submitLoader = document.getElementById('submitLoader');
+// Submit form
+async function submitForm() {
+    const nextBtn = document.getElementById('nextBtn');
+    const nextBtnText = document.getElementById('nextBtnText');
+    const nextBtnLoader = document.getElementById('nextBtnLoader');
     
     // Disable button and show loader
-    submitBtn.disabled = true;
-    submitText.style.display = 'none';
-    submitLoader.style.display = 'block';
+    nextBtn.disabled = true;
+    nextBtnText.style.display = 'none';
+    nextBtnLoader.style.display = 'block';
     
     try {
         const userId = getUserId();
@@ -719,62 +553,50 @@ async function handleSubmit(e) {
         await saveOnboardingData(userId);
 
         // Check if need to redirect to payment
-        if (formData.tariff === 'PLUS' || formData.tariff === 'PRO') {
-            // Check if trial is available
-            if (trialConfig.plus === 0) {
-                // No trial, redirect to payment
+        if ((formData.tariff === 'PLUS' || formData.tariff === 'PRO') && trialConfig.plus === 0) {
                 window.location.href = 'https://balansai.onrender.com/payment-plus';
                 return;
             }
-        } else if (formData.tariff === 'BUSINESS' || formData.tariff === 'BIZNES') {
-            // Check if trial is available
-            if (trialConfig.biznes === 0) {
-                // No trial, redirect to payment
+        
+        if ((formData.tariff === 'BUSINESS' || formData.tariff === 'BIZNES') && trialConfig.biznes === 0) {
                 window.location.href = 'https://balansai.onrender.com/payment-biznes';
                 return;
-            }
         }
-
-        // Show success screen
-        document.querySelector('.form-container').style.display = 'none';
-        document.getElementById('successScreen').style.display = 'flex';
-
-        // Haptic feedback
-        if (tg && tg.HapticFeedback) {
-            tg.HapticFeedback.notificationOccurred('success');
-        }
-
-        // Send data to bot (if needed)
+        
+        // Show success
+        haptic('success');
+        showSuccess();
+        
+        // Send data to bot
         if (tg && tg.sendData) {
             tg.sendData(JSON.stringify({ action: 'registration_complete' }));
         }
 
-        // Redirect to home after 2 seconds
+        // Redirect after delay
         setTimeout(() => {
             window.location.href = '/';
         }, 2000);
         
     } catch (error) {
-        console.error('Error submitting form:', error);
+        console.error('[REGISTER] Submit error:', error);
+        haptic('error');
         
-        // Show error
         if (tg && tg.showAlert) {
-            tg.showAlert('Xatolik yuz berdi: ' + error.message);
+            tg.showAlert('Xatolik: ' + error.message);
         } else {
-            alert('Xatolik yuz berdi: ' + error.message);
+            alert('Xatolik: ' + error.message);
         }
         
         // Re-enable button
-        submitBtn.disabled = false;
-        submitText.style.display = 'block';
-        submitLoader.style.display = 'none';
+        nextBtn.disabled = false;
+        nextBtnText.style.display = 'block';
+        nextBtnLoader.style.display = 'none';
     }
 }
 
 // Update user data
 async function updateUserData(userId) {
-    // Avval asosiy ma'lumotlarni yangilash
-    const updateResponse = await fetch(`/api/user/${userId}/update`, {
+    const response = await fetch(`/api/user/${userId}/update`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -787,12 +609,12 @@ async function updateUserData(userId) {
         })
     });
     
-    if (!updateResponse.ok) {
-        const error = await updateResponse.json();
+    if (!response.ok) {
+        const error = await response.json();
         throw new Error(error.error || 'Ma\'lumotlar saqlanmadi');
     }
     
-    // Keyin tarifni tanlash
+    // Set tariff
     if (formData.tariff) {
         const tariffResponse = await fetch(`/api/user/${userId}/tariff`, {
             method: 'POST',
@@ -811,7 +633,7 @@ async function updateUserData(userId) {
         }
     }
     
-    return await updateResponse.json();
+    return await response.json();
 }
 
 // Save onboarding data
@@ -837,3 +659,10 @@ async function saveOnboardingData(userId) {
     return await response.json();
 }
 
+// Make functions global
+window.selectOption = selectOption;
+window.selectTariff = selectTariff;
+window.addDebt = addDebt;
+window.removeDebt = removeDebt;
+window.nextStep = nextStep;
+window.prevStep = prevStep;
