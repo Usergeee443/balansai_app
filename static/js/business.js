@@ -1363,19 +1363,122 @@ function openSalesWarehouse() {
 
 // Savdo & Ombor ma'lumotlarini yuklash
 async function loadSalesWarehouseData() {
+    const initData = getInitData();
     try {
-        // Sticky statistics yuklash
-        const stats = await fetch('/api/business/sales-warehouse/stats');
-        const statsData = await stats.json();
+        // Parallel API so'rovlari
+        const [statsRes, salesRes, productsRes, creditsRes] = await Promise.all([
+            fetch('/api/business/sales-warehouse/stats', { headers: { 'X-Telegram-Init-Data': initData } }),
+            fetch('/api/business/sales?limit=5', { headers: { 'X-Telegram-Init-Data': initData } }),
+            fetch('/api/business/warehouse?limit=5', { headers: { 'X-Telegram-Init-Data': initData } }),
+            fetch('/api/business/credit?limit=5', { headers: { 'X-Telegram-Init-Data': initData } })
+        ]);
+        
+        const statsData = await statsRes.json();
+        const salesList = await salesRes.json();
+        const productsList = await productsRes.json();
+        const creditsList = await creditsRes.json();
 
         updateStickyStats(statsData);
-
-        // Overview statistikalarini yuklash
         updateOverviewStats(statsData);
+        
+        // So'nggi harakatlar ro'yxatini yangilash
+        updateRecentActivity(salesList, creditsList);
+        
+        // Top mahsulotlarni ko'rsatish
+        updateTopProducts(productsList);
     } catch (error) {
         console.error('Savdo & Ombor ma\'lumotlarini yuklashda xato:', error);
-        showToast('Ma\'lumotlarni yuklashda xatolik', 'error');
     }
+}
+
+// So'nggi harakatlarni yangilash
+function updateRecentActivity(sales, credits) {
+    const container = document.getElementById('recentActivityList');
+    if (!container) return;
+    
+    let activities = [];
+    
+    // Sotuvlarni qo'shish
+    if (sales && sales.length > 0) {
+        sales.forEach(sale => {
+            activities.push({
+                type: 'sale',
+                date: new Date(sale.sale_date),
+                amount: sale.total_amount,
+                description: sale.client_name || 'Sotuv',
+                icon: '📈',
+                color: '#10b981'
+            });
+        });
+    }
+    
+    // Nasiyalarni qo'shish
+    if (credits && credits.length > 0) {
+        credits.forEach(credit => {
+            activities.push({
+                type: 'credit',
+                date: new Date(credit.given_date),
+                amount: credit.amount,
+                description: credit.client_name || 'Nasiya',
+                icon: '💳',
+                color: '#ef4444'
+            });
+        });
+    }
+    
+    // Sanaga ko'ra tartiblash
+    activities.sort((a, b) => b.date - a.date);
+    activities = activities.slice(0, 5);
+    
+    if (activities.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 20px; color: var(--wallet-text-secondary);">Hozircha harakatlar yo\'q</div>';
+        return;
+    }
+    
+    let html = '';
+    activities.forEach(activity => {
+        const dateStr = activity.date.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit' });
+        const timeStr = activity.date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+        html += `
+            <div style="padding: 10px 0; border-bottom: 1px solid var(--wallet-border-color); display: flex; align-items: center; gap: 12px;">
+                <div style="font-size: 20px;">${activity.icon}</div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 500; color: var(--wallet-text-primary);">${activity.description}</div>
+                    <div style="font-size: 11px; color: var(--wallet-text-secondary);">${dateStr} ${timeStr}</div>
+                </div>
+                <div style="font-weight: 600; color: ${activity.color};">
+                    ${activity.type === 'sale' ? '+' : '-'}${formatCurrency(activity.amount)}
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+// Top mahsulotlarni ko'rsatish
+function updateTopProducts(products) {
+    // Overview sahifasida top mahsulotlarni ko'rsatish uchun
+    // Agar overview sahifasida top mahsulotlar bo'limi bo'lsa
+    const topProductsContainer = document.getElementById('topProductsList');
+    if (!topProductsContainer || !products || products.length === 0) return;
+    
+    let html = '';
+    products.slice(0, 5).forEach((product, index) => {
+        html += `
+            <div style="padding: 8px 0; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid var(--wallet-border-color);">
+                <div style="width: 24px; height: 24px; background: linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius: 6px; display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: 600;">${index + 1}</div>
+                <div style="flex: 1;">
+                    <div style="font-weight: 500; color: var(--wallet-text-primary);">${product.product_name}</div>
+                    <div style="font-size: 11px; color: var(--wallet-text-secondary);">${product.category || 'Kategoriya yo\'q'}</div>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: 600; color: #10b981;">${formatCurrency(product.sell_price || 0)}</div>
+                    <div style="font-size: 11px; color: var(--wallet-text-secondary);">${product.quantity} ${product.unit || 'dona'}</div>
+                </div>
+            </div>
+        `;
+    });
+    topProductsContainer.innerHTML = html;
 }
 
 // Overview statistikalarini yangilash
@@ -1478,237 +1581,870 @@ function showSalesOverview() {
 
 // Sotuvlar tafsiloti
 async function getSalesDetailContent() {
+    // Ma'lumotlarni yuklash
+    const initData = getInitData();
+    let salesStats = { today_sales: 0, total_revenue: 0, total_sales: 0 };
+    let salesList = [];
+    
+    try {
+        const [statsRes, salesRes] = await Promise.all([
+            fetch('/api/business/sales-warehouse/stats', { headers: { 'X-Telegram-Init-Data': initData } }),
+            fetch('/api/business/sales?limit=50', { headers: { 'X-Telegram-Init-Data': initData } })
+        ]);
+        salesStats = await statsRes.json();
+        salesList = await salesRes.json();
+    } catch (e) { console.error('Sales data error:', e); }
+    
+    const avgCheck = salesStats.total_sales > 0 ? salesStats.total_revenue / salesStats.total_sales : 0;
+    
+    let salesHtml = '';
+    if (salesList && salesList.length > 0) {
+        salesList.forEach(sale => {
+            const date = new Date(sale.sale_date);
+            const dateStr = date.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const timeStr = date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+            salesHtml += `
+                <div style="padding: 12px; border-bottom: 1px solid var(--wallet-border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600; color: var(--wallet-text-primary);">${formatCurrency(sale.total_amount)}</div>
+                        <div style="font-size: 12px; color: var(--wallet-text-secondary);">${sale.client_name || 'Naqd'} • ${sale.payment_type === 'cash' ? 'Naqd' : 'Karta'}</div>
+                        <div style="font-size: 11px; color: var(--wallet-text-secondary);">${dateStr} ${timeStr}</div>
+                    </div>
+                    <div style="color: #10b981; font-size: 20px;">✓</div>
+                </div>
+            `;
+        });
+    } else {
+        salesHtml = '<div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">Sotuvlar mavjud emas</div>';
+    }
+    
     return `
-        <button class="wallet-btn-primary" onclick="showAddSaleModal()" style="margin-bottom: 16px;">
+        <button class="wallet-btn-primary" onclick="showAddSaleModal()" style="margin-bottom: 16px; width: 100%;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
                 <path d="M12 5v14M5 12h14"/>
             </svg>
             <span>Yangi sotuv</span>
         </button>
-        <div class="wallet-stats-overview" style="margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
             <div class="wallet-stat-card">
-                <div class="wallet-stat-label">Bugungi sotuvlar</div>
-                <div class="wallet-stat-value">0</div>
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Jami sotuvlar</div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--wallet-text-primary);">${salesStats.total_sales || 0}</div>
             </div>
             <div class="wallet-stat-card">
-                <div class="wallet-stat-label">Jami summa</div>
-                <div class="wallet-stat-value">0 so'm</div>
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Jami summa</div>
+                <div style="font-size: 24px; font-weight: 700; color: #10b981;">${formatCurrency(salesStats.total_revenue || 0)}</div>
             </div>
             <div class="wallet-stat-card">
-                <div class="wallet-stat-label">O'rtacha chek</div>
-                <div class="wallet-stat-value">0 so'm</div>
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">O'rtacha chek</div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--wallet-text-primary);">${formatCurrency(avgCheck)}</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Bugungi sotuvlar</div>
+                <div style="font-size: 24px; font-weight: 700; color: #3b82f6;">${salesStats.today_sales || 0}</div>
             </div>
         </div>
-        <div class="wallet-section">
-            <div class="wallet-section-header">
-                <h2 class="wallet-section-title">So'nggi sotuvlar</h2>
+        <div class="wallet-card">
+            <h4 style="margin: 0 0 12px 0; font-size: 16px; color: var(--wallet-text-primary);">So'nggi sotuvlar</h4>
+            <div id="salesListContainer">${salesHtml}</div>
             </div>
-            <div id="salesListContainer">
-                <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
-                    Sotuvlar mavjud emas
+    `;
+}
+
+// Mahsulotlar tafsiloti (Ombor sahifasi)
+async function getProductsDetailContent() {
+    const initData = getInitData();
+    let warehouseStats = { total_products: 0, low_stock_count: 0, total_value: 0 };
+    let products = [];
+    
+    try {
+        const [statsRes, productsRes] = await Promise.all([
+            fetch('/api/business/statistics/warehouse', { headers: { 'X-Telegram-Init-Data': initData } }),
+            fetch('/api/business/warehouse?limit=100', { headers: { 'X-Telegram-Init-Data': initData } })
+        ]);
+        warehouseStats = await statsRes.json();
+        products = await productsRes.json();
+    } catch (e) { console.error('Products data error:', e); }
+    
+    const categoriesCount = [...new Set(products.map(p => p.category).filter(c => c))].length;
+    
+    let productsHtml = '';
+    if (products && products.length > 0) {
+        products.forEach(product => {
+            const isLowStock = product.min_stock > 0 && product.quantity <= product.min_stock;
+            const stockColor = isLowStock ? '#ef4444' : '#10b981';
+            productsHtml += `
+                <div style="padding: 14px; border-bottom: 1px solid var(--wallet-border-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: var(--wallet-text-primary); margin-bottom: 4px;">${product.product_name}</div>
+                            <div style="font-size: 12px; color: var(--wallet-text-secondary);">
+                                ${product.category || 'Kategoriya yo\'q'} ${product.product_code ? `• Kod: ${product.product_code}` : ''}
+        </div>
+                            <div style="font-size: 13px; color: #3b82f6; margin-top: 4px;">Narx: ${formatCurrency(product.sell_price || 0)}</div>
+            </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 700; color: ${stockColor}; font-size: 18px;">${product.quantity}</div>
+                            <div style="font-size: 11px; color: var(--wallet-text-secondary);">${product.unit || 'dona'}</div>
+                            ${isLowStock ? '<div style="font-size: 10px; color: #ef4444; margin-top: 2px;">⚠️ Kam qoldi</div>' : ''}
                 </div>
             </div>
         </div>
     `;
+        });
+    } else {
+        productsHtml = '<div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">Mahsulotlar mavjud emas</div>';
 }
 
-// Mahsulotlar tafsiloti
-async function getProductsDetailContent() {
     return `
-        <button class="wallet-btn-primary" onclick="showAddProductModal()" style="margin-bottom: 16px;">
+        <button class="wallet-btn-primary" onclick="showAddWarehouseModal()" style="margin-bottom: 16px; width: 100%;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
                 <path d="M12 5v14M5 12h14"/>
             </svg>
             <span>Yangi mahsulot</span>
         </button>
-        <div class="wallet-stats-overview" style="margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
             <div class="wallet-stat-card">
-                <div class="wallet-stat-label">Jami mahsulotlar</div>
-                <div class="wallet-stat-value" id="totalProductsCount">0</div>
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Jami mahsulotlar</div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--wallet-text-primary);">${warehouseStats.total_products || 0}</div>
             </div>
             <div class="wallet-stat-card">
-                <div class="wallet-stat-label">Omborda</div>
-                <div class="wallet-stat-value" id="inStockCount">0</div>
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Kam qolgan</div>
+                <div style="font-size: 24px; font-weight: 700; color: #ef4444;">${warehouseStats.low_stock_count || 0}</div>
             </div>
             <div class="wallet-stat-card">
-                <div class="wallet-stat-label">Kam qolgan</div>
-                <div class="wallet-stat-value" id="lowStockCount">0</div>
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Kategoriyalar</div>
+                <div style="font-size: 24px; font-weight: 700; color: #8b5cf6;">${categoriesCount}</div>
             </div>
+            <div class="wallet-stat-card">
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Ombor qiymati</div>
+                <div style="font-size: 24px; font-weight: 700; color: #10b981;">${formatCurrency(warehouseStats.total_value || 0)}</div>
         </div>
-        <div class="wallet-section">
-            <div class="wallet-section-header">
-                <h2 class="wallet-section-title">Mahsulotlar ro'yxati</h2>
             </div>
-            <div id="productsListContainer">
-                <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
-                    Ma'lumot yuklanmoqda...
+        <div class="wallet-card">
+            <h4 style="margin: 0 0 12px 0; font-size: 16px; color: var(--wallet-text-primary);">Mahsulotlar ro'yxati</h4>
+            <div id="productsListContainer">${productsHtml}</div>
                 </div>
-            </div>
-        </div>
     `;
 }
 
 // Mijozlar tafsiloti
 async function getClientsDetailContent() {
+    const initData = getInitData();
+    let clients = [];
+    let clientStats = { total_clients: 0, suppliers: 0, active_clients: 0, new_clients: 0 };
+    
+    try {
+        const clientsRes = await fetch('/api/business/clients?limit=100', { headers: { 'X-Telegram-Init-Data': initData } });
+        clients = await clientsRes.json();
+        
+        // Statistikalarni hisoblash
+        clientStats.total_clients = clients.length;
+        clientStats.suppliers = clients.filter(c => c.type === 'supplier').length;
+        clientStats.active_clients = clients.filter(c => c.status === 'active').length;
+        // 30 kun ichida qo'shilganlar
+        const thirtyDaysAgo = new Date();
+        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        clientStats.new_clients = clients.filter(c => new Date(c.created_at) > thirtyDaysAgo).length;
+    } catch (e) { console.error('Clients data error:', e); }
+    
+    let clientsHtml = '';
+    if (clients && clients.length > 0) {
+        clients.forEach(client => {
+            const balance = parseFloat(client.balance || 0);
+            const balanceColor = balance > 0 ? '#10b981' : balance < 0 ? '#ef4444' : 'var(--wallet-text-secondary)';
+            const typeLabel = client.type === 'supplier' ? 'Yetkazuvchi' : 'Mijoz';
+            const statusLabel = client.status === 'active' ? 'Aktiv' : 'Passiv';
+            const statusColor = client.status === 'active' ? '#10b981' : '#f59e0b';
+            
+            clientsHtml += `
+                <div style="padding: 14px; border-bottom: 1px solid var(--wallet-border-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: var(--wallet-text-primary); margin-bottom: 4px;">${client.name}</div>
+                            <div style="font-size: 12px; color: var(--wallet-text-secondary);">
+                                <span style="color: ${client.type === 'supplier' ? '#8b5cf6' : '#3b82f6'};">${typeLabel}</span> • 
+                                <span style="color: ${statusColor};">${statusLabel}</span>
+                            </div>
+                            ${client.phone ? `<div style="font-size: 12px; color: var(--wallet-text-secondary); margin-top: 4px;">📞 ${client.phone}</div>` : ''}
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 700; color: ${balanceColor}; font-size: 16px;">
+                                ${balance >= 0 ? '+' : ''}${formatCurrency(balance)}
+                            </div>
+                            <div style="font-size: 11px; color: var(--wallet-text-secondary);">
+                                ${balance > 0 ? 'Ortiqcha' : balance < 0 ? 'Qarz' : 'Balans'}
+                            </div>
+                        </div>
+            </div>
+        </div>
+    `;
+        });
+    } else {
+        clientsHtml = '<div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">Mijozlar mavjud emas</div>';
+}
+
     return `
-        <button class="wallet-btn-primary" onclick="showAddClientModal()" style="margin-bottom: 16px;">
+        <button class="wallet-btn-primary" onclick="showAddClientModal()" style="margin-bottom: 16px; width: 100%;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
                 <path d="M12 5v14M5 12h14"/>
             </svg>
             <span>Yangi mijoz</span>
         </button>
-        <div class="wallet-stats-overview" style="margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
             <div class="wallet-stat-card">
-                <div class="wallet-stat-label">Jami mijozlar</div>
-                <div class="wallet-stat-value">0</div>
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Jami mijozlar</div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--wallet-text-primary);">${clientStats.total_clients}</div>
             </div>
             <div class="wallet-stat-card">
-                <div class="wallet-stat-label">Aktiv</div>
-                <div class="wallet-stat-value">0</div>
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Yetkazuvchilar</div>
+                <div style="font-size: 24px; font-weight: 700; color: #8b5cf6;">${clientStats.suppliers}</div>
             </div>
             <div class="wallet-stat-card">
-                <div class="wallet-stat-label">VIP</div>
-                <div class="wallet-stat-value">0</div>
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Aktiv kontragentlar</div>
+                <div style="font-size: 24px; font-weight: 700; color: #10b981;">${clientStats.active_clients}</div>
             </div>
+            <div class="wallet-stat-card">
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Yangi mijozlar</div>
+                <div style="font-size: 24px; font-weight: 700; color: #3b82f6;">${clientStats.new_clients}</div>
         </div>
-        <div class="wallet-section">
-            <div class="wallet-section-header">
-                <h2 class="wallet-section-title">Mijozlar ro'yxati</h2>
             </div>
-            <div id="clientsListContainer">
-                <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
-                    Mijozlar mavjud emas
-                </div>
-            </div>
+        <div class="wallet-card">
+            <h4 style="margin: 0 0 12px 0; font-size: 16px; color: var(--wallet-text-primary);">Kontragentlar ro'yxati</h4>
+            <div id="clientsListContainer">${clientsHtml}</div>
         </div>
     `;
 }
 
 // Fakturalar tafsiloti
 async function getInvoicesDetailContent() {
-    return `
-        <button class="wallet-btn-primary" onclick="showAddInvoiceModal()" style="margin-bottom: 16px;">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
-                <path d="M12 5v14M5 12h14"/>
-            </svg>
-            <span>Yangi faktura</span>
-        </button>
-        <div class="wallet-stats-overview" style="margin-bottom: 20px;">
-            <div class="wallet-stat-card">
-                <div class="wallet-stat-label">Jami fakturalar</div>
-                <div class="wallet-stat-value">0</div>
-            </div>
-            <div class="wallet-stat-card">
-                <div class="wallet-stat-label">To'langan</div>
-                <div class="wallet-stat-value">0</div>
-            </div>
-            <div class="wallet-stat-card">
-                <div class="wallet-stat-label">Kutilmoqda</div>
-                <div class="wallet-stat-value">0</div>
+    const initData = getInitData();
+    let invoices = [];
+    let invoiceStats = { total: 0, pending: 0, paid: 0, total_amount: 0 };
+    
+    try {
+        const invoicesRes = await fetch('/api/business/invoices?limit=100', { headers: { 'X-Telegram-Init-Data': initData } });
+        invoices = await invoicesRes.json();
+        
+        // Statistikalarni hisoblash
+        invoiceStats.total = invoices.length;
+        invoiceStats.pending = invoices.filter(i => i.status === 'pending').length;
+        invoiceStats.paid = invoices.filter(i => i.status === 'paid').length;
+        invoiceStats.total_amount = invoices.reduce((sum, i) => sum + parseFloat(i.total_amount || 0), 0);
+    } catch (e) { console.error('Invoices data error:', e); }
+    
+    let invoicesHtml = '';
+    if (invoices && invoices.length > 0) {
+        invoices.forEach(invoice => {
+            const date = new Date(invoice.invoice_date);
+            const dateStr = date.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const statusLabel = invoice.status === 'paid' ? 'To\'langan' : 'Kutilmoqda';
+            const statusColor = invoice.status === 'paid' ? '#10b981' : '#f59e0b';
+            const statusBg = invoice.status === 'paid' ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)';
+            
+            invoicesHtml += `
+                <div style="padding: 14px; border-bottom: 1px solid var(--wallet-border-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: var(--wallet-text-primary); margin-bottom: 4px;">${invoice.invoice_number}</div>
+                            <div style="font-size: 12px; color: var(--wallet-text-secondary);">
+                                ${invoice.client_name || 'Mijoz belgilanmagan'} • ${dateStr}
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 700; color: var(--wallet-text-primary); font-size: 16px;">${formatCurrency(invoice.total_amount)}</div>
+                            <div style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: ${statusBg}; color: ${statusColor}; display: inline-block; margin-top: 4px;">
+                                ${statusLabel}
+                            </div>
+                        </div>
             </div>
         </div>
-        <div class="wallet-section">
-            <div class="wallet-section-header">
-                <h2 class="wallet-section-title">Fakturalar ro'yxati</h2>
+    `;
+        });
+    } else {
+        invoicesHtml = '<div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">Fakturalar mavjud emas</div>';
+}
+
+    return `
+        <button class="wallet-btn-primary" onclick="showAddInvoiceModal()" style="margin-bottom: 16px; width: 100%;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+            <span>Yangi faktura</span>
+                </button>
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
+            <div class="wallet-stat-card">
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Jami fakturalar</div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--wallet-text-primary);">${invoiceStats.total}</div>
             </div>
-            <div id="invoicesListContainer">
-                <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
-                    Fakturalar mavjud emas
-                </div>
+            <div class="wallet-stat-card">
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Kutish holatida</div>
+                <div style="font-size: 24px; font-weight: 700; color: #f59e0b;">${invoiceStats.pending}</div>
             </div>
+            <div class="wallet-stat-card">
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">To'langan</div>
+                <div style="font-size: 24px; font-weight: 700; color: #10b981;">${invoiceStats.paid}</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Umumiy summa</div>
+                <div style="font-size: 24px; font-weight: 700; color: #3b82f6;">${formatCurrency(invoiceStats.total_amount)}</div>
+        </div>
+            </div>
+        <div class="wallet-card">
+            <h4 style="margin: 0 0 12px 0; font-size: 16px; color: var(--wallet-text-primary);">Fakturalar ro'yxati</h4>
+            <div id="invoicesListContainer">${invoicesHtml}</div>
         </div>
     `;
 }
 
 // Nasiya tafsiloti
 async function getCreditDetailContent() {
+    const initData = getInitData();
+    let credits = [];
+    let creditStats = { total: 0, total_debt: 0, overdue: 0, paid: 0 };
+    
+    try {
+        const creditsRes = await fetch('/api/business/credit?limit=100', { headers: { 'X-Telegram-Init-Data': initData } });
+        credits = await creditsRes.json();
+        
+        // Statistikalarni hisoblash
+        creditStats.total = credits.length;
+        creditStats.total_debt = credits.reduce((sum, c) => sum + (parseFloat(c.amount || 0) - parseFloat(c.paid_amount || 0)), 0);
+        creditStats.overdue = credits.filter(c => {
+            if (!c.due_date || c.status !== 'active') return false;
+            return new Date(c.due_date) < new Date();
+        }).length;
+        creditStats.paid = credits.filter(c => c.status === 'closed').length;
+    } catch (e) { console.error('Credits data error:', e); }
+    
+    let creditsHtml = '';
+    if (credits && credits.length > 0) {
+        credits.forEach(credit => {
+            const givenDate = new Date(credit.given_date);
+            const givenDateStr = givenDate.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const dueDate = credit.due_date ? new Date(credit.due_date) : null;
+            const dueDateStr = dueDate ? dueDate.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' }) : 'Belgilanmagan';
+            
+            const isOverdue = dueDate && dueDate < new Date() && credit.status === 'active';
+            const remaining = parseFloat(credit.amount || 0) - parseFloat(credit.paid_amount || 0);
+            
+            let statusLabel = 'Aktiv';
+            let statusColor = '#3b82f6';
+            let statusBg = 'rgba(59, 130, 246, 0.1)';
+            
+            if (credit.status === 'closed') {
+                statusLabel = 'Yopilgan';
+                statusColor = '#10b981';
+                statusBg = 'rgba(16, 185, 129, 0.1)';
+            } else if (isOverdue) {
+                statusLabel = 'Kechikkan';
+                statusColor = '#ef4444';
+                statusBg = 'rgba(239, 68, 68, 0.1)';
+            }
+            
+            creditsHtml += `
+                <div style="padding: 14px; border-bottom: 1px solid var(--wallet-border-color);">
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div style="flex: 1;">
+                            <div style="font-weight: 600; color: var(--wallet-text-primary); margin-bottom: 4px;">${credit.client_name || 'Mijoz'}</div>
+                            <div style="font-size: 12px; color: var(--wallet-text-secondary);">
+                                Berilgan: ${givenDateStr}
+                            </div>
+                            <div style="font-size: 12px; color: ${isOverdue ? '#ef4444' : 'var(--wallet-text-secondary)'};">
+                                Muddat: ${dueDateStr} ${isOverdue ? '⚠️' : ''}
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div style="font-weight: 700; color: #ef4444; font-size: 16px;">${formatCurrency(remaining)}</div>
+                            <div style="font-size: 11px; padding: 2px 8px; border-radius: 4px; background: ${statusBg}; color: ${statusColor}; display: inline-block; margin-top: 4px;">
+                                ${statusLabel}
+                            </div>
+                        </div>
+            </div>
+        </div>
+    `;
+        });
+    } else {
+        creditsHtml = '<div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">Nasiyalar mavjud emas</div>';
+}
+
     return `
-        <button class="wallet-btn-primary" onclick="showAddCreditModal()" style="margin-bottom: 16px;">
+        <button class="wallet-btn-primary" onclick="showAddCreditModal()" style="margin-bottom: 16px; width: 100%;">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 18px; height: 18px;">
                 <path d="M12 5v14M5 12h14"/>
             </svg>
             <span>Yangi nasiya</span>
         </button>
-        <div class="wallet-stats-overview" style="margin-bottom: 20px;">
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
             <div class="wallet-stat-card">
-                <div class="wallet-stat-label">Jami qarz</div>
-                <div class="wallet-stat-value">0 so'm</div>
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Jami nasiya</div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--wallet-text-primary);">${creditStats.total}</div>
             </div>
             <div class="wallet-stat-card">
-                <div class="wallet-stat-label">Qarzdorlar</div>
-                <div class="wallet-stat-value">0</div>
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Qarz summasi</div>
+                <div style="font-size: 24px; font-weight: 700; color: #ef4444;">${formatCurrency(creditStats.total_debt)}</div>
             </div>
             <div class="wallet-stat-card">
-                <div class="wallet-stat-label">Muddati o'tgan</div>
-                <div class="wallet-stat-value">0</div>
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Muddati o'tgan</div>
+                <div style="font-size: 24px; font-weight: 700; color: #f59e0b;">${creditStats.overdue}</div>
             </div>
+            <div class="wallet-stat-card">
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">To'langan</div>
+                <div style="font-size: 24px; font-weight: 700; color: #10b981;">${creditStats.paid}</div>
         </div>
-        <div class="wallet-section">
-            <div class="wallet-section-header">
-                <h2 class="wallet-section-title">Nasiya ro'yxati</h2>
             </div>
-            <div id="creditsListContainer">
-                <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
-                    Nasiyalar mavjud emas
-                </div>
+        <div class="wallet-card">
+            <h4 style="margin: 0 0 12px 0; font-size: 16px; color: var(--wallet-text-primary);">Nasiya ro'yxati</h4>
+            <div id="creditsListContainer">${creditsHtml}</div>
             </div>
-        </div>
     `;
 }
 
 // Daromad tafsiloti
 async function getRevenueDetailContent() {
-    return `
-        <div class="wallet-stats-overview" style="margin-bottom: 20px;">
-            <div class="wallet-stat-card">
-                <div class="wallet-stat-label">Bugungi daromad</div>
-                <div class="wallet-stat-value">0 so'm</div>
-            </div>
-            <div class="wallet-stat-card">
-                <div class="wallet-stat-label">Bu hafta</div>
-                <div class="wallet-stat-value">0 so'm</div>
-            </div>
-            <div class="wallet-stat-card">
-                <div class="wallet-stat-label">Bu oy</div>
-                <div class="wallet-stat-value">0 so'm</div>
-            </div>
+    const initData = getInitData();
+    let revenueStats = { today: 0, week: 0, month: 0, total: 0 };
+    let salesList = [];
+    
+    try {
+        const [statsRes, salesRes] = await Promise.all([
+            fetch('/api/business/sales-warehouse/stats', { headers: { 'X-Telegram-Init-Data': initData } }),
+            fetch('/api/business/sales?limit=20', { headers: { 'X-Telegram-Init-Data': initData } })
+        ]);
+        const statsData = await statsRes.json();
+        salesList = await salesRes.json();
+        
+        revenueStats.today = statsData.today_revenue || 0;
+        revenueStats.week = statsData.week_revenue || statsData.total_revenue * 0.3 || 0;
+        revenueStats.month = statsData.month_revenue || statsData.total_revenue || 0;
+        revenueStats.total = statsData.total_revenue || 0;
+    } catch (e) { console.error('Revenue data error:', e); }
+    
+    // So'nggi daromadlar ro'yxati
+    let historyHtml = '';
+    if (salesList && salesList.length > 0) {
+        salesList.forEach(sale => {
+            const date = new Date(sale.sale_date);
+            const dateStr = date.toLocaleDateString('uz-UZ', { day: '2-digit', month: '2-digit', year: 'numeric' });
+            const timeStr = date.toLocaleTimeString('uz-UZ', { hour: '2-digit', minute: '2-digit' });
+            
+            historyHtml += `
+                <div style="padding: 12px; border-bottom: 1px solid var(--wallet-border-color); display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <div style="font-weight: 600; color: var(--wallet-text-primary);">${sale.client_name || 'Sotuv'}</div>
+                        <div style="font-size: 12px; color: var(--wallet-text-secondary);">${dateStr} ${timeStr}</div>
+                    </div>
+                    <div style="font-weight: 700; color: #10b981; font-size: 16px;">+${formatCurrency(sale.total_amount)}</div>
         </div>
+    `;
+        });
+    } else {
+        historyHtml = '<div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">Daromad tarixi mavjud emas</div>';
+    }
+    
+    // Trend hisoblash
+    const todayTrend = revenueStats.today > 0 ? '+' : '';
+    const weekTrend = revenueStats.week > revenueStats.today * 7 ? '↑' : '↓';
+    
+    return `
+        <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin-bottom: 20px;">
+            <div class="wallet-stat-card">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="font-size: 12px; color: var(--wallet-text-secondary);">Bugungi daromad</div>
+                    <span style="font-size: 10px; color: #10b981;">${todayTrend ? '↑' : ''}</span>
+                </div>
+                <div style="font-size: 24px; font-weight: 700; color: #10b981;">${formatCurrency(revenueStats.today)}</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <div style="font-size: 12px; color: var(--wallet-text-secondary);">Bu hafta</div>
+                    <span style="font-size: 10px; color: ${weekTrend === '↑' ? '#10b981' : '#f59e0b'};">${weekTrend}</span>
+                </div>
+                <div style="font-size: 24px; font-weight: 700; color: var(--wallet-text-primary);">${formatCurrency(revenueStats.week)}</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Bu oy</div>
+                <div style="font-size: 24px; font-weight: 700; color: #3b82f6;">${formatCurrency(revenueStats.month)}</div>
+            </div>
+            <div class="wallet-stat-card">
+                <div style="font-size: 12px; color: var(--wallet-text-secondary);">Jami daromad</div>
+                <div style="font-size: 24px; font-weight: 700; color: #8b5cf6;">${formatCurrency(revenueStats.total)}</div>
+        </div>
+        </div>
+        
         <div class="wallet-card" style="margin-bottom: 20px;">
             <h4 style="margin: 0 0 16px 0; font-size: 16px; color: var(--wallet-text-primary);">Daromad grafigi</h4>
-            <canvas id="revenueChart" style="width: 100%; height: 200px;"></canvas>
-        </div>
-        <div class="wallet-section">
-            <div class="wallet-section-header">
-                <h2 class="wallet-section-title">Daromad tarixchasi</h2>
-            </div>
-            <div id="revenueHistoryContainer">
-                <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
-                    Ma'lumot yuklanmoqda...
+            <div style="display: flex; align-items: flex-end; justify-content: space-between; height: 120px; padding: 10px 0;">
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 30px; background: linear-gradient(to top, #3b82f6, #8b5cf6); border-radius: 4px; height: ${Math.max(20, (revenueStats.today / Math.max(revenueStats.month, 1)) * 100)}px;"></div>
+                    <div style="font-size: 10px; color: var(--wallet-text-secondary); margin-top: 4px;">Bugun</div>
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 30px; background: linear-gradient(to top, #10b981, #34d399); border-radius: 4px; height: ${Math.max(20, (revenueStats.week / Math.max(revenueStats.month, 1)) * 100)}px;"></div>
+                    <div style="font-size: 10px; color: var(--wallet-text-secondary); margin-top: 4px;">Hafta</div>
+                </div>
+                <div style="flex: 1; display: flex; flex-direction: column; align-items: center;">
+                    <div style="width: 30px; background: linear-gradient(to top, #f59e0b, #fbbf24); border-radius: 4px; height: 100px;"></div>
+                    <div style="font-size: 10px; color: var(--wallet-text-secondary); margin-top: 4px;">Oy</div>
                 </div>
             </div>
+        </div>
+        
+        <div class="wallet-card">
+            <h4 style="margin: 0 0 12px 0; font-size: 16px; color: var(--wallet-text-primary);">Daromad tarixchasi</h4>
+            <div id="revenueHistoryContainer">${historyHtml}</div>
         </div>
     `;
 }
 
-// Placeholder CRUD modal functions - will be implemented
+// ==================== MODAL FUNKSIYALARI ====================
+
+// Yangi sotuv qo'shish modali
 function showAddSaleModal() {
-    alert('Yangi sotuv qo\'shish funksiyasi tez orada qo\'shiladi');
+    const modalHtml = `
+        <div id="saleModal" class="wallet-modal" style="display: flex;">
+            <div class="wallet-modal-content">
+                <div class="wallet-modal-header">
+                    <h3>Yangi sotuv</h3>
+                    <button class="wallet-icon-btn" onclick="closeSaleModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                            <path d="M18 6L6 18M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="wallet-modal-body">
+                    <div class="wallet-form-group">
+                        <label>Mijoz nomi (ixtiyoriy)</label>
+                        <input type="text" id="saleClientName" class="wallet-input" placeholder="Mijoz nomi">
+                    </div>
+                    <div class="wallet-form-group">
+                        <label>Summa *</label>
+                        <input type="number" id="saleAmount" class="wallet-input" placeholder="0" required>
+                    </div>
+                    <div class="wallet-form-group">
+                        <label>To'lov turi</label>
+                        <select id="salePaymentType" class="wallet-input">
+                            <option value="cash">Naqd</option>
+                            <option value="card">Karta</option>
+                            <option value="transfer">O'tkazma</option>
+                            <option value="credit">Nasiya</option>
+                        </select>
+                    </div>
+                    <div class="wallet-form-group">
+                        <label>Izoh</label>
+                        <textarea id="saleNotes" class="wallet-input" rows="2" placeholder="Izoh..."></textarea>
+                    </div>
+                </div>
+                <div class="wallet-modal-footer">
+                    <button class="wallet-btn-secondary" onclick="closeSaleModal()">Bekor qilish</button>
+                    <button class="wallet-btn-primary" onclick="saveSale()">Saqlash</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
-function showAddProductModal() {
-    alert('Yangi mahsulot qo\'shish funksiyasi tez orada qo\'shiladi');
+function closeSaleModal() {
+    const modal = document.getElementById('saleModal');
+    if (modal) modal.remove();
 }
 
+async function saveSale() {
+    const amount = document.getElementById('saleAmount').value;
+    if (!amount || parseFloat(amount) <= 0) {
+        showToast('Summani kiriting', 'error');
+        return;
+    }
+    
+    const initData = getInitData();
+    try {
+        const response = await fetch('/api/business/sales', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Telegram-Init-Data': initData
+            },
+            body: JSON.stringify({
+                client_name: document.getElementById('saleClientName').value,
+                total_amount: parseFloat(amount),
+                payment_type: document.getElementById('salePaymentType').value,
+                notes: document.getElementById('saleNotes').value
+            })
+        });
+        const result = await response.json();
+        if (result.success) {
+            showToast('Sotuv qo\'shildi', 'success');
+            closeSaleModal();
+            loadSectionDetail('sales'); // Sahifani yangilash
+        } else {
+            showToast('Xatolik yuz berdi', 'error');
+        }
+    } catch (e) {
+        console.error('Save sale error:', e);
+        showToast('Xatolik yuz berdi', 'error');
+    }
+}
+
+// Yangi mijoz qo'shish modali
 function showAddClientModal() {
-    alert('Yangi mijoz qo\'shish funksiyasi tez orada qo\'shiladi');
+    const modalHtml = `
+        <div id="clientModal" class="wallet-modal" style="display: flex;">
+            <div class="wallet-modal-content">
+                <div class="wallet-modal-header">
+                    <h3>Yangi mijoz</h3>
+                    <button class="wallet-icon-btn" onclick="closeClientModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                            <path d="M18 6L6 18M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="wallet-modal-body">
+                    <div class="wallet-form-group">
+                        <label>Nomi *</label>
+                        <input type="text" id="clientName" class="wallet-input" placeholder="Mijoz nomi" required>
+                    </div>
+                    <div class="wallet-form-group">
+                        <label>Telefon</label>
+                        <input type="tel" id="clientPhone" class="wallet-input" placeholder="+998 90 123 45 67">
+                    </div>
+                    <div class="wallet-form-group">
+                        <label>Turi</label>
+                        <select id="clientType" class="wallet-input">
+                            <option value="customer">Mijoz</option>
+                            <option value="supplier">Yetkazuvchi</option>
+                        </select>
+                    </div>
+                    <div class="wallet-form-group">
+                        <label>Manzil</label>
+                        <textarea id="clientAddress" class="wallet-input" rows="2" placeholder="Manzil..."></textarea>
+                    </div>
+                </div>
+                <div class="wallet-modal-footer">
+                    <button class="wallet-btn-secondary" onclick="closeClientModal()">Bekor qilish</button>
+                    <button class="wallet-btn-primary" onclick="saveClient()">Saqlash</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
+function closeClientModal() {
+    const modal = document.getElementById('clientModal');
+    if (modal) modal.remove();
+}
+
+async function saveClient() {
+    const name = document.getElementById('clientName').value;
+    if (!name) {
+        showToast('Nomni kiriting', 'error');
+        return;
+    }
+    
+    const initData = getInitData();
+    try {
+        const response = await fetch('/api/business/clients', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Telegram-Init-Data': initData
+            },
+            body: JSON.stringify({
+                name: name,
+                phone: document.getElementById('clientPhone').value,
+                type: document.getElementById('clientType').value,
+                address: document.getElementById('clientAddress').value
+            })
+        });
+        const result = await response.json();
+        if (result.success) {
+            showToast('Mijoz qo\'shildi', 'success');
+            closeClientModal();
+            loadSectionDetail('clients');
+        } else {
+            showToast('Xatolik yuz berdi', 'error');
+        }
+    } catch (e) {
+        console.error('Save client error:', e);
+        showToast('Xatolik yuz berdi', 'error');
+    }
+}
+
+// Yangi faktura qo'shish modali
 function showAddInvoiceModal() {
-    alert('Yangi faktura qo\'shish funksiyasi tez orada qo\'shiladi');
+    const invoiceNumber = 'INV-' + Date.now().toString().slice(-6);
+    const modalHtml = `
+        <div id="invoiceModal" class="wallet-modal" style="display: flex;">
+            <div class="wallet-modal-content">
+                <div class="wallet-modal-header">
+                    <h3>Yangi faktura</h3>
+                    <button class="wallet-icon-btn" onclick="closeInvoiceModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                            <path d="M18 6L6 18M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="wallet-modal-body">
+                    <div class="wallet-form-group">
+                        <label>Faktura raqami</label>
+                        <input type="text" id="invoiceNumber" class="wallet-input" value="${invoiceNumber}" readonly>
+                    </div>
+                    <div class="wallet-form-group">
+                        <label>Mijoz nomi *</label>
+                        <input type="text" id="invoiceClientName" class="wallet-input" placeholder="Mijoz nomi" required>
+                    </div>
+                    <div class="wallet-form-group">
+                        <label>Summa *</label>
+                        <input type="number" id="invoiceAmount" class="wallet-input" placeholder="0" required>
+                    </div>
+                    <div class="wallet-form-group">
+                        <label>To'lov muddati</label>
+                        <input type="date" id="invoiceDueDate" class="wallet-input">
+                    </div>
+                </div>
+                <div class="wallet-modal-footer">
+                    <button class="wallet-btn-secondary" onclick="closeInvoiceModal()">Bekor qilish</button>
+                    <button class="wallet-btn-primary" onclick="saveInvoice()">Saqlash</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
 }
 
+function closeInvoiceModal() {
+    const modal = document.getElementById('invoiceModal');
+    if (modal) modal.remove();
+}
+
+async function saveInvoice() {
+    const clientName = document.getElementById('invoiceClientName').value;
+    const amount = document.getElementById('invoiceAmount').value;
+    if (!clientName || !amount) {
+        showToast('Barcha maydonlarni to\'ldiring', 'error');
+        return;
+    }
+    
+    const initData = getInitData();
+    try {
+        const response = await fetch('/api/business/invoices', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Telegram-Init-Data': initData
+            },
+            body: JSON.stringify({
+                invoice_number: document.getElementById('invoiceNumber').value,
+                client_name: clientName,
+                total_amount: parseFloat(amount),
+                due_date: document.getElementById('invoiceDueDate').value || null
+            })
+        });
+        const result = await response.json();
+        if (result.success) {
+            showToast('Faktura qo\'shildi', 'success');
+            closeInvoiceModal();
+            loadSectionDetail('invoices');
+        } else {
+            showToast('Xatolik yuz berdi', 'error');
+        }
+    } catch (e) {
+        console.error('Save invoice error:', e);
+        showToast('Xatolik yuz berdi', 'error');
+    }
+}
+
+// Yangi nasiya qo'shish modali
 function showAddCreditModal() {
-    alert('Yangi nasiya qo\'shish funksiyasi tez orada qo\'shiladi');
+    const modalHtml = `
+        <div id="creditModal" class="wallet-modal" style="display: flex;">
+            <div class="wallet-modal-content">
+                <div class="wallet-modal-header">
+                    <h3>Yangi nasiya</h3>
+                    <button class="wallet-icon-btn" onclick="closeCreditModal()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px;">
+                            <path d="M18 6L6 18M6 6l12 12"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="wallet-modal-body">
+                    <div class="wallet-form-group">
+                        <label>Mijoz nomi *</label>
+                        <input type="text" id="creditClientName" class="wallet-input" placeholder="Mijoz nomi" required>
+                    </div>
+                    <div class="wallet-form-group">
+                        <label>Qarz summasi *</label>
+                        <input type="number" id="creditAmount" class="wallet-input" placeholder="0" required>
+                    </div>
+                    <div class="wallet-form-group">
+                        <label>To'lash muddati</label>
+                        <input type="date" id="creditDueDate" class="wallet-input">
+                    </div>
+                    <div class="wallet-form-group">
+                        <label>Izoh</label>
+                        <textarea id="creditNotes" class="wallet-input" rows="2" placeholder="Izoh..."></textarea>
+                    </div>
+                </div>
+                <div class="wallet-modal-footer">
+                    <button class="wallet-btn-secondary" onclick="closeCreditModal()">Bekor qilish</button>
+                    <button class="wallet-btn-primary" onclick="saveCredit()">Saqlash</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+}
+
+function closeCreditModal() {
+    const modal = document.getElementById('creditModal');
+    if (modal) modal.remove();
+}
+
+async function saveCredit() {
+    const clientName = document.getElementById('creditClientName').value;
+    const amount = document.getElementById('creditAmount').value;
+    if (!clientName || !amount) {
+        showToast('Barcha maydonlarni to\'ldiring', 'error');
+        return;
+    }
+    
+    const initData = getInitData();
+    try {
+        const response = await fetch('/api/business/credit', {
+            method: 'POST',
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Telegram-Init-Data': initData
+            },
+            body: JSON.stringify({
+                client_name: clientName,
+                amount: parseFloat(amount),
+                due_date: document.getElementById('creditDueDate').value || null,
+                notes: document.getElementById('creditNotes').value
+            })
+        });
+        const result = await response.json();
+        if (result.success) {
+            showToast('Nasiya qo\'shildi', 'success');
+            closeCreditModal();
+            loadSectionDetail('credit');
+        } else {
+            showToast('Xatolik yuz berdi', 'error');
+        }
+    } catch (e) {
+        console.error('Save credit error:', e);
+        showToast('Xatolik yuz berdi', 'error');
+    }
+}
+
+// Yangi mahsulot qo'shish (Ombor uchun)
+function showAddProductModal() {
+    // Ombor sahifasidagi mavjud modal funksiyasini chaqirish
+    if (typeof showAddWarehouseModal === 'function') {
+        showAddWarehouseModal();
+    } else {
+        showToast('Mahsulot qo\'shish uchun Ombor sahifasiga o\'ting', 'info');
+    }
 }
 
 // Global scope'ga export
@@ -1720,6 +2456,15 @@ window.showAddProductModal = showAddProductModal;
 window.showAddClientModal = showAddClientModal;
 window.showAddInvoiceModal = showAddInvoiceModal;
 window.showAddCreditModal = showAddCreditModal;
+window.closeSaleModal = closeSaleModal;
+window.saveSale = saveSale;
+window.closeClientModal = closeClientModal;
+window.saveClient = saveClient;
+window.closeInvoiceModal = closeInvoiceModal;
+window.saveInvoice = saveInvoice;
+window.closeCreditModal = closeCreditModal;
+window.saveCredit = saveCredit;
+window.loadSectionDetail = loadSectionDetail;
 
 // ==================== HR BO'LIMI (XODIMLAR BOSHQARUVI) ====================
 
@@ -1946,7 +2691,7 @@ function getVacationDetailContent() {
                 <h2 class="wallet-section-title">Tatil jadvali</h2>
             </div>
             <div id="hrVacationsListContainer"></div>
-        </div>
+            </div>
     `;
 }
 
@@ -1981,7 +2726,7 @@ function getSalaryDetailContent() {
                 </button>
             </div>
             <div id="hrSalariesListContainer"></div>
-        </div>
+            </div>
     `;
 }
 // ==================== XODIMLAR CRUD ====================
@@ -1994,8 +2739,8 @@ function renderEmployeesList() {
         container.innerHTML = `
             <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
                 Xodimlar mavjud emas. "Yangi xodim" tugmasini bosib qo'shing.
-            </div>
-        `;
+        </div>
+    `;
         return;
     }
 
@@ -2052,7 +2797,7 @@ function showAddEmployeeModal() {
                     <p style="color: var(--wallet-text-secondary); margin-bottom: 16px;">
                         Yangi xodimni qo'shish uchun bu QR kodni ko'rsating
                     </p>
-                </div>
+            </div>
 
                 <!-- QR Code Container -->
                 <div id="qrCodeContainer" style="
@@ -2290,8 +3035,8 @@ function renderTasksList() {
         container.innerHTML = `
             <div style="text-align: center; padding: 40px 20px; color: var(--wallet-text-secondary);">
                 Vazifalar mavjud emas. "Yangi vazifa" tugmasini bosib qo'shing.
-            </div>
-        `;
+        </div>
+    `;
         return;
     }
 

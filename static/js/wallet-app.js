@@ -16,7 +16,7 @@ let currentDebtFilter = 'all';
 let charts = {};
 
 // ============================================
-// DATA CACHE - Tezlashtirish uchun kesh
+// DATA CACHE - Tezlashtirish uchun kesh (sessionStorage bilan)
 // ============================================
 
 const dataCache = {
@@ -27,8 +27,45 @@ const dataCache = {
     debts: null,
     limit: null,
     lastUpdate: {},
-    TTL: 60000, // 60 sekund cache (1 minut)
-    pageLoaded: {}, // Qaysi sahifa yuklangan
+    TTL: 300000, // 5 minut cache (sahifalar o'rtasida saqlanadi)
+    pageLoaded: {},
+
+    // SessionStorage dan yuklash
+    loadFromStorage() {
+        try {
+            const stored = sessionStorage.getItem('balansai_cache');
+            if (stored) {
+                const data = JSON.parse(stored);
+                const now = Date.now();
+                // Faqat TTL ichida bo'lsa yuklash
+                if (data.timestamp && (now - data.timestamp) < this.TTL) {
+                    this.user = data.user || null;
+                    this.transactions = data.transactions || null;
+                    this.lastUpdate = data.lastUpdate || {};
+                    console.log('[Cache] SessionStorage dan yuklandi');
+                    return true;
+                }
+            }
+        } catch (e) {
+            console.log('[Cache] SessionStorage yuklashda xato:', e);
+        }
+        return false;
+    },
+
+    // SessionStorage ga saqlash
+    saveToStorage() {
+        try {
+            const data = {
+                user: this.user,
+                transactions: this.transactions,
+                lastUpdate: this.lastUpdate,
+                timestamp: Date.now()
+            };
+            sessionStorage.setItem('balansai_cache', JSON.stringify(data));
+        } catch (e) {
+            console.log('[Cache] SessionStorage saqlashda xato:', e);
+        }
+    },
 
     get(key) {
         const now = Date.now();
@@ -41,6 +78,10 @@ const dataCache = {
     set(key, value) {
         this[key] = value;
         this.lastUpdate[key] = Date.now();
+        // User va balance o'zgarganda sessionStorage ga saqlash
+        if (key === 'user' || key === 'transactions') {
+            this.saveToStorage();
+        }
     },
 
     isPageLoaded(page) {
@@ -68,9 +109,13 @@ const dataCache = {
             this.limit = null;
             this.lastUpdate = {};
             this.pageLoaded = {};
+            sessionStorage.removeItem('balansai_cache');
         }
     }
 };
+
+// Sahifa yuklanganda cache'ni sessionStorage dan olish
+dataCache.loadFromStorage();
 
 // ============================================
 // TELEGRAM WEB APP SETUP
@@ -321,15 +366,37 @@ async function loadPageData(pageName) {
 // ============================================
 
 async function loadHomePage() {
-    // Show skeleton for balance first
     const balanceEl = document.getElementById('totalBalance');
-    if (balanceEl) {
-        balanceEl.innerHTML = '<span class="skeleton-text" style="width: 120px; height: 28px;"></span>';
+    const transContainer = document.getElementById('homeTransactionsList');
+    
+    // 1. AVVAL CACHE'DAN TEZ KO'RSATISH (instant render)
+    const cachedUser = dataCache.get('user');
+    if (cachedUser) {
+        console.log('[Cache] Balans cache\'dan ko\'rsatilmoqda');
+        currentUser = cachedUser;
+        
+        // Avatar
+        const avatar = document.getElementById('userAvatar');
+        if (avatar && cachedUser.name) {
+            avatar.textContent = cachedUser.name.charAt(0).toUpperCase();
+        }
+        
+        // Balans - DARHOL ko'rsatish
+        if (balanceEl) {
+            balanceEl.textContent = formatCurrency(cachedUser.balance || 0);
+        }
+    } else {
+        // Cache yo'q - skeleton ko'rsatish
+        if (balanceEl) {
+            balanceEl.innerHTML = '<span class="skeleton-text" style="width: 120px; height: 28px;"></span>';
+        }
     }
 
-    // Show skeleton for transactions
-    const transContainer = document.getElementById('homeTransactionsList');
-    if (transContainer) {
+    // Tranzaksiyalar uchun skeleton (cache bo'lmasa)
+    const cachedTrans = dataCache.get('transactions');
+    if (cachedTrans && cachedTrans.length > 0 && transContainer) {
+        transContainer.innerHTML = cachedTrans.slice(0, 5).map(t => renderTransactionItem(t)).join('');
+    } else if (transContainer) {
         transContainer.innerHTML = Array(3).fill(`
             <div class="skeleton-transaction">
                 <div class="skeleton-icon"></div>
@@ -342,29 +409,31 @@ async function loadHomePage() {
         `).join('');
     }
 
+    // 2. BACKGROUND'DA YANGI MA'LUMOTLARNI YUKLASH
     try {
-        // Load user data
+        // User ma'lumotlarini yuklash
         const user = await apiRequest('/api/user');
         currentUser = user;
+        dataCache.set('user', user);
 
-        // Update avatar
+        // Avatar yangilash
         const avatar = document.getElementById('userAvatar');
         if (avatar && user.name) {
             avatar.textContent = user.name.charAt(0).toUpperCase();
         }
 
-        // Update balance
+        // Balans yangilash
         if (balanceEl) {
             balanceEl.textContent = formatCurrency(user.balance || 0);
         }
 
-        // Load monthly limit status
-        await loadLimitStatus();
+        // Limit va tranzaksiyalarni parallel yuklash (tezlashtirish)
+        await Promise.all([
+            loadLimitStatus(),
+            loadHomeTransactions()
+        ]);
 
-        // Load transactions for home
-        await loadHomeTransactions();
-
-        // Load business features for BUSINESS tariff users
+        // Biznes funksiyalarini yuklash (BUSINESS tarifi uchun)
         if (user.tariff === 'BUSINESS' || user.tariff === 'BIZNES') {
             await loadBusinessQuickFeatures();
         }
@@ -513,16 +582,24 @@ async function loadHomeTransactions() {
         }
 
         allTransactions = transactions;
+        // Cache'ga saqlash
+        dataCache.set('transactions', transactions);
 
         container.innerHTML = transactions.slice(0, 5).map(t => renderTransactionItem(t)).join('');
 
     } catch (error) {
         console.error('Home transactions error:', error);
-        container.innerHTML = `
-            <div style="padding: 40px 20px; text-align: center; color: var(--wallet-text-secondary);">
-                Yuklanmadi
-            </div>
-        `;
+        // Cache'dan ko'rsatish
+        const cached = dataCache.get('transactions');
+        if (cached && cached.length > 0) {
+            container.innerHTML = cached.slice(0, 5).map(t => renderTransactionItem(t)).join('');
+        } else {
+            container.innerHTML = `
+                <div style="padding: 40px 20px; text-align: center; color: var(--wallet-text-secondary);">
+                    Yuklanmadi
+                </div>
+            `;
+        }
     }
 }
 
@@ -2043,52 +2120,54 @@ function getInitData() {
 document.addEventListener('DOMContentLoaded', async () => {
     console.log('Wallet App initialized');
 
-    // Check if we're on business page
+    // Check if we're on business or employee page
     const currentPath = window.location.pathname;
-    console.log('[DEBUG] Current path:', currentPath);
+    const pageType = document.body.dataset.pageType;
+    console.log('[DEBUG] Current path:', currentPath, 'Page type:', pageType);
 
-    if (currentPath === '/business') {
-        console.log('[DEBUG] On business page, skipping checks');
+    // Business va Employee sahifalarida yo'naltirish qilmaslik
+    if (currentPath === '/business' || currentPath === '/employee' || pageType === 'business' || pageType === 'employee') {
+        console.log('[DEBUG] On business/employee page, loading home page without redirect');
+        await loadHomePage();
         return;
     }
 
-    // Check user tariff and employee status
+    // User tarifini tekshirish va kerakli sahifaga yo'naltirish (faqat index.html uchun)
     try {
-        console.log('[DEBUG] Checking user tariff...');
-        const userResponse = await apiRequest('/api/user');
-        console.log('[DEBUG] User response:', userResponse);
-
-        // Agar xodim bo'lsa, xodim sahifasiga yo'naltirish
-        if (userResponse && userResponse.is_employee) {
-            console.log('[DEBUG] User is employee, redirecting to employee app...');
-            const initData = getInitData();
-            if (initData) {
-                window.location.href = `/employee?initData=${encodeURIComponent(initData)}`;
-            } else {
-                window.location.href = '/employee';
+        const initData = getInitData();
+        if (initData) {
+            console.log('[DEBUG] Checking user tariff for redirect...');
+            const response = await fetch('/api/user', {
+                headers: {
+                    'X-Telegram-Init-Data': initData
+                }
+            });
+            
+            if (response.ok) {
+                const user = await response.json();
+                console.log('[DEBUG] User tariff:', user.tariff, 'is_employee:', user.is_employee);
+                
+                // Xodim bo'lsa employee sahifasiga yo'naltirish
+                if (user.is_employee) {
+                    console.log('[DEBUG] Redirecting to employee page...');
+                    window.location.href = `/employee?initData=${encodeURIComponent(initData)}`;
+                    return;
+                }
+                
+                // Biznes tarifi bo'lsa business sahifasiga yo'naltirish
+                if (user.tariff === 'BUSINESS' || user.tariff === 'BIZNES') {
+                    console.log('[DEBUG] Redirecting to business page...');
+                    window.location.href = `/business?initData=${encodeURIComponent(initData)}`;
+                    return;
+                }
             }
-            return;
-        }
-
-        // Agar BIZNES tarifli bo'lsa, biznes sahifasiga yo'naltirish
-        if (userResponse && userResponse.tariff &&
-            (userResponse.tariff === 'BIZNES' || userResponse.tariff === 'BUSINESS')) {
-            console.log('[DEBUG] User has BIZNES tariff, redirecting...');
-            const initData = getInitData();
-            if (initData) {
-                window.location.href = `/business?initData=${encodeURIComponent(initData)}`;
-            } else {
-                window.location.href = '/business';
-            }
-            return;
-        } else {
-            console.log('[DEBUG] FREE tariff, loading home page...');
         }
     } catch (error) {
-        console.error('[DEBUG] Error checking tariff:', error);
+        console.error('[DEBUG] Error checking user tariff:', error);
     }
 
-    // Load home page
+    // Oddiy user uchun home sahifasini yuklash
+    console.log('[DEBUG] Loading home page for regular user...');
     await loadHomePage();
 });
 
@@ -3397,3 +3476,162 @@ async function loadEmployeeInterface(userData) {
 
 // Make it globally accessible
 window.loadEmployeeInterface = loadEmployeeInterface;
+
+// ============================================
+// QUICK ACCESS (TEZ KIRISH) FUNKSIYALARI
+// ============================================
+
+// Mavjud xizmatlar ro'yxati
+const availableServices = [
+    { id: 'limit', name: 'Limit', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>', color: '#8B5CF6', action: 'showSetLimitModal()' },
+    { id: 'reminders', name: 'Eslatmalar', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>', color: '#FF9F0A', action: "navigateTo('reminders')" },
+    { id: 'debts', name: 'Qarzlar', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>', color: '#FF453A', action: "navigateTo('debts')" },
+    { id: 'topExpenses', name: 'Top xarajatlar', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>', color: '#0A84FF', action: "navigateTo('topExpenses')" },
+    { id: 'export', name: 'Eksport', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>', color: '#00C7BE', action: 'showExportModal()' },
+    { id: 'transactions', name: 'Tranzaksiyalar', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>', color: '#6366F1', action: "navigateTo('transactions')" },
+    { id: 'statistics', name: 'Statistika', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>', color: '#AF52DE', action: "navigateTo('statistics')" },
+    { id: 'income', name: 'Kirim', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 19V5M5 12l7-7 7 7"/></svg>', color: '#30D158', action: "showAddTransactionModal('income')" },
+    { id: 'expense', name: 'Chiqim', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12l7 7 7-7"/></svg>', color: '#FF453A', action: "showAddTransactionModal('expense')" }
+];
+
+// Default tanlangan xizmatlar
+const defaultQuickAccess = ['limit', 'reminders', 'debts', 'topExpenses'];
+
+// Tanlangan xizmatlarni olish
+function getQuickAccessServices() {
+    try {
+        const saved = localStorage.getItem('quickAccessServices');
+        if (saved) {
+            return JSON.parse(saved);
+        }
+    } catch (e) {
+        console.log('[QuickAccess] LocalStorage xatosi:', e);
+    }
+    return defaultQuickAccess;
+}
+
+// Tanlangan xizmatlarni saqlash
+function saveQuickAccessServices(services) {
+    try {
+        localStorage.setItem('quickAccessServices', JSON.stringify(services));
+    } catch (e) {
+        console.log('[QuickAccess] Saqlashda xato:', e);
+    }
+}
+
+// Tez kirish xizmatlarini ko'rsatish
+function renderQuickAccessServices() {
+    const container = document.getElementById('quickAccessServices');
+    if (!container) return;
+
+    const selectedIds = getQuickAccessServices();
+    const selectedServices = selectedIds
+        .map(id => availableServices.find(s => s.id === id))
+        .filter(s => s);
+
+    if (selectedServices.length === 0) {
+        container.innerHTML = `
+            <div style="grid-column: span 4; text-align: center; padding: 20px; color: var(--wallet-text-secondary);">
+                <p style="margin-bottom: 8px;">Tez kirish xizmatlari tanlanmagan</p>
+                <button class="wallet-section-action" onclick="showQuickAccessSettings()">Sozlash</button>
+            </div>
+        `;
+        return;
+    }
+
+    container.innerHTML = selectedServices.map(service => `
+        <div class="quick-access-item" onclick="${service.action}">
+            <div class="quick-access-icon" style="background: ${service.color}20; color: ${service.color};">
+                ${service.icon}
+            </div>
+            <span class="quick-access-label">${service.name}</span>
+        </div>
+    `).join('');
+}
+
+// Quick Access sozlamalari modalini ochish
+function showQuickAccessSettings() {
+    hapticFeedback('light');
+    const modal = document.getElementById('quickAccessModal');
+    const optionsContainer = document.getElementById('quickAccessOptions');
+    
+    if (!modal || !optionsContainer) return;
+
+    const selectedIds = getQuickAccessServices();
+
+    optionsContainer.innerHTML = availableServices.map(service => `
+        <div class="quick-access-option ${selectedIds.includes(service.id) ? 'selected' : ''}" 
+             data-id="${service.id}" 
+             onclick="toggleQuickAccessOption(this, '${service.id}')">
+            <div class="quick-access-option-icon" style="background: ${service.color}20; color: ${service.color};">
+                ${service.icon}
+            </div>
+            <span class="quick-access-option-name">${service.name}</span>
+            <div class="quick-access-check">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                    <polyline points="20 6 9 17 4 12"/>
+                </svg>
+            </div>
+        </div>
+    `).join('');
+
+    modal.classList.add('active');
+}
+
+// Quick Access modalini yopish
+function closeQuickAccessModal() {
+    const modal = document.getElementById('quickAccessModal');
+    if (modal) {
+        modal.classList.remove('active');
+    }
+}
+
+// Xizmatni tanlash/bekor qilish
+function toggleQuickAccessOption(element, serviceId) {
+    hapticFeedback('light');
+    const isSelected = element.classList.contains('selected');
+    const selectedCount = document.querySelectorAll('.quick-access-option.selected').length;
+
+    if (isSelected) {
+        element.classList.remove('selected');
+    } else {
+        // Maksimum 4 ta tanlash mumkin
+        if (selectedCount >= 4) {
+            hapticFeedback('error');
+            // Birinchi tanlanganni olib tashlash
+            const firstSelected = document.querySelector('.quick-access-option.selected');
+            if (firstSelected) {
+                firstSelected.classList.remove('selected');
+            }
+        }
+        element.classList.add('selected');
+    }
+}
+
+// Quick Access sozlamalarini saqlash
+function saveQuickAccessSettings() {
+    hapticFeedback('success');
+    const selectedOptions = document.querySelectorAll('.quick-access-option.selected');
+    const selectedIds = Array.from(selectedOptions).map(el => el.dataset.id);
+
+    if (selectedIds.length === 0) {
+        alert('Kamida 1 ta xizmat tanlang');
+        return;
+    }
+
+    saveQuickAccessServices(selectedIds);
+    renderQuickAccessServices();
+    closeQuickAccessModal();
+}
+
+// Sahifa yuklanganda Quick Access'ni render qilish
+document.addEventListener('DOMContentLoaded', function() {
+    setTimeout(() => renderQuickAccessServices(), 200);
+});
+
+// Global funksiyalar
+window.showQuickAccessSettings = showQuickAccessSettings;
+window.closeQuickAccessModal = closeQuickAccessModal;
+window.toggleQuickAccessOption = toggleQuickAccessOption;
+window.saveQuickAccessSettings = saveQuickAccessSettings;
+window.renderQuickAccessServices = renderQuickAccessServices;

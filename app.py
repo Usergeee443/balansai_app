@@ -153,16 +153,23 @@ def validate_telegram_webapp(init_data):
 
 @app.route('/')
 def index():
-    """Asosiy sahifa (SPA)"""
-    # Foydalanuvchining tarifini tekshirish
+    """Asosiy sahifa (SPA) - Tarifga qarab yo'naltirish"""
     try:
         user_id = get_user_id_from_request()
         print(f"[DEBUG] Index route: user_id = {user_id}")
+        
         if user_id and user_id != 123456789:  # Default test user emas
             user = database.get_user(user_id)
             print(f"[DEBUG] Index route: user = {user}, tariff = {user.get('tariff') if user else None}")
+            
+            # Xodim ekanligini tekshirish
+            employee_link = database.get_employee_link(user_id)
+            if employee_link:
+                print(f"[DEBUG] User {user_id} xodim, employee.html ochilmoqda")
+                return render_template('employee.html')
+            
+            # Biznes tarifi tekshirish
             if user and user.get('tariff') in ['BUSINESS', 'BIZNES']:
-                # Biznes foydalanuvchini biznes ilovasiga yo'naltirish
                 print(f"[DEBUG] User {user_id} BIZNES tarifida, business.html ochilmoqda")
                 return render_template('business.html')
     except Exception as e:
@@ -317,7 +324,7 @@ def get_user_info():
         
         # Optimallashtirilgan: balance va statistics ni bir vaqtda olish
         balance_stats = get_balance_and_statistics(user_id, days=30)
-
+        
         # Xodim ekanligini tekshirish
         employee_link = database.get_employee_link(user_id)
 
@@ -1829,30 +1836,206 @@ def api_sales_warehouse_stats():
     try:
         # Umumiy statistikalarni yig'ish
         warehouse_stats = database.get_warehouse_statistics(user_id)
-
-        # Sotuvlar (oxirgi 30 kun)
-        sales_count = 0  # TODO: Implement sales tracking
-
-        # Mijozlar soni
-        clients_count = 0  # TODO: Implement clients management
-
-        # Fakturalar
-        invoices_count = 0  # TODO: Implement invoices
-
-        # Nasiya
-        credit_count = 0  # TODO: Implement credit tracking
-
-        # Daromad (oxirgi 30 kun)
-        revenue = 0  # TODO: Calculate from sales
+        
+        # Sotuvlar statistikasi
+        sales_stats = database.get_sales_statistics(user_id)
+        
+        # Mijozlar statistikasi
+        clients_stats = database.get_clients_statistics(user_id)
+        
+        # Fakturalar statistikasi
+        invoices_stats = database.get_invoices_statistics(user_id)
+        
+        # Nasiya statistikasi
+        credit_stats = database.get_credit_statistics(user_id)
 
         return jsonify({
-            'total_sales': sales_count,
-            'total_products': warehouse_stats.get('total_products', 0),
-            'total_clients': clients_count,
-            'total_invoices': invoices_count,
-            'total_credit': credit_count,
-            'total_revenue': revenue
+            'total_sales': sales_stats.get('total_sales', 0) if sales_stats else 0,
+            'today_sales': sales_stats.get('today_sales', 0) if sales_stats else 0,
+            'total_revenue': sales_stats.get('total_revenue', 0) if sales_stats else 0,
+            'today_revenue': sales_stats.get('today_revenue', 0) if sales_stats else 0,
+            'week_revenue': sales_stats.get('week_revenue', 0) if sales_stats else 0,
+            'month_revenue': sales_stats.get('month_revenue', 0) if sales_stats else 0,
+            'sales_trend': sales_stats.get('trend', 0) if sales_stats else 0,
+            'revenue_trend': sales_stats.get('revenue_trend', 0) if sales_stats else 0,
+            'total_products': warehouse_stats.get('total_products', 0) if warehouse_stats else 0,
+            'low_stock_count': warehouse_stats.get('low_stock_count', 0) if warehouse_stats else 0,
+            'total_value': warehouse_stats.get('total_value', 0) if warehouse_stats else 0,
+            'total_clients': clients_stats.get('total_clients', 0) if clients_stats else 0,
+            'suppliers': clients_stats.get('suppliers', 0) if clients_stats else 0,
+            'active_clients': clients_stats.get('active_clients', 0) if clients_stats else 0,
+            'total_invoices': invoices_stats.get('total_invoices', 0) if invoices_stats else 0,
+            'pending_invoices': invoices_stats.get('pending', 0) if invoices_stats else 0,
+            'paid_invoices': invoices_stats.get('paid', 0) if invoices_stats else 0,
+            'total_credit': credit_stats.get('total_debt', 0) if credit_stats else 0,
+            'credit_count': credit_stats.get('total_credits', 0) if credit_stats else 0,
+            'overdue_credits': credit_stats.get('overdue', 0) if credit_stats else 0
         })
+    except Exception as e:
+        print(f"Sales warehouse stats error: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+# ==================== SAVDO & OMBOR API ENDPOINTLARI ====================
+
+@app.route('/api/business/sales', methods=['GET'])
+def api_get_sales():
+    """Sotuvlar ro'yxatini olish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+    
+    limit = request.args.get('limit', 50, type=int)
+    offset = request.args.get('offset', 0, type=int)
+    
+    try:
+        sales = database.get_sales(user_id, limit, offset)
+        return jsonify(sales if sales else [])
+    except Exception as e:
+        print(f"Get sales error: {e}")
+        return jsonify([])
+
+
+@app.route('/api/business/sales', methods=['POST'])
+def api_add_sale():
+    """Yangi sotuv qo'shish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+    
+    data = request.get_json()
+    try:
+        sale_id = database.add_sale(
+            user_id=user_id,
+            client_id=data.get('client_id'),
+            client_name=data.get('client_name'),
+            total_amount=data.get('total_amount', 0),
+            payment_type=data.get('payment_type', 'cash'),
+            notes=data.get('notes')
+        )
+        return jsonify({'success': True, 'id': sale_id})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/business/clients', methods=['GET'])
+def api_get_clients():
+    """Mijozlar ro'yxatini olish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+    
+    limit = request.args.get('limit', 100, type=int)
+    offset = request.args.get('offset', 0, type=int)
+    
+    try:
+        clients = database.get_clients(user_id, limit, offset)
+        return jsonify(clients if clients else [])
+    except Exception as e:
+        print(f"Get clients error: {e}")
+        return jsonify([])
+
+
+@app.route('/api/business/clients', methods=['POST'])
+def api_add_client():
+    """Yangi mijoz qo'shish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+    
+    data = request.get_json()
+    try:
+        client_id = database.add_client(
+            user_id=user_id,
+            name=data.get('name'),
+            phone=data.get('phone'),
+            email=data.get('email'),
+            address=data.get('address'),
+            client_type=data.get('type', 'customer'),
+            notes=data.get('notes')
+        )
+        return jsonify({'success': True, 'id': client_id})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/business/invoices', methods=['GET'])
+def api_get_invoices():
+    """Fakturalar ro'yxatini olish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+    
+    limit = request.args.get('limit', 100, type=int)
+    offset = request.args.get('offset', 0, type=int)
+    
+    try:
+        invoices = database.get_invoices(user_id, limit, offset)
+        return jsonify(invoices if invoices else [])
+    except Exception as e:
+        print(f"Get invoices error: {e}")
+        return jsonify([])
+
+
+@app.route('/api/business/invoices', methods=['POST'])
+def api_add_invoice():
+    """Yangi faktura qo'shish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+    
+    data = request.get_json()
+    try:
+        invoice_id = database.add_invoice(
+            user_id=user_id,
+            invoice_number=data.get('invoice_number'),
+            client_id=data.get('client_id'),
+            client_name=data.get('client_name'),
+            total_amount=data.get('total_amount', 0),
+            due_date=data.get('due_date'),
+            notes=data.get('notes')
+        )
+        return jsonify({'success': True, 'id': invoice_id})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/business/credit', methods=['GET'])
+def api_get_credits():
+    """Nasiyalar ro'yxatini olish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+    
+    limit = request.args.get('limit', 100, type=int)
+    offset = request.args.get('offset', 0, type=int)
+    
+    try:
+        credits = database.get_credits(user_id, limit, offset)
+        return jsonify(credits if credits else [])
+    except Exception as e:
+        print(f"Get credits error: {e}")
+        return jsonify([])
+
+
+@app.route('/api/business/credit', methods=['POST'])
+def api_add_credit():
+    """Yangi nasiya qo'shish"""
+    user_id = get_user_id_from_request()
+    if not user_id:
+        return jsonify({'error': 'User topilmadi'}), 401
+    
+    data = request.get_json()
+    try:
+        credit_id = database.add_credit(
+            user_id=user_id,
+            client_id=data.get('client_id'),
+            client_name=data.get('client_name'),
+            amount=data.get('amount', 0),
+            due_date=data.get('due_date'),
+            notes=data.get('notes')
+        )
+        return jsonify({'success': True, 'id': credit_id})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
@@ -2231,7 +2414,7 @@ def update_employee_permissions_endpoint():
 
 @app.route('/business')
 def business_app():
-    """Biznes tarifi uchun asosiy ilova"""
+    """Biznes tarifi uchun asosiy ilova - to'g'ridan-to'g'ri kirish"""
     user_id = get_user_id_from_request()
 
     # Agar header dan topilmasa, query param dan olish
@@ -2257,8 +2440,15 @@ def business_app():
 
     # Foydalanuvchining tarifini tekshirish
     user = database.get_user(user_id)
+    
+    # Xodim bo'lsa, xodim sahifasiga yo'naltirish
+    employee_link = database.get_employee_link(user_id)
+    if employee_link:
+        return redirect('/employee')
+    
+    # Biznes tarifi yo'q bo'lsa, asosiy sahifaga yo'naltirish
     if not user or user.get('tariff') not in ['BUSINESS', 'BIZNES']:
-        return redirect('/')  # Oddiy ilovaga yo'naltirish
+        return redirect('/')
 
     return render_template('business.html')
 
@@ -2267,7 +2457,7 @@ def business_app():
 
 @app.route('/employee')
 def employee_app():
-    """Xodim tarifi uchun asosiy ilova"""
+    """Xodim tarifi uchun asosiy ilova - to'g'ridan-to'g'ri kirish"""
     user_id = get_user_id_from_request()
 
     # Agar header dan topilmasa, query param dan olish
@@ -2293,7 +2483,11 @@ def employee_app():
     # Xodim ekanligini tekshirish
     employee_link = database.get_employee_link(user_id)
     if not employee_link:
-        return redirect('/')  # Oddiy ilovaga yo'naltirish
+        # Xodim emas - tarifga qarab yo'naltirish
+        user = database.get_user(user_id)
+        if user and user.get('tariff') in ['BUSINESS', 'BIZNES']:
+            return redirect('/business')
+        return redirect('/')
 
     return render_template('employee.html')
 

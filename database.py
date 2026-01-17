@@ -282,14 +282,14 @@ def _get_pool():
                         maxusage=None,  # Har bir connection necha marta ishlatilishi mumkin
                         setsession=[],  # Session sozlamalari
                         ping=1,  # Connection'ni tekshirish (1 = har bir ishlatishdan oldin)
-                        host=Config.MYSQL_HOST,
-                        user=Config.MYSQL_USER,
-                        password=Config.MYSQL_PASSWORD,
-                        database=Config.MYSQL_DATABASE,
-                        port=Config.MYSQL_PORT,
-                        cursorclass=pymysql.cursors.DictCursor,
-                        charset='utf8mb4',
-                        connect_timeout=5,
+            host=Config.MYSQL_HOST,
+            user=Config.MYSQL_USER,
+            password=Config.MYSQL_PASSWORD,
+            database=Config.MYSQL_DATABASE,
+            port=Config.MYSQL_PORT,
+            cursorclass=pymysql.cursors.DictCursor,
+            charset='utf8mb4',
+            connect_timeout=5,
                         read_timeout=10,
                         write_timeout=10
                     )
@@ -1054,14 +1054,14 @@ def get_debts(user_id, contact_id=None):
                 """, (user_id, contact_id))
             else:
                 cursor.execute("""
-                    SELECT * FROM debts 
-                    WHERE user_id = %s AND status = 'active'
-                    ORDER BY created_at DESC
-                """, (user_id,))
+                SELECT * FROM debts 
+                WHERE user_id = %s AND status = 'active'
+                ORDER BY created_at DESC
+            """, (user_id,))
             return cursor.fetchall()
         except Exception as e2:
             print(f"❌ Qarzlarni olishda xatolik: {e2}")
-            return []
+        return []
     finally:
         connection.close()
 
@@ -2488,6 +2488,367 @@ def get_task_statistics(user_id):
                 WHERE user_id = %s
             """, (user_id,))
             return cursor.fetchone()
+    finally:
+        connection.close()
+
+
+# ==================== SAVDO & OMBOR STATISTIKALARI ====================
+
+def get_sales_statistics(user_id):
+    """Sotuvlar statistikasi"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Jadvalni tekshirish va yaratish
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS sales (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id BIGINT NOT NULL,
+                    client_id INT,
+                    client_name VARCHAR(255),
+                    total_amount DECIMAL(15, 2) DEFAULT 0,
+                    payment_type ENUM('cash', 'card', 'transfer', 'credit') DEFAULT 'cash',
+                    status ENUM('completed', 'pending', 'cancelled') DEFAULT 'completed',
+                    notes TEXT,
+                    sale_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_user_id (user_id),
+                    INDEX idx_sale_date (sale_date)
+                )
+            """)
+            connection.commit()
+            
+            # Umumiy statistika
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total_sales,
+                    COALESCE(SUM(total_amount), 0) as total_revenue,
+                    COALESCE(AVG(total_amount), 0) as avg_check,
+                    COUNT(CASE WHEN DATE(sale_date) = CURDATE() THEN 1 END) as today_sales,
+                    COALESCE(SUM(CASE WHEN DATE(sale_date) = CURDATE() THEN total_amount ELSE 0 END), 0) as today_revenue,
+                    COALESCE(SUM(CASE WHEN sale_date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN total_amount ELSE 0 END), 0) as week_revenue,
+                    COALESCE(SUM(CASE WHEN sale_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN total_amount ELSE 0 END), 0) as month_revenue
+                FROM sales
+                WHERE user_id = %s AND status = 'completed'
+            """, (user_id,))
+            stats = cursor.fetchone()
+            
+            return {
+                'total_sales': stats['total_sales'] or 0,
+                'total_revenue': float(stats['total_revenue']) if stats['total_revenue'] else 0,
+                'avg_check': float(stats['avg_check']) if stats['avg_check'] else 0,
+                'today_sales': stats['today_sales'] or 0,
+                'today_revenue': float(stats['today_revenue']) if stats['today_revenue'] else 0,
+                'week_revenue': float(stats['week_revenue']) if stats['week_revenue'] else 0,
+                'month_revenue': float(stats['month_revenue']) if stats['month_revenue'] else 0,
+                'trend': 0,
+                'revenue_trend': 0
+            }
+    except Exception as e:
+        print(f"Sales statistics error: {e}")
+        return None
+    finally:
+        connection.close()
+
+
+def get_clients_statistics(user_id):
+    """Mijozlar statistikasi"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Jadvalni tekshirish va yaratish
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS clients (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id BIGINT NOT NULL,
+                    name VARCHAR(255) NOT NULL,
+                    phone VARCHAR(50),
+                    email VARCHAR(255),
+                    address TEXT,
+                    type ENUM('customer', 'supplier') DEFAULT 'customer',
+                    status ENUM('active', 'inactive') DEFAULT 'active',
+                    balance DECIMAL(15, 2) DEFAULT 0,
+                    notes TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                    INDEX idx_user_id (user_id),
+                    INDEX idx_type (type)
+                )
+            """)
+            connection.commit()
+            
+            # Statistika
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total_clients,
+                    COUNT(CASE WHEN type = 'supplier' THEN 1 END) as suppliers,
+                    COUNT(CASE WHEN status = 'active' THEN 1 END) as active_clients,
+                    COUNT(CASE WHEN created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN 1 END) as new_clients
+                FROM clients
+                WHERE user_id = %s
+            """, (user_id,))
+            stats = cursor.fetchone()
+            
+            return {
+                'total_clients': stats['total_clients'] or 0,
+                'suppliers': stats['suppliers'] or 0,
+                'active_clients': stats['active_clients'] or 0,
+                'new_clients': stats['new_clients'] or 0
+            }
+    except Exception as e:
+        print(f"Clients statistics error: {e}")
+        return None
+    finally:
+        connection.close()
+
+
+def get_invoices_statistics(user_id):
+    """Fakturalar statistikasi"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Jadvalni tekshirish va yaratish
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS invoices (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id BIGINT NOT NULL,
+                    invoice_number VARCHAR(50) NOT NULL,
+                    client_id INT,
+                    client_name VARCHAR(255),
+                    total_amount DECIMAL(15, 2) DEFAULT 0,
+                    paid_amount DECIMAL(15, 2) DEFAULT 0,
+                    status ENUM('pending', 'paid', 'cancelled', 'overdue') DEFAULT 'pending',
+                    invoice_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    due_date DATETIME,
+                    notes TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_user_id (user_id),
+                    INDEX idx_status (status)
+                )
+            """)
+            connection.commit()
+            
+            # Statistika
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total_invoices,
+                    COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending,
+                    COUNT(CASE WHEN status = 'paid' THEN 1 END) as paid,
+                    COALESCE(SUM(total_amount), 0) as total_amount
+                FROM invoices
+                WHERE user_id = %s
+            """, (user_id,))
+            stats = cursor.fetchone()
+            
+            return {
+                'total_invoices': stats['total_invoices'] or 0,
+                'pending': stats['pending'] or 0,
+                'paid': stats['paid'] or 0,
+                'total_amount': float(stats['total_amount']) if stats['total_amount'] else 0
+            }
+    except Exception as e:
+        print(f"Invoices statistics error: {e}")
+        return None
+    finally:
+        connection.close()
+
+
+def get_credit_statistics(user_id):
+    """Nasiya statistikasi"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            # Jadvalni tekshirish va yaratish
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS credits (
+                    id INT AUTO_INCREMENT PRIMARY KEY,
+                    user_id BIGINT NOT NULL,
+                    client_id INT,
+                    client_name VARCHAR(255),
+                    amount DECIMAL(15, 2) DEFAULT 0,
+                    paid_amount DECIMAL(15, 2) DEFAULT 0,
+                    status ENUM('active', 'closed', 'overdue') DEFAULT 'active',
+                    given_date DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    due_date DATETIME,
+                    notes TEXT,
+                    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    INDEX idx_user_id (user_id),
+                    INDEX idx_status (status)
+                )
+            """)
+            connection.commit()
+            
+            # Statistika
+            cursor.execute("""
+                SELECT 
+                    COUNT(*) as total_credits,
+                    COALESCE(SUM(amount - paid_amount), 0) as total_debt,
+                    COUNT(CASE WHEN status = 'overdue' OR (due_date < NOW() AND status = 'active') THEN 1 END) as overdue,
+                    COUNT(CASE WHEN status = 'closed' THEN 1 END) as closed
+                FROM credits
+                WHERE user_id = %s
+            """, (user_id,))
+            stats = cursor.fetchone()
+            
+            return {
+                'total_credits': stats['total_credits'] or 0,
+                'total_debt': float(stats['total_debt']) if stats['total_debt'] else 0,
+                'overdue': stats['overdue'] or 0,
+                'closed': stats['closed'] or 0
+            }
+    except Exception as e:
+        print(f"Credit statistics error: {e}")
+        return None
+    finally:
+        connection.close()
+
+
+# ==================== SAVDO & OMBOR CRUD FUNKSIYALARI ====================
+
+def get_sales(user_id, limit=50, offset=0):
+    """Sotuvlar ro'yxatini olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT * FROM sales
+                WHERE user_id = %s
+                ORDER BY sale_date DESC
+                LIMIT %s OFFSET %s
+            """, (user_id, limit, offset))
+            return cursor.fetchall()
+    except Exception as e:
+        print(f"Get sales error: {e}")
+        return []
+    finally:
+        connection.close()
+
+
+def add_sale(user_id, client_id=None, client_name=None, total_amount=0, payment_type='cash', notes=None):
+    """Yangi sotuv qo'shish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO sales (user_id, client_id, client_name, total_amount, payment_type, notes, sale_date)
+                VALUES (%s, %s, %s, %s, %s, %s, NOW())
+            """, (user_id, client_id, client_name, total_amount, payment_type, notes))
+            connection.commit()
+            return cursor.lastrowid
+    except Exception as e:
+        print(f"Add sale error: {e}")
+        return None
+    finally:
+        connection.close()
+
+
+def get_clients(user_id, limit=100, offset=0):
+    """Mijozlar ro'yxatini olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT * FROM clients
+                WHERE user_id = %s
+                ORDER BY created_at DESC
+                LIMIT %s OFFSET %s
+            """, (user_id, limit, offset))
+            return cursor.fetchall()
+    except Exception as e:
+        print(f"Get clients error: {e}")
+        return []
+    finally:
+        connection.close()
+
+
+def add_client(user_id, name, phone=None, email=None, address=None, client_type='customer', notes=None):
+    """Yangi mijoz qo'shish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO clients (user_id, name, phone, email, address, type, notes)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (user_id, name, phone, email, address, client_type, notes))
+            connection.commit()
+            return cursor.lastrowid
+    except Exception as e:
+        print(f"Add client error: {e}")
+        return None
+    finally:
+        connection.close()
+
+
+def get_invoices(user_id, limit=100, offset=0):
+    """Fakturalar ro'yxatini olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT * FROM invoices
+                WHERE user_id = %s
+                ORDER BY invoice_date DESC
+                LIMIT %s OFFSET %s
+            """, (user_id, limit, offset))
+            return cursor.fetchall()
+    except Exception as e:
+        print(f"Get invoices error: {e}")
+        return []
+    finally:
+        connection.close()
+
+
+def add_invoice(user_id, invoice_number, client_id=None, client_name=None, total_amount=0, due_date=None, notes=None):
+    """Yangi faktura qo'shish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO invoices (user_id, invoice_number, client_id, client_name, total_amount, due_date, notes)
+                VALUES (%s, %s, %s, %s, %s, %s, %s)
+            """, (user_id, invoice_number, client_id, client_name, total_amount, due_date, notes))
+            connection.commit()
+            return cursor.lastrowid
+    except Exception as e:
+        print(f"Add invoice error: {e}")
+        return None
+    finally:
+        connection.close()
+
+
+def get_credits(user_id, limit=100, offset=0):
+    """Nasiyalar ro'yxatini olish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT * FROM credits
+                WHERE user_id = %s
+                ORDER BY given_date DESC
+                LIMIT %s OFFSET %s
+            """, (user_id, limit, offset))
+            return cursor.fetchall()
+    except Exception as e:
+        print(f"Get credits error: {e}")
+        return []
+    finally:
+        connection.close()
+
+
+def add_credit(user_id, client_id=None, client_name=None, amount=0, due_date=None, notes=None):
+    """Yangi nasiya qo'shish"""
+    connection = get_db_connection()
+    try:
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                INSERT INTO credits (user_id, client_id, client_name, amount, due_date, notes, given_date)
+                VALUES (%s, %s, %s, %s, %s, %s, NOW())
+            """, (user_id, client_id, client_name, amount, due_date, notes))
+            connection.commit()
+            return cursor.lastrowid
+    except Exception as e:
+        print(f"Add credit error: {e}")
+        return None
     finally:
         connection.close()
 

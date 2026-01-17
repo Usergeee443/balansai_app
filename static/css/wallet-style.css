@@ -1345,9 +1345,74 @@ body {
     stroke: var(--wallet-text-secondary);
 }
 
+.wallet-modal-body {
+    padding: 16px 20px;
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.wallet-modal-footer {
+    padding: 16px 20px;
+    display: flex;
+    gap: 12px;
+    border-top: 1px solid var(--wallet-border-color);
+}
+
+.wallet-modal-footer .wallet-btn-secondary {
+    flex: 1;
+    padding: 14px;
+    background: var(--wallet-bg-tertiary);
+    border: none;
+    border-radius: var(--wallet-radius-md);
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--wallet-text-primary);
+    cursor: pointer;
+}
+
+.wallet-modal-footer .wallet-btn-primary {
+    flex: 1;
+    padding: 14px;
+    background: var(--wallet-accent-blue);
+    border: none;
+    border-radius: var(--wallet-radius-md);
+    font-size: 15px;
+    font-weight: 600;
+    color: white;
+    cursor: pointer;
+}
+
+.wallet-input {
+    width: 100%;
+    padding: 14px 16px;
+    background: var(--wallet-bg-primary);
+    border: 1px solid var(--wallet-bg-tertiary);
+    border-radius: var(--wallet-radius-md);
+    font-size: 16px;
+    color: var(--wallet-text-primary);
+    outline: none;
+    transition: border-color 0.15s ease;
+}
+
+.wallet-input:focus {
+    border-color: var(--wallet-accent-blue);
+}
+
+.wallet-input::placeholder {
+    color: var(--wallet-text-tertiary);
+}
+
 /* Form Inputs */
 .wallet-form-group {
     margin-bottom: var(--wallet-spacing-md);
+}
+
+.wallet-form-group label {
+    display: block;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--wallet-text-secondary);
+    margin-bottom: 8px;
 }
 
 .wallet-form-label {

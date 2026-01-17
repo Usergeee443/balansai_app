@@ -205,7 +205,24 @@
             </div>
         </div>
 
-        <!-- Info Card -->
+        <!-- Tez kirish xizmatlari (User tanlagan) -->
+        <div class="wallet-section" style="margin-top: 8px;">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">Tez kirish</h2>
+                <button class="wallet-section-action" onclick="showQuickAccessSettings()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 16px; height: 16px; margin-right: 4px;">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+                    </svg>
+                    Sozlash
+                </button>
+            </div>
+            <div id="quickAccessServices" class="quick-access-grid">
+                <!-- JavaScript orqali yuklanadi -->
+            </div>
+        </div>
+
+        <!-- Barcha xizmatlar tugmasi -->
         <div class="wallet-info-card" onclick="navigateTo('services')">
             <div class="wallet-info-icon">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -767,6 +784,24 @@
                         <div class="tg-service-content">
                             <span class="tg-service-title">Eksport</span>
                             <span class="tg-service-desc">Telegram'ga yuborish</span>
+                        </div>
+                        <svg class="tg-service-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </div>
+                    
+                    <div class="tg-service-item" onclick="navigateTo('transactions')">
+                        <div class="tg-service-icon" style="background: linear-gradient(135deg, #6366F1, #818CF8);">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2">
+                                <path d="M17 1l4 4-4 4"/>
+                                <path d="M3 11V9a4 4 0 0 1 4-4h14"/>
+                                <path d="M7 23l-4-4 4-4"/>
+                                <path d="M21 13v2a4 4 0 0 1-4 4H3"/>
+                            </svg>
+                        </div>
+                        <div class="tg-service-content">
+                            <span class="tg-service-title">Tranzaksiyalar</span>
+                            <span class="tg-service-desc">Barcha operatsiyalar</span>
                         </div>
                         <svg class="tg-service-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M9 18l6-6-6-6"/>
@@ -1651,10 +1686,153 @@
     <!-- Loading Screen -->
     <div id="loadingScreen" class="wallet-loading" style="display: none;">
         <div class="wallet-spinner"></div>
+    </div>
+
+    <!-- Quick Access Settings Modal -->
+    <div id="quickAccessModal" class="wallet-modal">
+        <div class="wallet-modal-content">
+            <div class="wallet-modal-handle"></div>
+            <div class="wallet-modal-header">
+                <span class="wallet-modal-title">Tez kirish sozlamalari</span>
+                <button class="wallet-modal-close" onclick="closeQuickAccessModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <p style="color: var(--wallet-text-secondary); font-size: 14px; margin-bottom: 16px;">
+                Tez kirish uchun 4 ta xizmatni tanlang
+            </p>
+            <div id="quickAccessOptions" class="quick-access-options">
+                <!-- JavaScript orqali yuklanadi -->
+            </div>
+            <button class="wallet-form-btn" onclick="saveQuickAccessSettings()" style="margin-top: 16px;">Saqlash</button>
         </div>
+    </div>
+
+    <!-- Quick Access Styles -->
+    <style>
+        .quick-access-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            padding: 0 16px;
+        }
+        
+        .quick-access-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 8px;
+            background: var(--wallet-card-bg);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .quick-access-item:active {
+            transform: scale(0.95);
+        }
+        
+        .quick-access-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        
+        .quick-access-icon svg {
+            width: 22px;
+            height: 22px;
+        }
+        
+        .quick-access-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--wallet-text-primary);
+            text-align: center;
+            line-height: 1.2;
+        }
+        
+        .quick-access-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .quick-access-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--wallet-bg-tertiary);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        
+        .quick-access-option.selected {
+            border-color: var(--wallet-accent-blue);
+            background: rgba(10, 132, 255, 0.1);
+        }
+        
+        .quick-access-option-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .quick-access-option-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .quick-access-option-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--wallet-text-primary);
+        }
+        
+        .quick-access-check {
+            margin-left: auto;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid var(--wallet-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .quick-access-option.selected .quick-access-check {
+            background: var(--wallet-accent-blue);
+            border-color: var(--wallet-accent-blue);
+        }
+        
+        .quick-access-check svg {
+            width: 12px;
+            height: 12px;
+            stroke: white;
+            display: none;
+        }
+        
+        .quick-access-option.selected .quick-access-check svg {
+            display: block;
+        }
+    </style>
 
     <!-- Scripts -->
-    <script src="/static/js/wallet-app.js?v=1.6.0"></script>
+    <script src="/static/js/wallet-app.js?v=1.6.2"></script>
     <script src="/static/js/business.js?v=1.6.0"></script>
 </body>
 </html>
