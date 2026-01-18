@@ -227,19 +227,23 @@ def free():
                 print(f"[DEBUG] User {user_id} xodim, employee.html ochilmoqda")
                 return render_template('employee.html')
             
-            # Tarifni tekshirish (ixtiyoriy - FREE bo'lsa to'g'ri, bo'lmasa ham ko'rsatiladi)
-            # Lekin client-side JavaScript tarifni tekshiradi
+            # Tarifni tekshirish - agar FREE bo'lmasa, asosiy sahifaga yo'naltirish
             if user:
                 user_tariff = user.get('tariff')
                 if user_tariff:
                     user_tariff_str = str(user_tariff).upper().strip()
                     print(f"[DEBUG] Free route: User {user_id} tariff = {user_tariff_str}")
+                    
+                    # Agar FREE tarifi bo'lmasa, asosiy sahifaga yo'naltirish (app.py tarifga qarab yo'naltiradi)
+                    if user_tariff_str != 'FREE':
+                        print(f"[DEBUG] Free route: User {user_id} is not FREE ({user_tariff_str}), redirecting to /")
+                        return redirect('/')
         else:
             print(f"[DEBUG] Free route: Default test user, free.html ochilmoqda")
     except Exception as e:
         print(f"[DEBUG] Free route xatosi: {e}")
     
-    # Free sahifasini ko'rsatish (client-side JavaScript tarifni tekshiradi)
+    # Free sahifasini ko'rsatish (faqat FREE tarifi uchun)
     return render_template('free.html')
 
 @app.route('/register')

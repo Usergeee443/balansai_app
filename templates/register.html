@@ -1659,11 +1659,11 @@
                 setTimeout(() => {
                     let redirectUrl = '/';
                     if (formData.tariff === 'FREE') {
-                        redirectUrl = '/';
+                        redirectUrl = '/free'; // Free tarifiga to'g'ridan-to'g'ri free.html ga yo'naltirish
                     } else if (formData.tariff === 'PLUS' || formData.tariff === 'PRO') {
-                        redirectUrl = '/';
+                        redirectUrl = '/'; // Plus/PRO uchun index.html (app.py avtomatik yo'naltiradi)
                     } else if (formData.tariff === 'BUSINESS' || formData.tariff === 'BIZNES') {
-                        redirectUrl = '/business';
+                        redirectUrl = '/business'; // Business uchun business.html
                     }
                     window.location.href = redirectUrl;
                 }, 3500);
