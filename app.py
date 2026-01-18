@@ -193,15 +193,54 @@ def index():
                 print(f"[DEBUG] User {user_id} xodim, employee.html ochilmoqda")
                 return render_template('employee.html')
             
-            # Biznes tarifi tekshirish
-            if user and user.get('tariff') in ['BUSINESS', 'BIZNES']:
-                print(f"[DEBUG] User {user_id} BIZNES tarifida, business.html ochilmoqda")
-                return render_template('business.html')
+            # Free tarifi tekshirish
+            user_tariff = user.get('tariff') if user else None
+            if user_tariff:
+                user_tariff_str = str(user_tariff).upper().strip()
+                if user_tariff_str == 'FREE':
+                    print(f"[DEBUG] User {user_id} FREE tarifida, free.html ochilmoqda")
+                    return render_template('free.html')
+            
+                # Biznes tarifi tekshirish
+                if user_tariff_str in ['BUSINESS', 'BIZNES']:
+                    print(f"[DEBUG] User {user_id} BIZNES tarifida, business.html ochilmoqda")
+                    return render_template('business.html')
     except Exception as e:
         print(f"[DEBUG] Tarif tekshirishda xato: {e}")
 
     print(f"[DEBUG] Index route: index.html ochilmoqda")
     return render_template('index.html')
+
+@app.route('/free')
+def free():
+    """Free tarif sahifasi - To'g'ridan-to'g'ri kirish"""
+    try:
+        user_id = get_user_id_from_request()
+        print(f"[DEBUG] Free route: user_id = {user_id}")
+        
+        if user_id and user_id != 123456789:  # Default test user emas
+            user = database.get_user(user_id)
+            
+            # Xodim ekanligini tekshirish
+            employee_link = database.get_employee_link(user_id)
+            if employee_link:
+                print(f"[DEBUG] User {user_id} xodim, employee.html ochilmoqda")
+                return render_template('employee.html')
+            
+            # Tarifni tekshirish (ixtiyoriy - FREE bo'lsa to'g'ri, bo'lmasa ham ko'rsatiladi)
+            # Lekin client-side JavaScript tarifni tekshiradi
+            if user:
+                user_tariff = user.get('tariff')
+                if user_tariff:
+                    user_tariff_str = str(user_tariff).upper().strip()
+                    print(f"[DEBUG] Free route: User {user_id} tariff = {user_tariff_str}")
+        else:
+            print(f"[DEBUG] Free route: Default test user, free.html ochilmoqda")
+    except Exception as e:
+        print(f"[DEBUG] Free route xatosi: {e}")
+    
+    # Free sahifasini ko'rsatish (client-side JavaScript tarifni tekshiradi)
+    return render_template('free.html')
 
 @app.route('/register')
 def register():

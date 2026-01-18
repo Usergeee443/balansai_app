@@ -1,0 +1,1482 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, maximum-scale=1.0, minimum-scale=1.0">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Balans AI - Bepul</title>
+    
+    <!-- Wallet Style CSS -->
+    <link rel="stylesheet" href="/static/css/wallet-style.css">
+    
+    <!-- Telegram WebApp SDK -->
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- Custom Transaction Modal Styles - Telegram Bottom Sheet -->
+    <style>
+        /* Transaction Modal - Full Screen */
+        .txn-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 99999;
+            display: none;
+            background: #1C1C1E;
+        }
+        
+        .txn-modal.active {
+            display: block;
+        }
+        
+        .txn-modal-overlay {
+            display: none;
+        }
+        
+        .txn-modal-sheet {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--wallet-bg);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        /* Header */
+        .txn-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px;
+            border-bottom: 0.5px solid var(--wallet-border);
+        }
+        
+        .txn-header-title {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--wallet-text-primary);
+        }
+        
+        .txn-close-btn {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: var(--wallet-bg-tertiary);
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        
+        .txn-close-btn:active {
+            transform: scale(0.9);
+            background: var(--wallet-bg-secondary);
+        }
+        
+        .txn-close-btn svg {
+            width: 14px;
+            height: 14px;
+            stroke: var(--wallet-text-secondary);
+            stroke-width: 2.5;
+        }
+        
+        /* Content */
+        .txn-content {
+            padding: 16px;
+            padding-bottom: calc(16px + env(safe-area-inset-bottom));
+            overflow-y: auto;
+        }
+        
+        /* Type Switcher - Telegram Style */
+        .txn-type-switcher {
+            display: flex;
+            background: var(--wallet-bg-secondary);
+            border-radius: 10px;
+            padding: 2px;
+            margin-bottom: 20px;
+        }
+        
+        .txn-type-btn {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 16px;
+            border: none;
+            background: transparent;
+            border-radius: 8px;
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--wallet-text-secondary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-family: inherit;
+        }
+        
+        .txn-type-btn.active[data-type="expense"] {
+            background: #FF453A;
+            color: white;
+        }
+        
+        .txn-type-btn.active[data-type="income"] {
+            background: #34C759;
+            color: white;
+        }
+        
+        .txn-type-btn svg {
+            stroke: currentColor;
+        }
+        
+        /* Amount Display */
+        .txn-amount-display {
+            text-align: center;
+            padding: 12px 0 20px;
+        }
+        
+        .txn-amount-value {
+            font-size: 48px;
+            font-weight: 400;
+            color: var(--wallet-text-primary);
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            letter-spacing: -1px;
+        }
+        
+        .txn-amount-currency {
+            font-size: 20px;
+            color: var(--wallet-text-secondary);
+            margin-left: 4px;
+            font-weight: 400;
+        }
+        
+        /* Category Grid - Telegram Style */
+        .txn-category-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+        
+        .txn-category-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            padding: 12px 8px;
+            background: var(--wallet-bg-secondary);
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        
+        .txn-category-item:active {
+            transform: scale(0.95);
+            opacity: 0.8;
+        }
+        
+        .txn-category-item.selected {
+            background: rgba(10, 132, 255, 0.15);
+        }
+        
+        .txn-category-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--wallet-bg-tertiary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .txn-category-item.selected .txn-category-icon {
+            background: #0A84FF;
+        }
+        
+        .txn-category-icon svg {
+            width: 20px;
+            height: 20px;
+            stroke: var(--wallet-text-secondary);
+        }
+        
+        .txn-category-item.selected .txn-category-icon svg {
+            stroke: white;
+        }
+        
+        .txn-category-item span {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--wallet-text-secondary);
+            text-align: center;
+            line-height: 1.2;
+        }
+        
+        .txn-category-item.selected span {
+            color: #0A84FF;
+        }
+        
+        /* Custom Keyboard - Telegram Style */
+        .txn-keyboard {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        
+        .txn-key {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--wallet-bg-secondary);
+            border: none;
+            border-radius: 12px;
+            font-size: 28px;
+            font-weight: 400;
+            color: var(--wallet-text-primary);
+            cursor: pointer;
+            transition: all 0.1s ease;
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
+            height: 56px;
+        }
+        
+        .txn-key:active {
+            background: var(--wallet-bg-tertiary);
+            transform: scale(0.95);
+        }
+        
+        .txn-key-backspace {
+            background: var(--wallet-bg-secondary);
+        }
+        
+        .txn-key-backspace svg {
+            width: 26px;
+            height: 26px;
+            stroke: var(--wallet-text-secondary);
+        }
+        
+        /* Submit Button - Telegram Style */
+        .txn-submit-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            width: 100%;
+            padding: 16px;
+            background: #0A84FF;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            color: white;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            font-family: inherit;
+        }
+        
+        .txn-submit-btn:active {
+            transform: scale(0.98);
+            opacity: 0.9;
+        }
+        
+        .txn-submit-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .txn-submit-btn svg {
+            width: 20px;
+            height: 20px;
+            stroke: white;
+        }
+    </style>
+
+    <!-- QR Code Scanner -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+</head>
+<body>
+    <!-- ============================================
+         HOME PAGE - WALLET STYLE
+         ============================================ -->
+    <div id="pageHome" class="page active">
+        <!-- Header -->
+        <div class="wallet-header">
+            <div class="wallet-header-left">
+                <div class="wallet-avatar" id="userAvatar">B</div>
+                <span class="wallet-title">Balans AI <span style="font-size: 12px; opacity: 0.7;">v1.6.0</span></span>
+            </div>
+            <div class="wallet-header-right">
+                <!-- Plus Upgrade Button - Small in Header -->
+                <button onclick="upgradeToPlus()" style="background: var(--tg-accent); color: white; border: none; border-radius: 12px; padding: 6px 12px; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 4px; cursor: pointer; margin-right: 8px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    Plus
+                </button>
+                <div class="wallet-header-icon" id="themeToggleBtn" onclick="toggleTheme()" title="Rejimni o'zgartirish">
+                    <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <!-- Moon icon (dark mode) -->
+                        <path id="moonIcon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        <!-- Sun icon (light mode) - hidden by default -->
+                        <g id="sunIcon" style="display: none;">
+                            <circle cx="12" cy="12" r="5"/>
+                            <line x1="12" y1="1" x2="12" y2="3"/>
+                            <line x1="12" y1="21" x2="12" y2="23"/>
+                            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                            <line x1="1" y1="12" x2="3" y2="12"/>
+                            <line x1="21" y1="12" x2="23" y2="12"/>
+                            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                        </g>
+                    </svg>
+                </div>
+                <div class="wallet-header-icon" onclick="showNotifications()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                        <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                    </svg>
+                </div>
+                <div class="wallet-header-icon" onclick="navigateTo('profile')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+            </svg>
+        </div>
+            </div>
+        </div>
+
+        <!-- Balance Section - Telegram Wallet Style (FREE - No Gauge) - Fixed Position -->
+        <div class="wallet-section" style="padding: 20px 16px; text-align: center; margin-top: 0;">
+            <!-- Balance Info (without gauge) -->
+            <div style="margin-bottom: 16px;">
+                <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 6px;">Balans</div>
+                <div id="totalBalance" style="font-size: 32px; font-weight: 700; color: var(--wallet-text-primary);">0 so'm</div>
+            </div>
+
+            <!-- CTA Button -->
+            <button class="tg-balance-cta" onclick="showAddTransactionModal()" style="width: 100%; max-width: 300px; margin: 0 auto;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+                Tranzaksiya qo'shish
+            </button>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="wallet-actions">
+            <div class="wallet-action-item" onclick="showAddTransactionModal('income')">
+                <div class="wallet-action-icon green">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 19V5M5 12l7-7 7 7"/>
+                </svg>
+            </div>
+                <span class="wallet-action-label">Kirim</span>
+            </div>
+            <div class="wallet-action-item" onclick="showAddTransactionModal('expense')">
+                <div class="wallet-action-icon" style="background: rgba(255, 69, 58, 0.15);">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="stroke: #FF453A;">
+                        <path d="M12 5v14M5 12l7 7 7-7"/>
+                    </svg>
+                </div>
+                <span class="wallet-action-label">Chiqim</span>
+            </div>
+            <div class="wallet-action-item" onclick="navigateTo('debts')">
+                <div class="wallet-action-icon orange">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M17 11h4a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h4"/>
+                        <rect x="8" y="5" width="8" height="12" rx="1"/>
+                    </svg>
+                </div>
+                <span class="wallet-action-label">Qarzlar</span>
+            </div>
+        </div>
+
+        <!-- Business Quick Actions (Only for BUSINESS tariff) -->
+        <div id="businessQuickActions" class="wallet-section" style="display: none;">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">💼 Biznes boshqaruvi</h2>
+            </div>
+            <div class="wallet-actions" style="grid-template-columns: repeat(3, 1fr);">
+                <div class="wallet-action-item" onclick="window.location.href='/business?page=warehouse'">
+                    <div class="wallet-action-icon purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>
+                </svg>
+            </div>
+                    <span class="wallet-action-label">Ombor</span>
+            </div>
+                <div class="wallet-action-item" onclick="window.location.href='/business?page=employees'">
+                    <div class="wallet-action-icon green">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                            <circle cx="9" cy="7" r="4"/>
+                            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                        </svg>
+                    </div>
+                    <span class="wallet-action-label">Xodimlar</span>
+                </div>
+                <div class="wallet-action-item" onclick="window.location.href='/business?page=tasks'">
+                    <div class="wallet-action-icon blue">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 11l3 3L22 4"/>
+                            <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>
+                        </svg>
+                    </div>
+                    <span class="wallet-action-label">Vazifalar</span>
+                </div>
+    </div>
+
+            <!-- Business Statistics Preview -->
+            <div class="wallet-stats-overview" style="margin-top: 12px;">
+                <div class="wallet-stat-card">
+                    <div class="wallet-stat-value" id="businessStatProducts">0</div>
+                    <div class="wallet-stat-label">Mahsulotlar</div>
+                </div>
+                <div class="wallet-stat-card">
+                    <div class="wallet-stat-value" id="businessStatEmployees">0</div>
+                    <div class="wallet-stat-label">Xodimlar</div>
+                </div>
+                <div class="wallet-stat-card">
+                    <div class="wallet-stat-value" id="businessStatTasks">0</div>
+                    <div class="wallet-stat-label">Vazifalar</div>
+                </div>
+            </div>
+
+            <!-- AI Recommendations -->
+            <div id="aiRecommendations" class="wallet-chart-card" style="margin-top: 16px; display: none;">
+                <div class="wallet-chart-header">
+                    <span class="wallet-chart-title">🤖 AI tavsiyalari</span>
+                </div>
+                <div id="aiRecommendationsList" style="padding: 12px 0;">
+                    <!-- Loaded via JavaScript -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Transactions -->
+        <div class="wallet-section">
+            <div class="wallet-section-header">
+                <h2 class="wallet-section-title">So'nggi tranzaksiyalar</h2>
+                <button class="wallet-section-action" onclick="navigateTo('transactions')">Barchasi</button>
+            </div>
+            <div class="wallet-transactions-list" id="homeTransactionsList">
+                <!-- Loaded via JavaScript -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         TRANSACTIONS PAGE
+         ============================================ -->
+    <div id="pageTransactions" class="page">
+        <div class="wallet-page-header">
+            <h1 class="wallet-page-title">Tranzaksiyalar</h1>
+            <div class="wallet-page-actions">
+                <button class="wallet-icon-btn" onclick="showAddTransactionModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+        
+        <!-- Search -->
+        <div class="wallet-search">
+            <svg class="wallet-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="M21 21l-4.35-4.35"/>
+                </svg>
+            <input type="text" class="wallet-search-input" id="transactionSearch" placeholder="Qidirish..." oninput="filterTransactions()">
+        </div>
+        
+        <!-- Filter Pills -->
+        <div class="wallet-filters">
+            <button class="wallet-filter-btn active" data-filter="all" onclick="setTransactionFilter('all', this)">Barchasi</button>
+            <button class="wallet-filter-btn" data-filter="income" onclick="setTransactionFilter('income', this)">Kirim</button>
+            <button class="wallet-filter-btn" data-filter="expense" onclick="setTransactionFilter('expense', this)">Chiqim</button>
+        </div>
+        
+        <!-- Transactions List -->
+        <div id="transactionsContainer">
+            <!-- Loaded via JavaScript -->
+        </div>
+    </div>
+
+    
+    <!-- ============================================
+         DEBTS PAGE
+         ============================================ -->
+    <div id="pageDebts" class="page">
+        <div class="wallet-page-header">
+            <h1 class="wallet-page-title">Qarzlar</h1>
+            <div class="wallet-page-actions">
+                <button class="wallet-icon-btn" onclick="showAddDebtModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+                    </svg>
+                </button>
+                </div>
+                </div>
+
+        <!-- Filter Pills -->
+        <div class="wallet-filters">
+            <button class="wallet-filter-btn active" data-filter="all" onclick="setDebtFilter('all', this)">Barchasi</button>
+            <button class="wallet-filter-btn" data-filter="given" onclick="setDebtFilter('given', this)">Berdim</button>
+            <button class="wallet-filter-btn" data-filter="taken" onclick="setDebtFilter('taken', this)">Oldim</button>
+                </div>
+
+        <!-- Skeleton Loading -->
+        <div id="debtsSkeleton" class="skeleton-list" style="padding: 0 16px;">
+            <div class="skeleton-item"></div>
+            <div class="skeleton-item"></div>
+            <div class="skeleton-item"></div>
+                </div>
+
+        <div id="debtsList" style="padding: 0 16px; display: none;">
+            <!-- Loaded via JavaScript -->
+                </div>
+                </div>
+
+    <!-- ============================================
+         WAREHOUSE PAGE
+         ============================================ -->
+    <div id="pageWarehouse" class="page">
+        <div class="wallet-page-header">
+            <button class="wallet-icon-btn" onclick="navigateTo('home')" style="margin-right: 12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h1 class="wallet-page-title">Ombor</h1>
+            <button class="wallet-icon-btn" onclick="showAddWarehouseModal()" style="margin-left: auto;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+            </button>
+        </div>
+
+        <div style="padding: 16px;">
+            <!-- Ombor statistikasi -->
+            <div class="wallet-card" style="margin-bottom: 16px;">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: center;">
+                    <div>
+                        <div style="font-size: 24px; font-weight: 600; color: var(--tg-theme-text-color);" id="warehouseTotalProducts">0</div>
+                        <div style="font-size: 13px; color: var(--tg-theme-hint-color); margin-top: 4px;">Mahsulotlar</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: 600; color: var(--tg-theme-text-color);" id="warehouseTotalValue">0</div>
+                        <div style="font-size: 13px; color: var(--tg-theme-hint-color); margin-top: 4px;">Umumiy qiymat</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: 600; color: #FF453A;" id="warehouseLowStock">0</div>
+                        <div style="font-size: 13px; color: var(--tg-theme-hint-color); margin-top: 4px;">Kam qolgan</div>
+                    </div>
+        </div>
+    </div>
+
+            <!-- Mahsulotlar ro'yxati -->
+            <div id="warehouseList" class="wallet-transactions-list">
+                <!-- JavaScript orqali to'ldiriladi -->
+            </div>
+        </div>
+        </div>
+        
+    <!-- ============================================
+         EMPLOYEES PAGE
+         ============================================ -->
+    <div id="pageEmployees" class="page">
+        <div class="wallet-page-header">
+            <button class="wallet-icon-btn" onclick="navigateTo('home')" style="margin-right: 12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h1 class="wallet-page-title">Xodimlar</h1>
+            <button class="wallet-icon-btn" onclick="showAddEmployeeModal()" style="margin-left: auto;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+            </button>
+        </div>
+        
+        <div style="padding: 16px;">
+            <!-- Xodimlar statistikasi -->
+            <div class="wallet-card" style="margin-bottom: 16px;">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; text-align: center;">
+                    <div>
+                        <div style="font-size: 24px; font-weight: 600; color: var(--tg-theme-text-color);" id="employeesTotal">0</div>
+                        <div style="font-size: 13px; color: var(--tg-theme-hint-color); margin-top: 4px;">Jami</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: 600; color: #34C759;" id="employeesActive">0</div>
+                        <div style="font-size: 13px; color: var(--tg-theme-hint-color); margin-top: 4px;">Faol</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 24px; font-weight: 600; color: var(--tg-theme-text-color);" id="employeesSalary">0</div>
+                        <div style="font-size: 13px; color: var(--tg-theme-hint-color); margin-top: 4px;">Ish haqi</div>
+                    </div>
+        </div>
+    </div>
+
+            <!-- Xodimlar ro'yxati -->
+            <div id="employeesList" class="wallet-transactions-list">
+                <!-- JavaScript orqali to'ldiriladi -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         TASKS PAGE
+         ============================================ -->
+    <div id="pageTasks" class="page">
+        <div class="wallet-page-header">
+            <button class="wallet-icon-btn" onclick="navigateTo('home')" style="margin-right: 12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            </button>
+            <h1 class="wallet-page-title">Vazifalar</h1>
+            <button class="wallet-icon-btn" onclick="showAddTaskModal()" style="margin-left: auto;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M12 5v14M5 12h14"/>
+                </svg>
+            </button>
+        </div>
+
+        <div style="padding: 16px;">
+            <!-- Vazifalar statistikasi -->
+            <div class="wallet-card" style="margin-bottom: 16px;">
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; text-align: center;">
+                    <div>
+                        <div style="font-size: 20px; font-weight: 600; color: var(--tg-theme-text-color);" id="tasksTotal">0</div>
+                        <div style="font-size: 12px; color: var(--tg-theme-hint-color); margin-top: 4px;">Jami</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 20px; font-weight: 600; color: #FF9500;" id="tasksPending">0</div>
+                        <div style="font-size: 12px; color: var(--tg-theme-hint-color); margin-top: 4px;">Kutilmoqda</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 20px; font-weight: 600; color: #0A84FF;" id="tasksInProgress">0</div>
+                        <div style="font-size: 12px; color: var(--tg-theme-hint-color); margin-top: 4px;">Jarayonda</div>
+                    </div>
+                    <div>
+                        <div style="font-size: 20px; font-weight: 600; color: #34C759;" id="tasksCompleted">0</div>
+                        <div style="font-size: 12px; color: var(--tg-theme-hint-color); margin-top: 4px;">Bajarildi</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Vazifalar ro'yxati -->
+            <div id="tasksList" class="wallet-transactions-list">
+                <!-- JavaScript orqali to'ldiriladi -->
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         BUSINESS STATS PAGE
+         ============================================ -->
+    <div id="pageBusinessStats" class="page">
+        <div class="wallet-page-header">
+            <button class="wallet-icon-btn" onclick="navigateTo('home')" style="margin-right: 12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            </button>
+            <h1 class="wallet-page-title">Biznes statistika</h1>
+        </div>
+
+        <div style="padding: 16px;">
+            <div class="wallet-empty">
+                <div class="wallet-empty-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                        <path d="M18 20V10M12 20V4M6 20v-6"/>
+            </svg>
+        </div>
+                <div class="wallet-empty-title">Tez orada...</div>
+                <div class="wallet-empty-text">Biznes statistikasi tez orada qo'shiladi</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================
+         GOALS PAGE
+         ============================================ -->
+    <div id="pageGoals" class="page">
+        <div class="wallet-page-header">
+            <h1 class="wallet-page-title">Maqsadlar</h1>
+            <div class="wallet-page-actions">
+                <button class="wallet-icon-btn" onclick="showAddGoalModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M12 5v14M5 12h14"/>
+            </svg>
+                </button>
+        </div>
+        </div>
+
+        <div class="wallet-empty">
+            <div class="wallet-empty-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <circle cx="12" cy="12" r="10"/>
+                    <circle cx="12" cy="12" r="6"/>
+                    <circle cx="12" cy="12" r="2"/>
+            </svg>
+        </div>
+            <div class="wallet-empty-title">Maqsadlar yo'q</div>
+            <div class="wallet-empty-text">Pul yig'ish maqsadlarini qo'shing va ularni kuzating</div>
+            <button class="wallet-cta-btn" onclick="showAddGoalModal()">Maqsad qo'shish</button>
+        </div>
+    </div>
+
+    <!-- ============================================
+         TOP EXPENSES PAGE
+         ============================================ -->
+    <div id="pageTopExpenses" class="page">
+        <div class="wallet-page-header">
+            <button class="wallet-icon-btn" onclick="navigateTo('home')" style="margin-right: 12px;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M19 12H5M12 19l-7-7 7-7"/>
+                </svg>
+            </button>
+            <h1 class="wallet-page-title">Top xarajatlar</h1>
+        </div>
+        
+        <!-- Skeleton Loading -->
+        <div id="topExpensesSkeleton" class="skeleton-list" style="padding: 0 16px;">
+            <div class="skeleton-item"></div>
+            <div class="skeleton-item"></div>
+            <div class="skeleton-item"></div>
+            <div class="skeleton-item"></div>
+            <div class="skeleton-item"></div>
+        </div>
+        
+        <div id="topExpensesContent" style="padding: 0 16px; display: none;">
+            <!-- Loaded via JavaScript -->
+        </div>
+    </div>
+
+    <!-- ============================================
+         BOTTOM NAVIGATION - Telegram Wallet Style (Glass Effect)
+         ============================================ -->
+    <nav class="tg-wallet-nav">
+        <button class="tg-wallet-nav-item active" data-page="home" onclick="navigateTo('home')">
+            <div class="tg-wallet-nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                    <polyline points="9 22 9 12 15 12 15 22"/>
+                </svg>
+            </div>
+            <span class="tg-wallet-nav-label">Asosiy</span>
+        </button>
+        <button class="tg-wallet-nav-item" data-page="transactions" onclick="navigateTo('transactions')">
+            <div class="tg-wallet-nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <rect x="1" y="4" width="22" height="16" rx="2" ry="2"/>
+                    <line x1="1" y1="10" x2="23" y2="10"/>
+                </svg>
+            </div>
+            <span class="tg-wallet-nav-label">Tranzaksiya</span>
+        </button>
+        <button class="tg-wallet-nav-item" data-page="debts" onclick="navigateTo('debts')">
+            <div class="tg-wallet-nav-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M17 11h4a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2v-6a2 2 0 0 1 2-2h4"/>
+                    <rect x="8" y="5" width="8" height="12" rx="1"/>
+                </svg>
+            </div>
+            <span class="tg-wallet-nav-label">Qarzlar</span>
+        </button>
+    </nav>
+
+    <!-- ============================================
+         PROFILE PAGE
+         ============================================ -->
+    <div id="pageProfile" class="page">
+        <div class="wallet-profile-header">
+            <div class="wallet-profile-avatar" id="profileAvatar">U</div>
+            <div class="wallet-profile-name" id="profileName">Foydalanuvchi</div>
+            <div class="wallet-profile-username" id="profileUsername">@username</div>
+        </div>
+
+        <!-- Tariff Info -->
+        <div class="wallet-settings-group">
+            <div class="wallet-settings-title">Tarif ma'lumotlari</div>
+            <div class="tariff-info-card" id="tariffInfoCard">
+                <div class="tariff-info-header">
+                    <div class="tariff-info-icon" id="tariffInfoIcon">🆓</div>
+                    <div class="tariff-info-content">
+                        <div class="tariff-info-name" id="tariffInfoName">FREE</div>
+                        <div class="tariff-info-desc" id="tariffInfoDesc">Bepul tarif</div>
+                    </div>
+                    <div class="tariff-info-badge" id="tariffInfoBadge">FREE</div>
+                </div>
+                <button class="tariff-upgrade-btn-small" onclick="upgradeToPlus()">
+                    Plus ga o'tish
+                </button>
+            </div>
+        </div>
+
+        <!-- Settings Groups -->
+        <div class="wallet-settings-group">
+            <div class="wallet-settings-title">Sozlamalar</div>
+            <div class="wallet-settings-list">
+                <div class="wallet-settings-item" onclick="showLanguageModal()">
+                    <div class="wallet-settings-icon blue">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="2" y1="12" x2="22" y2="12"/>
+                            <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                        </svg>
+                    </div>
+                    <div class="wallet-settings-content">
+                        <div class="wallet-settings-label">Til</div>
+                    </div>
+                    <div class="wallet-settings-value">
+                        O'zbek
+                        <svg class="wallet-settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="wallet-settings-item" onclick="showCurrencyModal()">
+                    <div class="wallet-settings-icon green">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="1" x2="12" y2="23"/>
+                            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+                        </svg>
+                    </div>
+                    <div class="wallet-settings-content">
+                        <div class="wallet-settings-label">Valyuta</div>
+                    </div>
+                    <div class="wallet-settings-value">
+                        UZS
+                        <svg class="wallet-settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </div>
+                </div>
+                <div class="wallet-settings-item" onclick="toggleTheme()">
+                    <div class="wallet-settings-icon purple">
+                        <svg id="indexThemeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path id="indexMoonIcon" d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                            <g id="indexSunIcon" style="display: none;">
+                                <circle cx="12" cy="12" r="5"/>
+                                <line x1="12" y1="1" x2="12" y2="3"/>
+                                <line x1="12" y1="21" x2="12" y2="23"/>
+                                <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+                                <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+                                <line x1="1" y1="12" x2="3" y2="12"/>
+                                <line x1="21" y1="12" x2="23" y2="12"/>
+                                <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+                                <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+                            </g>
+                        </svg>
+                    </div>
+                    <div class="wallet-settings-content">
+                        <div class="wallet-settings-label">Ko'rinish</div>
+                        <div class="wallet-settings-desc" id="indexThemeDesc">Qorong'u rejim</div>
+                    </div>
+                    <div class="wallet-settings-value">
+                        <svg class="wallet-settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M9 18l6-6-6-6"/>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="wallet-settings-group">
+            <div class="wallet-settings-title">Bildirishnomalar</div>
+            <div class="wallet-settings-list">
+                <div class="wallet-settings-item">
+                    <div class="wallet-settings-icon orange">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                            <path d="M13.73 21a2 2 0 0 1-3.46 0"/>
+                        </svg>
+                    </div>
+                    <div class="wallet-settings-content">
+                        <div class="wallet-settings-label">Push bildirishnomalar</div>
+                    </div>
+                    <label class="wallet-toggle">
+                        <input type="checkbox" id="pushNotifications" checked>
+                        <span class="wallet-toggle-slider"></span>
+                    </label>
+                </div>
+                <div class="wallet-settings-item">
+                    <div class="wallet-settings-icon purple">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <polyline points="12 6 12 12 16 14"/>
+                        </svg>
+                    </div>
+                    <div class="wallet-settings-content">
+                        <div class="wallet-settings-label">Eslatmalar</div>
+                    </div>
+                    <label class="wallet-toggle">
+                        <input type="checkbox" id="reminderNotifications" checked>
+                        <span class="wallet-toggle-slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <div class="wallet-settings-group">
+            <div class="wallet-settings-title">Yordam</div>
+            <div class="wallet-settings-list">
+                <div class="wallet-settings-item" onclick="showSupport()">
+                    <div class="wallet-settings-icon blue">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                    </div>
+                    <div class="wallet-settings-content">
+                        <div class="wallet-settings-label">Yordam markazi</div>
+                    </div>
+                    <svg class="wallet-settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </div>
+                <div class="wallet-settings-item" onclick="showAbout()">
+                    <div class="wallet-settings-icon green">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="10"/>
+                            <line x1="12" y1="16" x2="12" y2="12"/>
+                            <line x1="12" y1="8" x2="12.01" y2="8"/>
+                        </svg>
+                    </div>
+                    <div class="wallet-settings-content">
+                        <div class="wallet-settings-label">Ilova haqida</div>
+                    </div>
+                    <svg class="wallet-settings-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </div>
+            </div>
+        </div>
+        
+        <div style="padding: 0 16px 32px;">
+            <button class="wallet-form-btn danger" onclick="handleLogout()">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right: 8px;">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+                    <polyline points="16 17 21 12 16 7"/>
+                    <line x1="21" y1="12" x2="9" y2="12"/>
+                </svg>
+                Chiqish
+            </button>
+        </div>
+    </div>
+
+    <!-- ============================================
+         MODALS
+         ============================================ -->
+
+    <!-- Add Transaction Modal - Full Screen -->
+    <div id="addTransactionModal" class="txn-modal">
+        <div class="txn-modal-sheet">
+            <!-- Header with Close Button -->
+            <div class="txn-header">
+                <span class="txn-header-title">Tranzaksiya</span>
+                <button type="button" class="txn-close-btn" onclick="closeAddTransactionModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Content -->
+            <div class="txn-content">
+                <!-- Type Switcher -->
+                <div class="txn-type-switcher">
+                    <button type="button" class="txn-type-btn active" data-type="expense" onclick="setTransactionType('expense')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M12 5v14M5 12l7 7 7-7"/>
+                        </svg>
+                        Chiqim
+                    </button>
+                    <button type="button" class="txn-type-btn" data-type="income" onclick="setTransactionType('income')">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                            <path d="M12 19V5M5 12l7-7 7 7"/>
+                        </svg>
+                        Kirim
+                    </button>
+                </div>
+                
+                <!-- Amount Display -->
+                <div class="txn-amount-display">
+                    <span class="txn-amount-value" id="txnAmountDisplay">0</span>
+                    <span class="txn-amount-currency">so'm</span>
+                </div>
+                
+                <!-- Category Grid -->
+                <div class="txn-category-grid" id="txnCategoryGrid">
+                    <div class="txn-category-item" data-category="Berilgan pul" onclick="selectTxnCategory('Berilgan pul', this)">
+                        <div class="txn-category-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <circle cx="12" cy="12" r="10"/>
+                                <path d="M12 8v8M8 12h8"/>
+                            </svg>
+                        </div>
+                        <span>Berilgan pul</span>
+                    </div>
+                    <div class="txn-category-item selected" data-category="Oziq-ovqat" onclick="selectTxnCategory('Oziq-ovqat', this)">
+                        <div class="txn-category-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                            </svg>
+                        </div>
+                        <span>Oziq-ovqat</span>
+                    </div>
+                    <div class="txn-category-item" data-category="Transport" onclick="selectTxnCategory('Transport', this)">
+                        <div class="txn-category-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <rect x="1" y="3" width="15" height="13" rx="2"/>
+                                <path d="M16 8h4l3 3v5h-7V8z"/>
+                                <circle cx="5.5" cy="18.5" r="2.5"/>
+                                <circle cx="18.5" cy="18.5" r="2.5"/>
+                            </svg>
+                        </div>
+                        <span>Transport</span>
+                    </div>
+                    <div class="txn-category-item" data-category="Kommunal" onclick="selectTxnCategory('Kommunal', this)">
+                        <div class="txn-category-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+                            </svg>
+                        </div>
+                        <span>Kommunal</span>
+                    </div>
+                    <div class="txn-category-item" data-category="Kiyim-kechak" onclick="selectTxnCategory('Kiyim-kechak', this)">
+                        <div class="txn-category-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20.38 3.46L16 2a4 4 0 01-8 0L3.62 3.46a2 2 0 00-1.34 2.23l.58 3.47a1 1 0 00.99.84H6v10c0 1.1.9 2 2 2h8a2 2 0 002-2V10h2.15a1 1 0 00.99-.84l.58-3.47a2 2 0 00-1.34-2.23z"/>
+                            </svg>
+                        </div>
+                        <span>Kiyim-kechak</span>
+                    </div>
+                    <div class="txn-category-item" data-category="Sog'liq" onclick="selectTxnCategory('Sog\'liq', this)">
+                        <div class="txn-category-icon">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
+                            </svg>
+                        </div>
+                        <span>Sog'liq</span>
+                    </div>
+                </div>
+                
+                <!-- Custom Numeric Keyboard - Grid -->
+                <div class="txn-keyboard">
+                    <button type="button" class="txn-key" onclick="txnKeyPress('1')">1</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('2')">2</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('3')">3</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('4')">4</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('5')">5</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('6')">6</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('7')">7</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('8')">8</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('9')">9</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('.')">.</button>
+                    <button type="button" class="txn-key" onclick="txnKeyPress('0')">0</button>
+                    <button type="button" class="txn-key txn-key-backspace" onclick="txnKeyPress('backspace')">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/>
+                            <line x1="18" y1="9" x2="12" y2="15"/>
+                            <line x1="12" y1="9" x2="18" y2="15"/>
+                        </svg>
+                    </button>
+                </div>
+                
+                <!-- Submit Button -->
+                <button type="button" class="txn-submit-btn" onclick="submitTransaction()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                        <polyline points="20 6 9 17 4 12"/>
+                    </svg>
+                    Saqlash
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Reminder Modal -->
+    <div id="addReminderModal" class="wallet-modal">
+        <div class="wallet-modal-content">
+            <div class="wallet-modal-handle"></div>
+            <div class="wallet-modal-header">
+                <span class="wallet-modal-title">Eslatma qo'shish</span>
+                <button class="wallet-modal-close" onclick="closeAddReminderModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="addReminderForm" onsubmit="handleAddReminder(event)">
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Sarlavha</label>
+                    <input type="text" class="wallet-form-input" id="reminderTitle" placeholder="Eslatma nomi" required>
+                </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Summa</label>
+                    <input type="number" class="wallet-form-input" id="reminderAmount" placeholder="0" required>
+                </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Sana</label>
+                    <input type="date" class="wallet-form-input" id="reminderDate" required>
+                </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Takrorlash</label>
+                    <select class="wallet-form-select" id="reminderRepeat">
+                        <option value="none">Takrorlanmaydi</option>
+                        <option value="daily">Har kuni</option>
+                        <option value="weekly">Har hafta</option>
+                        <option value="monthly">Har oy</option>
+                    </select>
+                </div>
+                <button type="submit" class="wallet-form-btn">Qo'shish</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Debt Modal -->
+    <div id="addDebtModal" class="wallet-modal">
+        <div class="wallet-modal-content">
+            <div class="wallet-modal-handle"></div>
+            <div class="wallet-modal-header">
+                <span class="wallet-modal-title">Qarz qo'shish</span>
+                <button class="wallet-modal-close" onclick="closeAddDebtModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+        </div>
+            <form id="addDebtForm" onsubmit="handleAddDebt(event)">
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Qarz turi</label>
+                    <select class="wallet-form-select" id="debtType" required>
+                        <option value="given">Berdim (Menga qaytarishadi)</option>
+                        <option value="taken">Oldim (Men qaytaraman)</option>
+                    </select>
+        </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Kimga/Kimdan</label>
+                    <input type="text" class="wallet-form-input" id="debtPersonName" placeholder="Ism" required>
+                </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Summa</label>
+                    <input type="number" class="wallet-form-input" id="debtAmount" placeholder="0" required>
+                </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Muddat (ixtiyoriy)</label>
+                    <input type="date" class="wallet-form-input" id="debtDueDate">
+        </div>
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Izoh (ixtiyoriy)</label>
+                    <input type="text" class="wallet-form-input" id="debtDescription" placeholder="Qarz haqida">
+        </div>
+                <button type="submit" class="wallet-form-btn">Qo'shish</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Set Limit Modal -->
+    <div id="setLimitModal" class="wallet-modal">
+        <div class="wallet-modal-content">
+            <div class="wallet-modal-handle"></div>
+            <div class="wallet-modal-header">
+                <span class="wallet-modal-title">Oylik limit</span>
+                <button class="wallet-modal-close" onclick="closeSetLimitModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+            </svg>
+                </button>
+        </div>
+            <form id="setLimitForm" onsubmit="handleSetLimit(event)">
+                <div class="wallet-form-group">
+                    <label class="wallet-form-label">Oylik xarajat limiti (so'm)</label>
+                    <input type="number" class="wallet-form-input" id="limitAmount" placeholder="Masalan: 5000000" required>
+                    <div style="margin-top: 8px; font-size: 12px; color: var(--wallet-text-secondary);">
+                        Agar limit oshsa, ogohlantirish olasiz
+        </div>
+        </div>
+                <div class="wallet-limit-presets">
+                    <button type="button" class="wallet-limit-preset" onclick="setLimitPreset(1000000)">1 mln</button>
+                    <button type="button" class="wallet-limit-preset" onclick="setLimitPreset(2000000)">2 mln</button>
+                    <button type="button" class="wallet-limit-preset" onclick="setLimitPreset(5000000)">5 mln</button>
+                    <button type="button" class="wallet-limit-preset" onclick="setLimitPreset(10000000)">10 mln</button>
+        </div>
+                <button type="submit" class="wallet-form-btn">Saqlash</button>
+                <button type="button" class="wallet-form-btn secondary" style="margin-top: 8px;" onclick="removeLimit()">Limitni o'chirish</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Not Registered Modal -->
+    <div id="notRegisteredModal" class="wallet-modal">
+        <div class="wallet-modal-content" style="text-align: center; padding: 40px 24px;">
+            <div style="width: 80px; height: 80px; margin: 0 auto 24px; background: var(--wallet-bg-tertiary); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--wallet-accent-blue)" stroke-width="2">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                    <circle cx="12" cy="7" r="4"/>
+            </svg>
+        </div>
+            <h2 style="font-size: 22px; font-weight: 700; margin-bottom: 12px;">Ro'yxatdan o'tmagansiz</h2>
+            <p style="color: var(--wallet-text-secondary); margin-bottom: 24px;">Ilovadan foydalanish uchun Telegram bot orqali ro'yxatdan o'ting</p>
+            <button class="wallet-form-btn" onclick="openTelegramBot()">Botga o'tish</button>
+        </div>
+        </div>
+
+    <!-- Loading Screen -->
+    <div id="loadingScreen" class="wallet-loading" style="display: none;">
+        <div class="wallet-spinner"></div>
+        </div>
+
+    <!-- Quick Access Settings Modal -->
+    <div id="quickAccessModal" class="wallet-modal">
+        <div class="wallet-modal-content">
+            <div class="wallet-modal-handle"></div>
+            <div class="wallet-modal-header">
+                <span class="wallet-modal-title">Tez kirish sozlamalari</span>
+                <button class="wallet-modal-close" onclick="closeQuickAccessModal()">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M18 6L6 18M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <p style="color: var(--wallet-text-secondary); font-size: 14px; margin-bottom: 16px;">
+                Tez kirish uchun 4 ta xizmatni tanlang
+            </p>
+            <div id="quickAccessOptions" class="quick-access-options">
+                <!-- JavaScript orqali yuklanadi -->
+            </div>
+            <button class="wallet-form-btn" onclick="saveQuickAccessSettings()" style="margin-top: 16px;">Saqlash</button>
+        </div>
+    </div>
+
+    <!-- Quick Access Styles -->
+    <style>
+        .quick-access-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            padding: 0 16px;
+        }
+        
+        .quick-access-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px 8px;
+            background: var(--wallet-card-bg);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .quick-access-item:active {
+            transform: scale(0.95);
+        }
+        
+        .quick-access-icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+        
+        .quick-access-icon svg {
+            width: 22px;
+            height: 22px;
+        }
+        
+        .quick-access-label {
+            font-size: 11px;
+            font-weight: 500;
+            color: var(--wallet-text-primary);
+            text-align: center;
+            line-height: 1.2;
+        }
+        
+        .quick-access-options {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .quick-access-option {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--wallet-bg-tertiary);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+        }
+        
+        .quick-access-option.selected {
+            border-color: var(--wallet-accent-blue);
+            background: rgba(10, 132, 255, 0.1);
+        }
+        
+        .quick-access-option-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        
+        .quick-access-option-icon svg {
+            width: 18px;
+            height: 18px;
+        }
+        
+        .quick-access-option-name {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--wallet-text-primary);
+        }
+        
+        .quick-access-check {
+            margin-left: auto;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid var(--wallet-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .quick-access-option.selected .quick-access-check {
+            background: var(--wallet-accent-blue);
+            border-color: var(--wallet-accent-blue);
+        }
+        
+        .quick-access-check svg {
+            width: 12px;
+            height: 12px;
+            stroke: white;
+            display: none;
+        }
+        
+        .quick-access-option.selected .quick-access-check svg {
+            display: block;
+        }
+    </style>
+
+    <!-- Scripts -->
+    <script src="/static/js/wallet-app.js?v=1.6.3"></script>
+    <script src="/static/js/business.js?v=1.6.0"></script>
+    
+    <!-- Free Page Tariff Check and Upgrade Function -->
+    <script>
+        // Free tarifi uchun sahifa - faqat FREE tarifi kirish mumkin
+        // IMPORTANT: Redirect qilmaslik uchun - agar FREE bo'lsa, qoladi
+        (async function checkFreeAccess() {
+            const tg = window.Telegram?.WebApp;
+            if (!tg || !tg.initData) {
+                console.log('[FREE] Telegram WebApp mavjud emas');
+                return;
+            }
+            
+            // Agar bir marta tekshirilgan bo'lsa, qayta tekshirishdan saqlanish
+            if (window.__freeAccessChecked) {
+                console.log('[FREE] Access already checked, skipping');
+                return;
+            }
+            window.__freeAccessChecked = true;
+            
+            try {
+                const response = await fetch('/api/user', {
+                    headers: {
+                        'X-Telegram-Init-Data': tg.initData
+                    }
+                });
+                
+                if (response.ok) {
+                    const user = await response.json();
+                    console.log('[FREE] User tariff:', user.tariff);
+                    
+                    // Xodim bo'lsa, xodim sahifasiga yo'naltirish
+                    if (user.is_employee) {
+                        console.log('[FREE] User is employee, redirecting to /employee');
+                        window.__freeAccessChecked = false; // Reset for redirect
+                        window.location.href = '/employee';
+                        return;
+                    }
+                    
+                    const userTariff = user.tariff ? String(user.tariff).toUpperCase().trim() : '';
+                    
+                    // Agar PLUS/PRO tarifi bo'lsa, Plus sahifasiga yo'naltirish
+                    if (['PLUS', 'PRO'].includes(userTariff)) {
+                        console.log('[FREE] User is PLUS, redirecting to /');
+                        window.__freeAccessChecked = false; // Reset for redirect
+                        window.location.href = '/';
+                        return;
+                    }
+                    
+                    // Agar BUSINESS tarifi bo'lsa, business sahifasiga yo'naltirish
+                    if (['BUSINESS', 'BIZNES'].includes(userTariff)) {
+                        console.log('[FREE] User is BUSINESS, redirecting to /business');
+                        window.__freeAccessChecked = false; // Reset for redirect
+                        window.location.href = '/business';
+                        return;
+                    }
+                    
+                    // Agar ruxsat berilmagan tarif bo'lsa va FREE ham bo'lmasa, register sahifasiga yo'naltirish
+                    if (userTariff && userTariff !== 'FREE') {
+                        console.log('[FREE] User tariff not allowed for Free page:', userTariff);
+                        window.__freeAccessChecked = false; // Reset for redirect
+                        window.location.href = '/register';
+                        return;
+                    }
+                    
+                    // Agar FREE tarifi bo'lsa, qoladi (redirect yo'q)
+                    if (userTariff === 'FREE') {
+                        console.log('[FREE] User is FREE, staying on free.html');
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error('[FREE] Access check error:', error);
+                window.__freeAccessChecked = false; // Reset on error
+            }
+        })();
+        
+        // Plus ga o'tish funksiyasi
+        function upgradeToPlus() {
+            const tg = window.Telegram?.WebApp;
+            if (tg && tg.openLink) {
+                tg.openLink('https://balansai.onrender.com/payment-plus');
+            } else {
+                window.location.href = 'https://balansai.onrender.com/payment-plus';
+            }
+        }
+    </script>
+</body>
+</html>

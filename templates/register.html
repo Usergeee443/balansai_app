@@ -823,6 +823,88 @@
             width: 20px;
             height: 20px;
         }
+        
+        /* Tariff Button */
+        .tariff-button {
+            width: 100%;
+            padding: 12px 16px;
+            margin-top: 14px;
+            border-radius: 10px;
+            font-size: 15px;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-family: inherit;
+        }
+        
+        .tariff-button:active {
+            transform: scale(0.98);
+        }
+        
+        .tariff-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .tariff-button.free {
+            background: var(--tg-accent);
+            color: white;
+        }
+        
+        .tariff-button.plus {
+            background: var(--tg-accent);
+            color: white;
+        }
+        
+        .tariff-button.business {
+            background: var(--tg-accent);
+            color: white;
+        }
+        
+        .tariff-button-loader {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        .tariff-button-text {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .tariff-button-icon {
+            display: none;
+        }
+        
+        .tariff-button.loading .tariff-button-text {
+            display: none;
+        }
+        
+        .tariff-button.loading .tariff-button-icon {
+            display: block;
+        }
+        
+        .tariff-card {
+            cursor: default;
+        }
+        
+        .tariff-card .tariff-header {
+            cursor: pointer;
+        }
+        
+        .tariff-card .tariff-features {
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
@@ -1018,7 +1100,7 @@
         
         <div class="tariff-list">
             <!-- FREE -->
-            <div class="tariff-card" onclick="selectTariff('FREE')">
+            <div class="tariff-card">
                 <div class="tariff-header">
                     <div class="tariff-icon">🆓</div>
                     <div class="tariff-info">
@@ -1036,10 +1118,16 @@
                         Cheklovli statistika
                             </div>
                             </div>
+                <button class="tariff-button free" onclick="selectTariffWithLoading('FREE', this)" id="tariffBtnFree">
+                    <span class="tariff-button-text">Bepul davom etish</span>
+                    <div class="tariff-button-icon">
+                        <div class="tariff-button-loader"></div>
+                    </div>
+                </button>
                         </div>
 
             <!-- PLUS -->
-            <div class="tariff-card popular" onclick="selectTariff('PLUS')">
+            <div class="tariff-card popular">
                 <div class="tariff-badge">Ommabop</div>
                 <div class="tariff-header">
                     <div class="tariff-icon">⭐</div>
@@ -1062,10 +1150,16 @@
                         Cheksiz AI tahlil
                 </div>
             </div>
+                <button class="tariff-button plus" onclick="selectTariffWithLoading('PLUS', this)" id="tariffBtnPlus">
+                    <span class="tariff-button-text">7 kun sinash</span>
+                    <div class="tariff-button-icon">
+                        <div class="tariff-button-loader"></div>
+                    </div>
+                </button>
                 </div>
 
             <!-- BUSINESS -->
-            <div class="tariff-card" onclick="selectTariff('BUSINESS')">
+            <div class="tariff-card">
                 <div class="tariff-header">
                     <div class="tariff-icon">💼</div>
                     <div class="tariff-info">
@@ -1087,6 +1181,12 @@
                         Ombor va savdo
                         </div>
                         </div>
+                <button class="tariff-button business" onclick="selectTariffWithLoading('BUSINESS', this)" id="tariffBtnBusiness">
+                    <span class="tariff-button-text">7 kun sinash</span>
+                    <div class="tariff-button-icon">
+                        <div class="tariff-button-loader"></div>
+                    </div>
+                </button>
                         </div>
                     </div>
                 </div>
@@ -1335,6 +1435,30 @@
             submitForm();
         }
         
+        // Select tariff with loading state
+        let isSubmitting = false;
+        function selectTariffWithLoading(tariff, buttonElement) {
+            // Prevent multiple clicks
+            if (isSubmitting) return;
+            
+            haptic('light');
+            formData.tariff = tariff;
+            
+            // Disable all tariff buttons
+            isSubmitting = true;
+            const allTariffButtons = document.querySelectorAll('.tariff-button');
+            allTariffButtons.forEach(btn => {
+                btn.disabled = true;
+            });
+            
+            // Show loading on clicked button
+            buttonElement.classList.add('loading');
+            buttonElement.disabled = true;
+            
+            // Submit form
+            submitForm();
+        }
+        
         // Add debt
         function addDebt() {
             haptic('light');
@@ -1531,9 +1655,17 @@
                 haptic('success');
                 showSuccess();
                 
-                // Redirect after delay
+                // Redirect after delay based on tariff
                 setTimeout(() => {
-                    window.location.href = '/';
+                    let redirectUrl = '/';
+                    if (formData.tariff === 'FREE') {
+                        redirectUrl = '/';
+                    } else if (formData.tariff === 'PLUS' || formData.tariff === 'PRO') {
+                        redirectUrl = '/';
+                    } else if (formData.tariff === 'BUSINESS' || formData.tariff === 'BIZNES') {
+                        redirectUrl = '/business';
+                    }
+                    window.location.href = redirectUrl;
                 }, 3500);
                 
             } catch (error) {

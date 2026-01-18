@@ -373,31 +373,25 @@ def update_user(user_id, name=None, source=None, account_type=None):
         connection.close()
 
 def save_initial_balance(user_id, cash_balance=0, card_balance=0):
-    """Boshlang'ich balansni saqlash"""
+    """Boshlang'ich balansni saqlash - faqat bitta tranzaksiya"""
     connection = get_db_connection()
     try:
         with connection.cursor() as cursor:
-            # Naqd pul
-            if cash_balance > 0:
-                cursor.execute("""
-                    INSERT INTO transactions (user_id, transaction_type, amount, category, currency, description)
-                    VALUES (%s, 'income', %s, 'boshlang_ich_naqd', 'UZS', 'Boshlang''ich naqd pul')
-                """, (user_id, cash_balance))
-            
-            # Karta balansi
-            if card_balance > 0:
-                cursor.execute("""
-                    INSERT INTO transactions (user_id, transaction_type, amount, category, currency, description)
-                    VALUES (%s, 'income', %s, 'boshlang_ich_karta', 'UZS', 'Boshlang''ich karta balansi')
-                """, (user_id, card_balance))
-            
-            # Umumiy boshlang'ich balans
+            # Umumiy boshlang'ich balans - faqat bitta tranzaksiya
             total_balance = cash_balance + card_balance
             if total_balance > 0:
+                # Agar naqd pul va karta balansi ikkalasi ham bo'lsa, bitta umumiy tranzaksiya
+                if cash_balance > 0 and card_balance > 0:
+                    description = f'Boshlang\'ich balans (Naqd: {cash_balance:,.0f}, Karta: {card_balance:,.0f})'
+                elif cash_balance > 0:
+                    description = 'Boshlang\'ich naqd pul'
+                else:
+                    description = 'Boshlang\'ich karta balansi'
+                
                 cursor.execute("""
                     INSERT INTO transactions (user_id, transaction_type, amount, category, currency, description)
-                    VALUES (%s, 'income', %s, 'boshlang_ich_balans', 'UZS', 'Boshlang''ich balans')
-                """, (user_id, total_balance))
+                    VALUES (%s, 'income', %s, 'boshlang_ich_balans', 'UZS', %s)
+                """, (user_id, total_balance, description))
             
             connection.commit()
             return True
