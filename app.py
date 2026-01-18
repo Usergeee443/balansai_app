@@ -1238,7 +1238,7 @@ Siz Balans AI'da muvaffaqiyatli ro'yxatdan o'tdingiz!
 
 Endi moliyaviy hisoblaringizni oson boshqarishingiz mumkin.
 
-👇 Ilovani ochish uchun quyidagi tugmani bosing:"""
+👇 Boshlash uchun /start komandasini bosing:"""
 
         # Inline keyboard
         keyboard = {

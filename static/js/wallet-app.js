@@ -534,11 +534,21 @@ function updateGauge(percent) {
 async function loadLimitStatus() {
     try {
         const limitStatus = await apiRequest('/api/limit');
+        const gaugeContainer = document.querySelector('.tg-balance-gauge');
+        const gaugeSvg = gaugeContainer?.querySelector('.tg-gauge-svg');
         
         if (limitStatus && limitStatus.limit) {
             const limit = limitStatus.limit;
             const spent = limitStatus.spent || 0;
             const percent = (spent / limit) * 100;
+            
+            // Show gauge container and SVG if limit is set
+            if (gaugeContainer) {
+                gaugeContainer.style.display = 'block';
+            }
+            if (gaugeSvg) {
+                gaugeSvg.style.display = 'block';
+            }
             
             // Update gauge
             updateGauge(percent);
@@ -554,13 +564,32 @@ async function loadLimitStatus() {
                 }
             }
         } else {
-            // No limit set, show 0%
-            updateGauge(0);
+            // No limit set - hide only SVG gauge, keep balance info visible
+            if (gaugeSvg) {
+                gaugeSvg.style.display = 'none';
+            }
+            // Keep gauge container visible for balance info
+            if (gaugeContainer) {
+                gaugeContainer.style.display = 'block';
+            }
+            
+            // Reset label
+            const balanceLabel = document.getElementById('balanceLabel');
+            if (balanceLabel) {
+                balanceLabel.textContent = 'Balans';
+            }
         }
     } catch (error) {
         console.error('Limit status error:', error);
-        // On error, show 0%
-        updateGauge(0);
+        // On error, hide only SVG gauge, keep balance info visible
+        const gaugeContainer = document.querySelector('.tg-balance-gauge');
+        const gaugeSvg = gaugeContainer?.querySelector('.tg-gauge-svg');
+        if (gaugeSvg) {
+            gaugeSvg.style.display = 'none';
+        }
+        if (gaugeContainer) {
+            gaugeContainer.style.display = 'block';
+        }
     }
 }
 
@@ -1912,12 +1941,75 @@ async function handleAddReminder(event) {
     }
 }
 
-function showAddDebtModal() {
+async function showAddDebtModal() {
     hapticFeedback('light');
     const modal = document.getElementById('addDebtModal');
     if (modal) {
         modal.classList.add('active');
+        // Load contacts for debt modal
+        await loadContactsForDebt();
     }
+}
+
+async function loadContactsForDebt() {
+    try {
+        const contacts = await apiRequest('/api/contacts');
+        const select = document.getElementById('debtContactId');
+        if (!select) return;
+        
+        // Clear existing options except first one
+        select.innerHTML = '<option value="">Kontakt tanlang yoki yangi yarating</option>';
+        
+        // Add contacts to select
+        if (contacts && contacts.length > 0) {
+            contacts.forEach(contact => {
+                const option = document.createElement('option');
+                option.value = contact.id;
+                option.textContent = contact.name || contact.full_name || 'Nomsiz kontakt';
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Kontaktlarni yuklashda xatolik:', error);
+    }
+}
+
+function onDebtContactChange() {
+    const select = document.getElementById('debtContactId');
+    const nameInput = document.getElementById('debtPersonName');
+    const hiddenInput = document.getElementById('debtContactIdHidden');
+    
+    if (select && nameInput && hiddenInput) {
+        if (select.value) {
+            // Contact selected - hide manual input
+            nameInput.style.display = 'none';
+            nameInput.required = false;
+            hiddenInput.value = select.value;
+            
+            // Get contact name from option text
+            const selectedOption = select.options[select.selectedIndex];
+            nameInput.value = selectedOption.textContent;
+        } else {
+            // No contact selected - show manual input
+            nameInput.style.display = 'block';
+            nameInput.required = true;
+            hiddenInput.value = '';
+            nameInput.value = '';
+        }
+    }
+}
+
+function showAddContactModalFromDebt() {
+    // Close debt modal temporarily
+    closeAddDebtModal();
+    // Show add contact modal (if exists) or create new contact
+    // For now, we'll just show an alert to add contact manually
+    // TODO: Implement add contact modal
+    alert('Kontakt qo\'shish funksiyasi tez orada qo\'shiladi. Hozircha ismni qo\'lda kiriting.');
+    // Reopen debt modal
+    setTimeout(() => {
+        showAddDebtModal();
+    }, 100);
 }
 
 function closeAddDebtModal() {
@@ -1933,9 +2025,18 @@ async function handleAddDebt(event) {
     event.preventDefault();
     hapticFeedback('medium');
 
+    const contactId = document.getElementById('debtContactIdHidden')?.value || null;
+    const personName = document.getElementById('debtPersonName')?.value || '';
+    
+    // If contact is selected, use contact name, otherwise use manual input
+    const finalPersonName = contactId ? 
+        (document.getElementById('debtContactId')?.options[document.getElementById('debtContactId')?.selectedIndex]?.textContent || personName) :
+        personName;
+
     const data = {
         debt_type: document.getElementById('debtType').value,
-        person_name: document.getElementById('debtPersonName').value,
+        person_name: finalPersonName,
+        contact_id: contactId || null,
         amount: parseFloat(document.getElementById('debtAmount').value),
         currency: 'UZS',
         due_date: document.getElementById('debtDueDate').value || null,
@@ -2266,6 +2367,9 @@ window.handleAddReminder = handleAddReminder;
 window.showAddDebtModal = showAddDebtModal;
 window.closeAddDebtModal = closeAddDebtModal;
 window.handleAddDebt = handleAddDebt;
+window.loadContactsForDebt = loadContactsForDebt;
+window.onDebtContactChange = onDebtContactChange;
+window.showAddContactModalFromDebt = showAddContactModalFromDebt;
 window.toggleReminder = toggleReminder;
 window.showNotifications = showNotifications;
 window.showExportModal = showExportModal;
@@ -2295,10 +2399,21 @@ async function loadLimitStatus() {
         currentLimitStatus = status;
         updateLimitUI(status);
         
+        const gaugeContainer = document.querySelector('.tg-balance-gauge');
+        const gaugeSvg = gaugeContainer?.querySelector('.tg-gauge-svg');
+        
         // Update gauge based on limit percentage
-        if (status && status.has_limit) {
+        if (status && status.has_limit && status.limit) {
             const percent = status.percent || 0;
             updateGauge(percent);
+            
+            // Show gauge container and SVG if limit is set
+            if (gaugeContainer) {
+                gaugeContainer.style.display = 'block';
+            }
+            if (gaugeSvg) {
+                gaugeSvg.style.display = 'block';
+            }
             
             // Update balance label if needed
             const balanceLabel = document.getElementById('balanceLabel');
@@ -2312,17 +2427,31 @@ async function loadLimitStatus() {
                 }
             }
         } else {
-            // No limit set, show 0%
-            updateGauge(0);
+            // No limit set - hide only SVG gauge, keep balance info visible
+            if (gaugeSvg) {
+                gaugeSvg.style.display = 'none';
+            }
+            // Keep gauge container visible for balance info
+            if (gaugeContainer) {
+                gaugeContainer.style.display = 'block';
+            }
+            
             const balanceLabel = document.getElementById('balanceLabel');
             if (balanceLabel) {
-                balanceLabel.textContent = 'Umumiy balans';
+                balanceLabel.textContent = 'Balans';
             }
         }
     } catch (error) {
         console.error('Limit status error:', error);
-        // On error, show 0%
-        updateGauge(0);
+        // On error, hide only SVG gauge, keep balance info visible
+        const gaugeContainer = document.querySelector('.tg-balance-gauge');
+        const gaugeSvg = gaugeContainer?.querySelector('.tg-gauge-svg');
+        if (gaugeSvg) {
+            gaugeSvg.style.display = 'none';
+        }
+        if (gaugeContainer) {
+            gaugeContainer.style.display = 'block';
+        }
     }
 }
 

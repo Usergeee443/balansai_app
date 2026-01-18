@@ -365,7 +365,7 @@
             <div style="margin-bottom: 16px;">
                 <div style="font-size: 13px; color: var(--wallet-text-secondary); margin-bottom: 6px;">Balans</div>
                 <div id="totalBalance" style="font-size: 32px; font-weight: 700; color: var(--wallet-text-primary);">0 so'm</div>
-            </div>
+        </div>
 
             <!-- CTA Button -->
             <button class="tg-balance-cta" onclick="showAddTransactionModal()" style="width: 100%; max-width: 300px; margin: 0 auto;">
@@ -841,8 +841,8 @@
                             <circle cx="12" cy="12" r="10"/>
                             <line x1="2" y1="12" x2="22" y2="12"/>
                             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-                        </svg>
-                    </div>
+                </svg>
+            </div>
                     <div class="wallet-settings-content">
                         <div class="wallet-settings-label">Til</div>
                     </div>
@@ -980,7 +980,7 @@
                     <line x1="21" y1="12" x2="9" y2="12"/>
                 </svg>
                 Chiqish
-            </button>
+        </button>
         </div>
     </div>
 
@@ -1174,8 +1174,19 @@
                     </select>
         </div>
                 <div class="wallet-form-group">
-                    <label class="wallet-form-label">Kimga/Kimdan</label>
-                    <input type="text" class="wallet-form-input" id="debtPersonName" placeholder="Ism" required>
+                    <label class="wallet-form-label">Kontakt</label>
+                    <div style="display: flex; gap: 8px;">
+                        <select class="wallet-form-select" id="debtContactId" style="flex: 1;" onchange="onDebtContactChange()">
+                            <option value="">Kontakt tanlang yoki yangi yarating</option>
+                        </select>
+                        <button type="button" class="wallet-form-btn" style="padding: 12px 16px; white-space: nowrap;" onclick="showAddContactModalFromDebt()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M12 5v14M5 12h14"/>
+                            </svg>
+                        </button>
+                    </div>
+                    <input type="text" class="wallet-form-input" id="debtPersonName" placeholder="Yoki ism kiriting" style="margin-top: 8px; display: none;">
+                    <input type="hidden" id="debtContactIdHidden">
                 </div>
                 <div class="wallet-form-group">
                     <label class="wallet-form-label">Summa</label>
@@ -1477,6 +1488,147 @@
                 window.location.href = 'https://balansai.onrender.com/payment-plus';
             }
         }
+        
+        // Kontakt tanlash funksiyalari (qarz uchun)
+        async function loadContactsForDebt() {
+            try {
+                const tg = window.Telegram?.WebApp;
+                if (!tg || !tg.initData) return;
+                
+                const response = await fetch('/api/contacts', {
+                    headers: {
+                        'X-Telegram-Init-Data': tg.initData
+                    }
+                });
+                
+                if (response.ok) {
+                    const contacts = await response.json();
+                    const select = document.getElementById('debtContactId');
+                    if (!select) return;
+                    
+                    // Clear existing options except first one
+                    select.innerHTML = '<option value="">Kontakt tanlang yoki yangi yarating</option>';
+                    
+                    // Add contacts to select
+                    if (contacts && contacts.length > 0) {
+                        contacts.forEach(contact => {
+                            const option = document.createElement('option');
+                            option.value = contact.id;
+                            option.textContent = contact.name || contact.full_name || 'Nomsiz kontakt';
+                            select.appendChild(option);
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error('Kontaktlarni yuklashda xatolik:', error);
+            }
+        }
+        
+        function onDebtContactChange() {
+            const select = document.getElementById('debtContactId');
+            const nameInput = document.getElementById('debtPersonName');
+            const hiddenInput = document.getElementById('debtContactIdHidden');
+            
+            if (select && nameInput && hiddenInput) {
+                if (select.value) {
+                    // Contact selected - hide manual input
+                    nameInput.style.display = 'none';
+                    nameInput.required = false;
+                    hiddenInput.value = select.value;
+                    
+                    // Get contact name from option text
+                    const selectedOption = select.options[select.selectedIndex];
+                    nameInput.value = selectedOption.textContent;
+                } else {
+                    // No contact selected - show manual input
+                    nameInput.style.display = 'block';
+                    nameInput.required = true;
+                    hiddenInput.value = '';
+                    nameInput.value = '';
+                }
+            }
+        }
+        
+        function showAddContactModalFromDebt() {
+            // Close debt modal temporarily
+            closeAddDebtModal();
+            // Show add contact modal (if exists) or create new contact
+            alert('Kontakt qo\'shish funksiyasi tez orada qo\'shiladi. Hozircha ismni qo\'lda kiriting.');
+            // Reopen debt modal
+            setTimeout(() => {
+                showAddDebtModal();
+            }, 100);
+        }
+        
+        // Override showAddDebtModal to load contacts
+        const originalShowAddDebtModal = window.showAddDebtModal;
+        window.showAddDebtModal = async function() {
+            if (originalShowAddDebtModal) {
+                originalShowAddDebtModal();
+            } else {
+                hapticFeedback('light');
+                const modal = document.getElementById('addDebtModal');
+                if (modal) {
+                    modal.classList.add('active');
+                }
+            }
+            await loadContactsForDebt();
+        };
+        
+        // Override handleAddDebt to include contact_id
+        const originalHandleAddDebt = window.handleAddDebt;
+        window.handleAddDebt = async function(event) {
+            event.preventDefault();
+            hapticFeedback('medium');
+
+            const contactId = document.getElementById('debtContactIdHidden')?.value || null;
+            const personName = document.getElementById('debtPersonName')?.value || '';
+            
+            // If contact is selected, use contact name, otherwise use manual input
+            const finalPersonName = contactId ? 
+                (document.getElementById('debtContactId')?.options[document.getElementById('debtContactId')?.selectedIndex]?.textContent || personName) :
+                personName;
+
+            const data = {
+                debt_type: document.getElementById('debtType').value,
+                person_name: finalPersonName,
+                contact_id: contactId || null,
+                amount: parseFloat(document.getElementById('debtAmount').value),
+                currency: 'UZS',
+                due_date: document.getElementById('debtDueDate').value || null,
+                description: document.getElementById('debtDescription').value || null
+            };
+
+            try {
+                const tg = window.Telegram?.WebApp;
+                const response = await fetch('/api/debts', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Telegram-Init-Data': tg?.initData || ''
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (response.ok) {
+                    hapticFeedback('success');
+                    closeAddDebtModal();
+                    // Reload debts page
+                    if (typeof loadDebtsPage === 'function') {
+                        await loadDebtsPage();
+                    } else {
+                        location.reload();
+                    }
+                } else {
+                    const error = await response.json();
+                    hapticFeedback('error');
+                    alert('Xatolik: ' + (error.error || 'Qarz qo\'shilmadi'));
+                }
+            } catch (error) {
+                hapticFeedback('error');
+                alert('Xatolik: ' + error.message);
+            }
+        };
     </script>
 </body>
 </html>
